@@ -43,7 +43,7 @@ def collect_weather_data(weather_resource_info, current_dt, city, tolerance):
 
     """
 
-    try:        
+    try:
         weather_resource_json = fetch_weather_data_as_json(weather_resource_info['url'](city))
         rows = transform_weather_data_to_csv(weather_resource_json, current_dt(), weather_resource_info, tolerance)
         write_rows(weather_resource_info['csv_file'], rows)
@@ -83,8 +83,8 @@ def epoch_time(date):
 
     three_hours_in_seconds = 60 * 60 * 3
     initial_timestamp = datetime(date.year, date.month, date.day, tzinfo=timezone.utc).timestamp()
-    keys = [str(j) for j in range (0, 24, 3)]
-    values = [initial_timestamp + three_hours_in_seconds*j for j in range(0,8)]
+    keys = [str(j) for j in range(0, 24, 3)]
+    values = [initial_timestamp + three_hours_in_seconds*j for j in range(0, 8)]
     return dict(zip(keys, values))
 
 

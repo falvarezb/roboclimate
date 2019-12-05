@@ -1,6 +1,6 @@
 from datetime import date
 from unittest.mock import Mock
-from roboclimate.open_weather.weather_spider import normalise_dt
+from roboclimate.weather_spider import normalise_dt
 
 
 # fixtures

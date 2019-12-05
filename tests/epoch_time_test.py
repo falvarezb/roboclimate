@@ -1,5 +1,5 @@
 from datetime import date
-from roboclimate.open_weather.weather_spider import epoch_time
+from roboclimate.weather_spider import epoch_time
 
 
 # see https://www.epochconverter.com/
