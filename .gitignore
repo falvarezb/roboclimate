@@ -1,5 +1,6 @@
 __pycache__/
 .hypothesis/
+.pytest_cache/
 
 
 # Log file
@@ -9,3 +10,5 @@ __pycache__/
 
 *.jsonl
 *.csv
+
+city.list.json
