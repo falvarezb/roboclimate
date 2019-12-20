@@ -1,56 +1,5 @@
 import pandas as pd
-
-
-def match_true_temp_and_forecast(current_weather_df, forecast_df):
-    """
-
-    Matches the true temperature with the forecast done over the 5 previous days.
-    If the forecast of any of the 5 previous days is not available, the entire record is discarded
-
-    current_weather_df
-    ------------------
-
-      temp   dt       today
-    0   0.5  100  2019-11-30
-    1   0.6  200  2019-11-30 
-
-
-    forecast_df
-    -----------
-
-      temp   dt       today
-    0   1.0  100  2019-11-30
-    1   2.0  100  2019-11-28
-    2   1.5  100  2019-11-27
-    3   3.0  100  2019-11-29
-    4   4.0  100  2019-11-26
-    5   5.0  200  2019-11-30
-    6   2.0  200  2019-11-28
-    7   4.0  200  2019-11-27
-    8   3.0  200  2019-11-29
-    9   1.0  200  2019-11-26
-
-
-    result
-    ------
-
-       temp   dt       today   t5   t4   t3   t2   t1
-    0   0.5  100  2019-11-30  4.0  1.5  2.0  3.0  1.0
-    1   0.6  200  2019-11-30  1.0  4.0  2.0  3.0  5.0
-
-    """
-
-    import logging
-    headers = ['t5', 't4', 't3', 't2', 't1']
-    df = pd.DataFrame()
-    for row in current_weather_df.iterrows():
-        temps = forecast_df[forecast_df['dt'] == row[1]['dt']].sort_values('today').T.loc['temp']
-        if len(temps) == len(headers):
-            temps_df = pd.DataFrame(dict([(i, [j]) for i, j in zip(headers, temps)]), index=[row[0]])
-            df = df.append(pd.DataFrame([row[1]]).join(temps_df))
-        else:
-            logging.warning(f"number of temperatures {len(temps)} != 5 for timestamp {row[1]['dt']}")
-    return df
+from roboclimate.data_analysis import match_true_temp_and_forecast
 
 
 def test_one_element_in_current_weather():
