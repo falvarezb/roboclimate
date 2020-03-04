@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn.metrics import mean_absolute_error as mae
 from sklearn.metrics import mean_squared_error as mse
 from sklearn.metrics import median_absolute_error as medae
-from roboclimate.metrics import mean_absolute_scaled_error, mean_absolute_scaled_error_1day
+from metrics import mean_absolute_scaled_error, mean_absolute_scaled_error_1day
 
 
 def load_data(file):
