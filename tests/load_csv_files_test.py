@@ -1,5 +1,5 @@
 import pandas as pd
-from roboclimate.data_analysis import load_data, load_forecast_temp_data
+from roboclimate.data_analysis import load_data
 
 def test_load_true_temp():
     data = load_data('tests/csv_files/weather.csv')

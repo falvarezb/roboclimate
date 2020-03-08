@@ -10,11 +10,6 @@ from metrics import mean_absolute_scaled_error, mean_absolute_scaled_error_1day
 def load_data(file):
     return pd.read_csv(file, usecols=['temp', 'dt', 'today'], dtype={'dt': 'int64'})
 
-
-def load_forecast_temp_data(forecast_file):
-    pd.read_csv(forecast_file, usecols=['temp', 'dt', 'today'], dtype={'dt': 'int64'})
-
-
 def match_true_temp_and_forecast(true_temp_df, forecast_temp_df):
     """
 
@@ -73,7 +68,7 @@ def match_true_temp_and_forecast(true_temp_df, forecast_temp_df):
 def forecast_precision(data):
     return {
         "mae": [mae(data['temp'], data[f't{i}']) for i in range(5, 0, -1)],
-        "rmse": [sqrt(mse(data['temp'], data[f't{i}']))for i in range(5, 0, -1)],  # root mean squared error
+        "rmse": [sqrt(mse(data['temp'], data[f't{i}'])) for i in range(5, 0, -1)],  # root mean squared error
         "medae": [medae(data['temp'], data[f't{i}']) for i in range(5, 0, -1)],
         "mase": [mean_absolute_scaled_error(data['temp'], data[f't{i}']) for i in range(5, 0, -1)],
         "mase1d": [mean_absolute_scaled_error_1day(data['temp'], data[f't{i}']) for i in range(5, 0, -1)]
