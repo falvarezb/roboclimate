@@ -68,7 +68,15 @@ It is robust to outliers
 
 ## Applications
 
-This project comprises several applications that combined constitute our data pipeline.
+This project comprises several applications that combined constitute the data pipeline:
+
+- weather spider
+- data analysis
+
+Assuming that this project has been downloaded into a folder called `roboclimateapp`, the following
+env variable needs to be set:
+
+`export PYTHONPATH=/path/to/roboclimateapp`
 
 ### Weather spider
 
