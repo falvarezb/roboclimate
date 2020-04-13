@@ -51,13 +51,11 @@ https://en.wikipedia.org/wiki/Mean_absolute_scaled_error
 
 Average of the absolute value of the errors (the errors being the differences between predicted and real values)
 
-The mean absolute error uses the same scale as the data being measured.
+### Root mean squared error (RMSE)
 
-### Mean squared error (MSE)
+Square root of the average of the square of the errors
 
-Average of the square of the errors
-
-It weights outliers more heavily than MEA as a result of the squaring of each term, which effectively weights large errors more heavily than small ones
+It weights outliers more heavily than MAE as a result of the squaring of each term, which effectively weights large errors more heavily than small ones
 
 ### Median absolute error (MEDAE)
 
@@ -131,6 +129,9 @@ Steps:
 To run the application, execute the command:
 
 `python roboclimate/data_analysis.py`
+
+
+As part of the data analysis, there is a Jupyter notebook, `notebook.ipynb`, displaying some graphs
 
 
 ## Deployment
