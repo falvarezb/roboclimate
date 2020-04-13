@@ -13,5 +13,10 @@ __pycache__/
 
 *.jsonl
 *.csv
+.terraform/
+*.tfplan
+*.tfstate
+*.tfstate.backup
+
 
 city.list.json

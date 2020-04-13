@@ -112,15 +112,28 @@ temp,pressure,humidity,wind_speed,wind_deg,dt,today
 2.62,1021,88,0.99,175,1575439200,2019-12-03
 ```
 
-### Data anlysis
+### Data analysis
 
 ...
 
 
-## Housekeeping
+## Deployment
+
+In order to deploy the applicaton, run terraform:
+
+```
+terraform init
+terraform plan -out roboclimate.tfplan
+terraform apply roboclimate.tfplan
+```
+
+Then, ssh into the machine and:
+
+- set the env variable `OPEN_WEATHER_API`
+- start the application `python roboclimate/weather_spider.py`
 
 Export environment settings to provision cloud instance:
 
 ```
-conda env export > roboclimate.yml
+conda env export > terraform/roboclimate.yml
 ```
