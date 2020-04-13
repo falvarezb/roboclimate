@@ -4,7 +4,7 @@
 
 Have you ever complained about the weatherman failing to predict the weather correctly?
 
-That's the question this project aims to answer: how reliable are the weather predictions?
+That's the question this project aims to answer: how reliable are the weather forecasts?
 
 To do so we'll compare the accuracy of different weather models ranging from a naive approach to  sophisticated meteorological models.
 
@@ -94,7 +94,7 @@ The data is recorded on 2 csv files:
 - weather.csv
 - forecast.csv
 
-that are created inside a folder called 'csv_files' that, in turn, is created in the location where the script is executed from.
+that are created inside a folder called `csv_files` that, in turn, is created in the location where the script is executed.
 
 Example of data contained on weather.csv:
 
@@ -112,9 +112,25 @@ temp,pressure,humidity,wind_speed,wind_deg,dt,today
 2.62,1021,88,0.99,175,1575439200,2019-12-03
 ```
 
+To run the application, execute the command:
+
+`python roboclimate/weather_spider.py`
+
 ### Data analysis
 
-...
+This application analyse the data collected by the weather spider:
+
+- **input**: weather.csv, forecast.csv
+- **output**: temp_data.csv, metrics.csv
+
+Steps:
+
+- join the records from **weather.csv** and **forecast.csv** by the field `dt`, effectively, matching the true temperature with the forecast done over the 5 previous days; the result is stored on **temp_data.csv**
+- calculate the precision of the forecast according to the different metrics; the result is stored on **metrics.csv**
+
+To run the application, execute the command:
+
+`python roboclimate/data_analysis.py`
 
 
 ## Deployment

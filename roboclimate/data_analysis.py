@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn.metrics import mean_absolute_error as mae
 from sklearn.metrics import mean_squared_error as mse
 from sklearn.metrics import median_absolute_error as medae
-from metrics import mean_absolute_scaled_error, mean_absolute_scaled_error_1day
+from roboclimate.metrics import mean_absolute_scaled_error, mean_absolute_scaled_error_1day
 
 
 def load_data(file):
@@ -13,7 +13,8 @@ def load_data(file):
 def match_true_temp_and_forecast(true_temp_df, forecast_temp_df):
     """
 
-    Matches the true temperature with the forecast done over the 5 previous days.
+    Joins the records from weather.csv and forecast.csv by the field dt, effectively,
+    matching the true temperature with the forecast done over the 5 previous days.
     If the forecast of any of the 5 previous days is not available, the entire record is discarded
 
     true_temp_df
