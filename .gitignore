@@ -17,6 +17,7 @@ __pycache__/
 *.tfplan
 *.tfstate
 *.tfstate.backup
+*.tfvars
 
 .ipynb_checkpoints/
 
