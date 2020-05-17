@@ -55,7 +55,7 @@ Average of the absolute value of the errors (the errors being the differences be
 
 Square root of the average of the square of the errors
 
-It weights outliers more heavily than MAE as a result of the squaring of each term, which effectively weights large errors more heavily than small ones
+It weighs outliers more heavily than MAE as a result of the squaring of each term, which effectively weighs large errors more heavily than small ones
 
 ### Median absolute error (MEDAE)
 
