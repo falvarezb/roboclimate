@@ -10,7 +10,7 @@ from roboclimate.metrics import mean_absolute_scaled_error, mean_absolute_scaled
 def load_data(file):
     return pd.read_csv(file, usecols=['temp', 'dt', 'today'], dtype={'dt': 'int64'})
 
-def match_true_temp_and_forecast(true_temp_df, forecast_temp_df):
+def join_true_temp_and_forecast(true_temp_df, forecast_temp_df):
     """
 
     Joins the records from weather.csv and forecast.csv by the field dt, effectively,
@@ -77,8 +77,8 @@ def forecast_precision(data):
 
 
 def main():
-    data_df = match_true_temp_and_forecast(load_data('csv_files/weather.csv'), load_data('csv_files/forecast.csv'))
-    data_df.to_csv('csv_files/temp_data.csv', index=False)
+    data_df = join_true_temp_and_forecast(load_data('csv_files/weather.csv'), load_data('csv_files/forecast.csv'))
+    data_df.to_csv('csv_files/join.csv', index=False)
     metrics = forecast_precision(data_df)
     pd.DataFrame(metrics).to_csv('csv_files/metrics.csv', index=False)
     print('END')
