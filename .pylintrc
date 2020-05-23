@@ -94,7 +94,7 @@ max-nested-blocks=5
 
 # Logging modules to check that the string format arguments are in logging
 # function parameter format
-logging-modules=logging
+logging-modules=
 
 
 [SPELLING]
@@ -422,4 +422,4 @@ min-public-methods=2
 
 # Exceptions that will emit a warning when being caught. Defaults to
 # "Exception"
-overgeneral-exceptions=Exception
+overgeneral-exceptions=
