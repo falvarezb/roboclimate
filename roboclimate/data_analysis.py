@@ -66,20 +66,20 @@ def join_true_temp_and_forecast(true_temp_df, forecast_temp_df):
     return df
 
 
-def forecast_precision(data):
+def forecast_precision(join_data):
     return {
-        "mae": [mae(data['temp'], data[f't{i}']) for i in range(5, 0, -1)],
-        "rmse": [sqrt(mse(data['temp'], data[f't{i}'])) for i in range(5, 0, -1)],  # root mean squared error
-        "medae": [medae(data['temp'], data[f't{i}']) for i in range(5, 0, -1)],
-        "mase": [mean_absolute_scaled_error(data['temp'], data[f't{i}']) for i in range(5, 0, -1)],
-        "mase1d": [mean_absolute_scaled_error_1day(data['temp'], data[f't{i}']) for i in range(5, 0, -1)]
+        "mae": [mae(join_data['temp'], join_data[f't{i}']) for i in range(5, 0, -1)],
+        "rmse": [sqrt(mse(join_data['temp'], join_data[f't{i}'])) for i in range(5, 0, -1)],  # root mean squared error
+        "medae": [medae(join_data['temp'], join_data[f't{i}']) for i in range(5, 0, -1)],
+        "mase": [mean_absolute_scaled_error(join_data['temp'], join_data[f't{i}']) for i in range(5, 0, -1)],
+        "mase1d": [mean_absolute_scaled_error_1day(join_data['temp'], join_data[f't{i}']) for i in range(5, 0, -1)]
     }
 
 
 def main():
-    data_df = join_true_temp_and_forecast(load_data('csv_files/weather.csv'), load_data('csv_files/forecast.csv'))
-    data_df.to_csv('csv_files/join.csv', index=False)
-    metrics = forecast_precision(data_df)
+    join_data_df = join_true_temp_and_forecast(load_data('csv_files/weather.csv'), load_data('csv_files/forecast.csv'))
+    join_data_df.to_csv('csv_files/join.csv', index=False)
+    metrics = forecast_precision(join_data_df)
     pd.DataFrame(metrics).to_csv('csv_files/metrics.csv', index=False)
     print('END')
 
