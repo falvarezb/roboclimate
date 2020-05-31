@@ -11,7 +11,3 @@ def one_year_ago(date_time):
 def remove_29_feb(df):
     df['dt_iso'] = df['dt'].apply(datetime.fromtimestamp)
     return df.drop(df[df['dt_iso'].apply(lambda x: (x.month, x.day)) == (2, 29)].index)
-    
-
-# def remove_29_feb(df):
-#     return df.drop(list(filter(lambda x: x.month == 2 and x.day == 29, df.index)))

@@ -1,7 +1,6 @@
 from datetime import datetime, timezone
 from sklearn.metrics import mean_absolute_error as mae
 import numpy as np
-import pandas as pd
 from roboclimate.util import one_year_ago
 
 def mean_absolute_scaled_error(real_data, predicted_data, period=1):
