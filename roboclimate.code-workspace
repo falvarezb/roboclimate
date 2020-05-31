@@ -3,5 +3,8 @@
 		{
 			"path": "."
 		}
-	]
+	],
+	"settings": {
+		"python.dataScience.jupyterServerURI": "http://localhost:8889/?token=a2c5869c783e4b0f0d60681d44efa063d8b424861b539e85"
+	}
 }

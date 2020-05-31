@@ -1,5 +1,8 @@
+from datetime import datetime, timezone
 from sklearn.metrics import mean_absolute_error as mae
 import numpy as np
+import pandas as pd
+from roboclimate.util import one_year_ago
 
 def mean_absolute_scaled_error(real_data, predicted_data, period=1):
     """
@@ -53,11 +56,16 @@ def mean_absolute_scaled_error_1day(real_data, predicted_data):
     return mean_absolute_scaled_error(real_data, predicted_data, period)
 
 
-def mean_absolute_scaled_error_1year(real_data, predicted_data):
+def mean_absolute_scaled_error_1year(real_data_without_feb_29, predicted_data_without_feb_29, dt_data_without_feb_29, historical_data):
     """
     This version of the function 'mean_absolute_scaled_error' considers as "last period" the temperature from 1 year ago,
-    on the same date at the same time
+    on the same date at the same time.
 
     """
 
-    return mae(real_data, predicted_data) / mae(real_data[8:], real_data[:-8])
+    previous_year_datetime = lambda dt: one_year_ago(datetime.fromtimestamp(dt, tz=timezone.utc))    
+    naive_prediction = [historical_data[previous_year_datetime(j)] for j in dt_data_without_feb_29]
+
+    return mae(real_data_without_feb_29, predicted_data_without_feb_29) / mae(real_data_without_feb_29, naive_prediction)
+
+

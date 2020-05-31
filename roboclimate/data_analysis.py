@@ -4,7 +4,8 @@ import pandas as pd
 from sklearn.metrics import mean_absolute_error as mae
 from sklearn.metrics import mean_squared_error as mse
 from sklearn.metrics import median_absolute_error as medae
-from roboclimate.metrics import mean_absolute_scaled_error, mean_absolute_scaled_error_1day
+from roboclimate.metrics import mean_absolute_scaled_error as mase, mean_absolute_scaled_error_1day as mase_1day, mean_absolute_scaled_error_1year as mase_1year
+from roboclimate.util import remove_29_feb
 
 
 def load_data(file):
@@ -66,20 +67,29 @@ def join_true_temp_and_forecast(true_temp_df, forecast_temp_df):
     return df
 
 
-def forecast_precision(join_data):
+def forecast_precision(join_data, historical_data):
+    join_data_without_29_feb = remove_29_feb(join_data)
     return {
         "mae": [mae(join_data['temp'], join_data[f't{i}']) for i in range(5, 0, -1)],
-        "rmse": [sqrt(mse(join_data['temp'], join_data[f't{i}'])) for i in range(5, 0, -1)],  # root mean squared error
+        "rmse": [sqrt(mse(join_data['temp'], join_data[f't{i}'])) for i in range(5, 0, -1)],
         "medae": [medae(join_data['temp'], join_data[f't{i}']) for i in range(5, 0, -1)],
-        "mase": [mean_absolute_scaled_error(join_data['temp'], join_data[f't{i}']) for i in range(5, 0, -1)],
-        "mase1d": [mean_absolute_scaled_error_1day(join_data['temp'], join_data[f't{i}']) for i in range(5, 0, -1)]
+        "mase": [mase(join_data['temp'], join_data[f't{i}']) for i in range(5, 0, -1)],
+        "mase1d": [mase_1day(join_data['temp'], join_data[f't{i}']) for i in range(5, 0, -1)],
+        "mase1y": [mase_1year(join_data_without_29_feb['temp'], join_data_without_29_feb[f't{i}'], join_data_without_29_feb['dt'], historical_data['temp']) for i in range(5, 0, -1)]
     }
+
+def read_historical_data(df):
+    df['parsed_dt'] = df['dt_iso'].apply(lambda x: x[:19])
+    df = df.drop_duplicates('parsed_dt')
+    return df.set_index(pd.DatetimeIndex(df['parsed_dt']))
 
 
 def main():
+    london_df = read_historical_data(pd.read_csv("london_weather_historical_data.csv"))
+
     join_data_df = join_true_temp_and_forecast(load_data('csv_files/weather.csv'), load_data('csv_files/forecast.csv'))
     join_data_df.to_csv('csv_files/join.csv', index=False)
-    metrics = forecast_precision(join_data_df)
+    metrics = forecast_precision(join_data_df, london_df)
     pd.DataFrame(metrics).to_csv('csv_files/metrics.csv', index=False)
     print('END')
 
