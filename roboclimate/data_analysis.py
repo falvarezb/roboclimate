@@ -14,12 +14,12 @@ def load_data(file):
 def join_true_temp_and_forecast(true_temp_df, forecast_temp_df):
     """
 
-    Joins the records from weather.csv and forecast.csv by the field dt, effectively,
+    Joins the records from weather.csv and forecast.csv by the field dt, effectively
     matching the true temperature with the forecast done over the 5 previous days.
     If the forecast of any of the 5 previous days is not available, the entire record is discarded
 
     true_temp_df
-    ------------------
+    ------------
 
       temp   dt       today
     0   0.5  100  2019-11-30
@@ -27,7 +27,7 @@ def join_true_temp_and_forecast(true_temp_df, forecast_temp_df):
 
 
     forecast_temp_df
-    -----------
+    ----------------
 
       temp   dt       today
     0   1.0  100  2019-11-30
@@ -67,25 +67,26 @@ def join_true_temp_and_forecast(true_temp_df, forecast_temp_df):
     return df
 
 
-def forecast_precision(join_data, historical_data):
-    join_data_without_29_feb = remove_29_feb(join_data)
+def forecast_precision(joined_data, historical_data):
+    joined_data_without_29_feb = remove_29_feb(joined_data)
     return {
-        "mae": [mae(join_data['temp'], join_data[f't{i}']) for i in range(5, 0, -1)],
-        "rmse": [sqrt(mse(join_data['temp'], join_data[f't{i}'])) for i in range(5, 0, -1)],
-        "medae": [medae(join_data['temp'], join_data[f't{i}']) for i in range(5, 0, -1)],
-        "mase": [mase(join_data['temp'], join_data[f't{i}']) for i in range(5, 0, -1)],
-        "mase1d": [mase_1day(join_data['temp'], join_data[f't{i}']) for i in range(5, 0, -1)],
-        "mase1y": [mase_1year(join_data_without_29_feb['temp'], join_data_without_29_feb[f't{i}'], join_data_without_29_feb['dt'], historical_data['temp']) for i in range(5, 0, -1)]
+        "mae": [mae(joined_data['temp'], joined_data[f't{i}']) for i in range(5, 0, -1)],
+        "rmse": [sqrt(mse(joined_data['temp'], joined_data[f't{i}'])) for i in range(5, 0, -1)],
+        "medae": [medae(joined_data['temp'], joined_data[f't{i}']) for i in range(5, 0, -1)],
+        "mase": [mase(joined_data['temp'], joined_data[f't{i}']) for i in range(5, 0, -1)],
+        "mase1d": [mase_1day(joined_data['temp'], joined_data[f't{i}']) for i in range(5, 0, -1)],
+        "mase1y": [mase_1year(joined_data_without_29_feb['temp'], joined_data_without_29_feb[f't{i}'], joined_data_without_29_feb['dt'], historical_data['temp']) for i in range(5, 0, -1)]
     }
 
-def read_historical_data(df):
+def read_historical_data(file):
+    df = pd.read_csv(file)
     df['parsed_dt'] = df['dt_iso'].apply(lambda x: x[:19])
     df = df.drop_duplicates('parsed_dt')
     return df.set_index(pd.DatetimeIndex(df['parsed_dt']))
 
 
 def main():
-    london_df = read_historical_data(pd.read_csv("london_weather_historical_data.csv"))
+    london_df = read_historical_data("london_weather_historical_data.csv")
 
     join_data_df = join_true_temp_and_forecast(load_data('csv_files/weather.csv'), load_data('csv_files/forecast.csv'))
     join_data_df.to_csv('csv_files/join.csv', index=False)
