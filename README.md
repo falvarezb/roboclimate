@@ -134,6 +134,12 @@ To run the application, execute the command:
 As part of the data analysis, there is a Jupyter notebook, `notebook.ipynb`, displaying some graphs
 
 
+## Tests
+
+```
+pytest --cov-report html --cov=roboclimate tests/
+```
+
 ## Deployment
 
 In order to deploy the applicaton, run terraform:
