@@ -62,9 +62,16 @@ def mean_absolute_scaled_error_1year(real_data_without_feb_29, predicted_data_wi
 
     """
 
-    previous_year_datetime = lambda dt: one_year_ago(datetime.fromtimestamp(dt, tz=timezone.utc))    
-    naive_prediction = [historical_data[previous_year_datetime(j)] for j in dt_data_without_feb_29]
+    previous_year_datetime = lambda dt: one_year_ago(datetime.fromtimestamp(dt, tz=timezone.utc))  
 
-    return mae(real_data_without_feb_29, predicted_data_without_feb_29) / mae(real_data_without_feb_29, naive_prediction)
+    try:
+        naive_prediction = [historical_data[previous_year_datetime(j)] for j in dt_data_without_feb_29]
+        return mae(real_data_without_feb_29, predicted_data_without_feb_29) / mae(real_data_without_feb_29, naive_prediction)
+    except KeyError as err:
+        print(f"{err} not found in historical data")
+        return np.nan
+    
+
+    
 
 
