@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn.metrics import mean_absolute_error as mae
 from sklearn.metrics import mean_squared_error as mse
 from sklearn.metrics import median_absolute_error as medae
-from roboclimate.metrics import mean_absolute_scaled_error as mase, mean_absolute_scaled_error_1day as mase_1day, mean_absolute_scaled_error_1year as mase_1year
+from roboclimate.metrics import mean_absolute_scaled_error as mase, mean_absolute_scaled_error_1day as mase_1day, mean_absolute_scaled_error_1year as mase_1year, mean_absolute_scaled_error_year_avg as mase_1year_avg
 from roboclimate.util import remove_29_feb
 
 
@@ -75,7 +75,8 @@ def forecast_precision(joined_data, historical_data):
         "medae": [medae(joined_data['temp'], joined_data[f't{i}']) for i in range(5, 0, -1)],
         "mase": [mase(joined_data['temp'], joined_data[f't{i}']) for i in range(5, 0, -1)],
         "mase1d": [mase_1day(joined_data['temp'], joined_data[f't{i}']) for i in range(5, 0, -1)],
-        "mase1y": [mase_1year(joined_data_without_29_feb['temp'], joined_data_without_29_feb[f't{i}'], joined_data_without_29_feb['dt'], historical_data['temp']) for i in range(5, 0, -1)]
+        "mase1y": [mase_1year(joined_data_without_29_feb['temp'], joined_data_without_29_feb[f't{i}'], joined_data_without_29_feb['dt'], historical_data['temp']) for i in range(5, 0, -1)],
+        "mase1y_avg": [mase_1year_avg(joined_data_without_29_feb['temp'], joined_data_without_29_feb[f't{i}'], joined_data_without_29_feb['dt'], historical_data['temp']) for i in range(5, 0, -1)]
     }
 
 def read_historical_data(file):

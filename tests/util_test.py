@@ -1,6 +1,6 @@
-from datetime import datetime
-from roboclimate.util import one_year_ago, remove_29_feb
 import pandas as pd
+from datetime import datetime
+from roboclimate.util import one_year_ago, remove_29_feb, n_years_ago
 
 def test_one_year_ago():
     assert one_year_ago(datetime(2019, 12, 20, 5, 0, 0)) == datetime(2018, 12, 20, 5, 0, 0)
@@ -8,6 +8,13 @@ def test_one_year_ago():
 
 def test_one_year_ago_leap_year():
     assert one_year_ago(datetime(2020, 2, 29, 5, 0, 0)) is None
+
+def test_n_years_ago():
+    assert n_years_ago(datetime(2019, 12, 20, 5, 0, 0), 3) == datetime(2016, 12, 20, 5, 0, 0)
+
+
+def test_n_years_ago_leap_year():
+    assert n_years_ago(datetime(2020, 2, 29, 5, 0, 0), 3) is None
 
 
 def test_remove_29_feb():
