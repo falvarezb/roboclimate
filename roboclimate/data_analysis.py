@@ -11,6 +11,7 @@ from roboclimate.util import remove_29_feb
 def load_data(file):
     return pd.read_csv(file, usecols=['temp', 'dt', 'today'], dtype={'dt': 'int64'})
 
+
 def join_true_temp_and_forecast(true_temp_df, forecast_temp_df):
     """
 
@@ -67,7 +68,7 @@ def join_true_temp_and_forecast(true_temp_df, forecast_temp_df):
     return df
 
 
-def forecast_precision(joined_data, historical_data):
+def forecast_precision(joined_data, historical_data, years_back=19):
     joined_data_without_29_feb = remove_29_feb(joined_data)
     return {
         "mae": [mae(joined_data['temp'], joined_data[f't{i}']) for i in range(5, 0, -1)],
@@ -76,8 +77,9 @@ def forecast_precision(joined_data, historical_data):
         "mase": [mase(joined_data['temp'], joined_data[f't{i}']) for i in range(5, 0, -1)],
         "mase1d": [mase_1day(joined_data['temp'], joined_data[f't{i}']) for i in range(5, 0, -1)],
         "mase1y": [mase_1year(joined_data_without_29_feb['temp'], joined_data_without_29_feb[f't{i}'], joined_data_without_29_feb['dt'], historical_data['temp']) for i in range(5, 0, -1)],
-        "mase1y_avg": [mase_1year_avg(joined_data_without_29_feb['temp'], joined_data_without_29_feb[f't{i}'], joined_data_without_29_feb['dt'], historical_data['temp']) for i in range(5, 0, -1)]
+        "mase1y_avg": [mase_1year_avg(joined_data_without_29_feb['temp'], joined_data_without_29_feb[f't{i}'], joined_data_without_29_feb['dt'], historical_data['temp'], years_back) for i in range(5, 0, -1)]
     }
+
 
 def read_historical_data(file):
     df = pd.read_csv(file)

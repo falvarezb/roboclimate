@@ -48,6 +48,7 @@ def test_forecast_precision():
     assert result['mase'] == [1, 1, 2, 3, 1]
     assert result['mase1d'] == [np.nan, np.nan, np.nan, np.nan, np.nan]
     assert result['mase1y'] == [0.8, 0.6, 0.6, 0.6, 0.2]
+    assert result['mase1y_avg'] == [np.nan, np.nan, np.nan, np.nan, np.nan]
 
 
 def test_forecast_precision_mase1d():
@@ -73,6 +74,24 @@ def test_forecast_precision_mase1d():
 
     result = forecast_precision(joined_data, historical_data)
     assert result['mase1d'] == [2, 1, 0, 1, 1]
+
+
+def test_forecast_precision_mase1y_avg():
+    """
+        temp   dt              today       t5   t4   t3   t2   t1
+    0   1      1575082800      2019-11-30  4.0  3    2.0  1    1.0
+    """
+    joined_data = pd.DataFrame({'temp': [1], 'dt': [1575082800], 'today': ['2019-11-30'],
+                                't5': [4.0],
+                                't4': [3],
+                                't3': [2.0],
+                                't2': [1],
+                                't1': [1.0]})
+    historical_data = read_historical_data("tests/csv_files/historical_data_year_avg.csv")
+    years_back = 2
+
+    result = forecast_precision(joined_data, historical_data, years_back)
+    assert result['mase1y_avg'] == [1, 2/3, 1/3, 0, 0]
 
 
 def test_29_feb_discarded_when_calculating_mase1y():

@@ -38,6 +38,8 @@ def mean_absolute_scaled_error(real_data, predicted_data, period=1):
 
     """
 
+    if len(real_data) <= period:
+        return np.nan
     return mae(real_data[period:], predicted_data[period:]) / mae(real_data[period:], real_data[:-period])
 
 
@@ -51,10 +53,7 @@ def mean_absolute_scaled_error_1day(real_data, predicted_data):
     If there are no enough elements in the data series to calculate the metric, np.nan is returned instead
     """
 
-    period = 8
-    if len(real_data) <= period:
-        return np.nan
-    return mean_absolute_scaled_error(real_data, predicted_data, period)
+    return mean_absolute_scaled_error(real_data, predicted_data, 8)
 
 
 def mean_absolute_scaled_error_1year(real_data_without_feb_29, predicted_data_without_feb_29, dt_data_without_feb_29, historical_data):
@@ -66,7 +65,8 @@ def mean_absolute_scaled_error_1year(real_data_without_feb_29, predicted_data_wi
     TODO: instead of stopping the entire calculation, just discard the offending data point and continue calculation with rest of data
     """
 
-    def previous_year_datetime(dt): return one_year_ago(datetime.fromtimestamp(dt, tz=timezone.utc))
+    def previous_year_datetime(dt): 
+        return one_year_ago(datetime.fromtimestamp(dt, tz=timezone.utc))
 
     try:
         naive_prediction = [historical_data[previous_year_datetime(j)] for j in dt_data_without_feb_29]
@@ -76,10 +76,10 @@ def mean_absolute_scaled_error_1year(real_data_without_feb_29, predicted_data_wi
         return np.nan
 
 
-def mean_absolute_scaled_error_year_avg(real_data_without_feb_29, predicted_data_without_feb_29, dt_data_without_feb_29, historical_data):
+def mean_absolute_scaled_error_year_avg(real_data_without_feb_29, predicted_data_without_feb_29, dt_data_without_feb_29, historical_data, years_back = 19):
     """
     This function considers as "last period" the avg temperature, on the same date at the same time, over the years present in 
-    the historical data
+    the historical data (currently up to 19 years for London)
 
     In case the historical data does not contain the data point for any of the datetimes considered, the mae is not calculated
     and np.nan is returned
@@ -89,7 +89,7 @@ def mean_absolute_scaled_error_year_avg(real_data_without_feb_29, predicted_data
 
     def previous_years_avg(dt):
         date_time = datetime.fromtimestamp(dt, tz=timezone.utc)
-        return np.average([historical_data[n_years_ago(date_time, n)] for n in range(1, 20)])
+        return np.average([historical_data[n_years_ago(date_time, n)] for n in range(1, years_back+1)])
 
     try:
         naive_prediction = [previous_years_avg(dt) for dt in dt_data_without_feb_29]
