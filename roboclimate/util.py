@@ -1,5 +1,8 @@
-from datetime import datetime
+from datetime import datetime, date
 
+def current_utc_date_generator():
+    current_utc_dt = datetime.utcnow()
+    return date(current_utc_dt.year, current_utc_dt.month, current_utc_dt.day)
 
 def one_year_ago(date_time):
     return n_years_ago(date_time, 1)

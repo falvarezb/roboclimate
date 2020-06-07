@@ -58,18 +58,17 @@ def test_init():
     folder = "tests/temp"
     cities = ["london", "madrid"]
     csv_header = ['field1', 'field2']
-    weather_resource_names = ['real', 'forecast']
 
     # before test
     if os.path.exists(folder):
         shutil.rmtree(folder)
 
-    init(folder, csv_header, cities, weather_resource_names)
+    init(folder, csv_header, cities)
 
-    with open(f"{folder}/real_london.csv") as f:
+    with open(f"{folder}/weather_london.csv") as f:
         assert f.readline() == "field1,field2\n"
 
-    with open(f"{folder}/real_madrid.csv") as f:
+    with open(f"{folder}/weather_madrid.csv") as f:
         assert f.readline() == "field1,field2\n"
 
     with open(f"{folder}/forecast_london.csv") as f:

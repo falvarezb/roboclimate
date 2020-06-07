@@ -1,10 +1,12 @@
 import json
 import csv
-from datetime import timezone, datetime, date
+from datetime import timezone, datetime
 import os
 import logging
 import requests
 from apscheduler.schedulers.blocking import BlockingScheduler
+import roboclimate.util as util
+from roboclimate.config import weather_resources
 
 
 def fetch_weather_data_as_json(url):
@@ -23,7 +25,7 @@ def write_rows(csv_file, rows):
             csv_writer.writerow(row)
 
 
-def collect_weather_data(weather_resource_info, current_dt_generator, city, tolerance):
+def collect_weather_data(url, rows_generator, dt_normaliser, current_dt_generator, csv_file, tolerance):
     """
     Reads weather data from Open Weather's endpoints and store it in a CSV file
 
@@ -44,15 +46,15 @@ def collect_weather_data(weather_resource_info, current_dt_generator, city, tole
     """
 
     try:
-        weather_resource_json = fetch_weather_data_as_json(weather_resource_info['url_generator'](city))
-        rows = transform_weather_data_to_csv(weather_resource_json, current_dt_generator(), weather_resource_info['rows_generator'], weather_resource_info['dt_normaliser'], tolerance)
-        write_rows(weather_resource_info['csv_file'](city), rows)
+        weather_resource_json = fetch_weather_data_as_json(url)
+        rows = transform_weather_data_to_csv(weather_resource_json, current_dt_generator(), rows_generator, dt_normaliser, tolerance)
+        write_rows(csv_file, rows)
     except Exception:
-        logging.error(f"Error while reading {weather_resource_info['url_generator'](city)}", exc_info=True)
+        logging.error(f"Error while reading {url}", exc_info=True)
 
 
-def url_generator(weather_resource):
-    return lambda city: f"http://api.openweathermap.org/data/2.5/{weather_resource}?id={city}&appid={os.environ.get('OPEN_WEATHER_API')}&units=metric"
+def generate_url(weather_resource, city):
+    return f"http://api.openweathermap.org/data/2.5/{weather_resource}?id={city}&appid={os.environ.get('OPEN_WEATHER_API')}&units=metric"
 
 
 def epoch_time(date):
@@ -84,7 +86,7 @@ def epoch_time(date):
     three_hours_in_seconds = 60 * 60 * 3
     initial_timestamp = datetime(date.year, date.month, date.day, tzinfo=timezone.utc).timestamp()
     keys = [str(j) for j in range(0, 24, 3)]
-    values = [initial_timestamp + three_hours_in_seconds*j for j in range(0, 8)]
+    values = [initial_timestamp + three_hours_in_seconds * j for j in range(0, 8)]
     return dict(zip(keys, values))
 
 
@@ -134,25 +136,36 @@ def normalise_dt(dt, current_utc_date, tolerance):
     return dt
 
 
-def collect_current_weather_data(current_weather_config, current_utc_date_generator, city_ids, tolerance):
-    for city in city_ids:
-        collect_weather_data(current_weather_config, current_utc_date_generator, city, tolerance)
+def collect_current_weather_data(current_utc_date_generator, cities, csv_folder, tolerance):
+    weather_resource = weather_resources[0]
+    rows_generator = lambda json: [json]
+    dt_normaliser = normalise_dt
+    for city_name, city_id in cities.enumerate():
+        collect_weather_data(generate_url(weather_resource, city_id), rows_generator, dt_normaliser,
+                             current_utc_date_generator, csv_file_path(csv_folder, weather_resource, city_name), tolerance)
 
 
-def collect_five_day_weather_forecast_data(five_day_weather_forecast_config, current_utc_date_generator, city_ids, tolerance):
-    for city in city_ids:
-        collect_weather_data(five_day_weather_forecast_config, current_utc_date_generator, city, tolerance)
+def collect_five_day_weather_forecast_data(current_utc_date_generator, cities, csv_folder, tolerance):
+    weather_resource = weather_resources[1]
+    rows_generator = lambda json: json['list']
+    dt_normaliser = lambda dt, current_dt, tolerance: dt
+    for city_name, city_id in cities.enumerate():
+        collect_weather_data(generate_url(weather_resource, city_id), rows_generator, dt_normaliser,
+                             current_utc_date_generator, csv_file_path(csv_folder, weather_resource, city_name), tolerance)
 
 
+def csv_file_path(csv_folder, weather_resource, city_name):
+    return f"{csv_folder}/{weather_resource}_{city_name}.csv"
 
-def init(csv_folder, csv_header, city_names, weather_resource_names):
+
+def init(csv_folder, csv_header, city_names):
     if not os.path.exists(csv_folder):
         logging.info(f"creating folder {csv_folder}")
         os.makedirs(csv_folder)
 
-    for weather_resource in weather_resource_names:
-        for city in city_names:
-            csv_file = f"{csv_folder}/{weather_resource}_{city}.csv"
+    for weather_resource in weather_resources:
+        for city_name in city_names:
+            csv_file = csv_file_path(csv_folder, weather_resource, city_name)
             if not os.path.exists(csv_file):
                 logging.info(f"creating file {csv_file}")
                 write_rows(csv_file, [csv_header])
@@ -161,33 +174,33 @@ def init(csv_folder, csv_header, city_names, weather_resource_names):
 def main():
 
     logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level='INFO')
-    cities = {"london": 2643743}
-    csv_folder = "csv_files"
-    csv_header = ['temp', 'pressure', 'humidity', 'wind_speed', 'wind_deg', 'dt', 'today']
-    tolerance = 1200
+    import roboclimate.config as config
+    # cities = {"london": 2643743}
+    # weather_resources = ['weather', 'forecast']
+    # csv_folder = "csv_files"
+    # csv_header = ['temp', 'pressure', 'humidity', 'wind_speed', 'wind_deg', 'dt', 'today']
+    # tolerance = 1200
 
-    def current_utc_date_generator():
-        current_utc_dt = datetime.utcnow()
-        return date(current_utc_dt.year, current_utc_dt.month, current_utc_dt.day)
+    # weather_resource_config = {
+    #     "current_weather": {
+    #         "url_generator": url_generator("weather"),
+    #         "name": "weather",
+    #         "csv_file_generator": lambda city: f"{csv_folder}/weather_{city}.csv",
+    #         "rows_generator": lambda json: [json],
+    #         "dt_normaliser": normalise_dt
+    #     },
+    #     "five_day_weather_forecast": {
+    #         "url_generator": url_generator("forecast"),
+    #         "name": "forecast",
+    #         "csv_file_generator": lambda city: f"{csv_folder}/forecast_{city}.csv",
+    #         "rows_generator": lambda json: json['list'],
+    #         "dt_normaliser": lambda dt, current_dt, tolerance: dt
+    #     }
+    # }
 
-    weather_resource_config = {
-        "current_weather": {
-            "url_generator": url_generator("weather"),
-            "name": "weather",
-            "rows_generator": lambda json: [json],
-            "dt_normaliser": normalise_dt
-        },
-        "five_day_weather_forecast": {
-            "url_generator": url_generator("forecast"),
-            "name": "forecast",
-            "rows_generator": lambda json: json['list'],
-            "dt_normaliser": lambda dt, current_dt, tolerance: dt
-        }
-    }
-
-    init(csv_folder, csv_header, cities.keys(), [config["name"] for config in weather_resource_config.values()])
-    collect_current_weather_data(weather_resource_config['current_weather'], current_utc_date_generator, cities.values(), tolerance)
-    collect_five_day_weather_forecast_data(weather_resource_config['five_day_weather_forecast'], current_utc_date_generator, cities.values(), tolerance)
+    init(config.csv_folder, config.csv_header, config.cities.keys())
+    collect_current_weather_data(util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance)
+    collect_five_day_weather_forecast_data(util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance)
 
     # scheduler = BlockingScheduler()
     # scheduler.add_job(collect_current_weather_data, 'cron', [weather_resource_config['current_weather'], current_utc_date, cities, tolerance], hour='*/3')
