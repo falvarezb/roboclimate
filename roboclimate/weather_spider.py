@@ -46,7 +46,7 @@ def collect_weather_data(weather_resource_info, current_dt, city, tolerance):
     try:
         weather_resource_json = fetch_weather_data_as_json(weather_resource_info['url'](city))
         rows = transform_weather_data_to_csv(weather_resource_json, current_dt(), weather_resource_info, tolerance)
-        write_rows(weather_resource_info['csv_file'], rows)
+        write_rows(weather_resource_info['csv_file'](city), rows)
     except Exception:
         logging.error(f"Error while reading {weather_resource_info['url'](city)}", exc_info=True)
 
@@ -134,6 +134,34 @@ def normalise_dt(dt, current_utc_date, tolerance):
     return dt
 
 
+def collect_current_weather_data(current_weather_config, current_utc_date, city_ids, tolerance):
+    for city in city_ids:
+        collect_weather_data(current_weather_config, current_utc_date, city, tolerance)
+
+
+def collect_five_day_weather_forecast_data(five_day_weather_forecast_config, current_utc_date, city_ids, tolerance):
+    for city in city_ids:
+        collect_weather_data(five_day_weather_forecast_config, current_utc_date, city, tolerance)
+
+
+def current_utc_date():
+    current_utc_dt = datetime.utcnow()
+    return date(current_utc_dt.year, current_utc_dt.month, current_utc_dt.day)
+
+
+def init(csv_folder, csv_header, city_names, weather_resource_names):
+    if not os.path.exists(csv_folder):
+        logging.info(f"creating folder {csv_folder}")
+        os.makedirs(csv_folder)
+
+    for weather_resource in weather_resource_names:
+        for city in city_names:
+            csv_file = f"{csv_folder}/{weather_resource}_{city}.csv"
+            if not os.path.exists(csv_file):
+                logging.info(f"creating file {csv_file}")
+                write_rows(csv_file, [csv_header])
+
+
 def main():
 
     logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level='INFO')
@@ -145,40 +173,25 @@ def main():
     weather_resource_config = {
         "current_weather": {
             "url": url("weather"),
-            "csv_file": f"{csv_folder}/weather.csv",
+            "name": "weather",
             "rows_generator": lambda row: [row],
             "normaliser": normalise_dt
         },
         "five_day_weather_forecast": {
             "url": url("forecast"),
-            "csv_file": f"{csv_folder}/forecast.csv",
+            "name": "forecast",
             "rows_generator": lambda row: row['list'],
             "normaliser": lambda dt, current_dt, tolerance: dt
         }
     }
 
-    def current_utc_date():
-        current_utc_dt = datetime.utcnow()
-        return date(current_utc_dt.year, current_utc_dt.month, current_utc_dt.day)
-
-    def init():
-        if not os.path.exists(csv_folder):
-            logging.info(f"creating folder {csv_folder}")
-            os.makedirs(csv_folder)
-
-        for key in iter(weather_resource_config):
-            csv_file = weather_resource_config[key]["csv_file"]
-            if not os.path.exists(csv_file):
-                logging.info(f"creating file {csv_file}")
-                write_rows(csv_file, [csv_header])
-
-    init()
-    collect_weather_data(weather_resource_config['current_weather'], current_utc_date, cities['london'], tolerance)
-    collect_weather_data(weather_resource_config['five_day_weather_forecast'], current_utc_date, cities['london'], tolerance)
+    init(csv_folder, csv_header, cities.keys(), [config["name"] for config in weather_resource_config.values()])
+    collect_current_weather_data(weather_resource_config['current_weather'], current_utc_date, cities.values(), tolerance)
+    collect_five_day_weather_forecast_data(weather_resource_config['five_day_weather_forecast'], current_utc_date, cities.values(), tolerance)
 
     # scheduler = BlockingScheduler()
-    # scheduler.add_job(collect_weather_data, 'cron', [weather_resource_config['current_weather'], current_utc_date, cities['london'], tolerance], hour='*/3')
-    # scheduler.add_job(collect_weather_data, 'cron', [weather_resource_config['five_day_weather_forecast'], current_utc_date, cities['london'], tolerance], hour=22)
+    # scheduler.add_job(collect_current_weather_data, 'cron', [weather_resource_config['current_weather'], current_utc_date, cities, tolerance], hour='*/3')
+    # scheduler.add_job(collect_five_day_weather_forecast_data, 'cron', [weather_resource_config['five_day_weather_forecast'], current_utc_date, cities, tolerance], hour=22)
     # scheduler.start()
 
 

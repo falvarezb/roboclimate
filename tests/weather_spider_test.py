@@ -1,6 +1,8 @@
+import shutil
+import os
 from datetime import date
 from unittest.mock import Mock
-from roboclimate.weather_spider import epoch_time, normalise_dt
+from roboclimate.weather_spider import epoch_time, normalise_dt, init
 
 
 # see https://www.epochconverter.com/
@@ -47,3 +49,31 @@ def test_normalise_dt_success():
 def test_normalise_dt_fail():
     tolerance = 1
     assert normalise_dt(dt, current_utc_date, tolerance) == dt
+
+
+def test_init():
+    folder = "tests/myfolder"
+    cities = ["london", "madrid"]
+    csv_header = ['field1', 'field2']
+    weather_resource_names = ['real', 'forecast']
+
+    #before test
+    if os.path.exists(folder):
+        shutil.rmtree(folder)
+
+    init(folder, csv_header, cities, weather_resource_names)
+
+    with open(f"{folder}/real_london.csv") as f:
+        assert f.readline() == "field1,field2\n"
+
+    with open(f"{folder}/real_madrid.csv") as f:
+        assert f.readline() == "field1,field2\n"
+
+    with open(f"{folder}/forecast_london.csv") as f:
+        assert f.readline() == "field1,field2\n"
+
+    with open(f"{folder}/forecast_madrid.csv") as f:
+        assert f.readline() == "field1,field2\n"
+
+    #after test
+    shutil.rmtree(folder)
