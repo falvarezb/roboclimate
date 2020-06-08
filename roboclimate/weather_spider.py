@@ -54,7 +54,7 @@ def collect_weather_data(url, rows_generator, dt_normaliser, current_dt_generato
 
 
 def generate_url(weather_resource, city):
-    return f"http://api.openweathermap.org/data/2.5/{weather_resource}?id={city}&appid={os.environ.get('OPEN_WEATHER_API')}&units=metric"
+    return f"http://api.openweathermap.org/data/2.5/{weather_resource}?id={city}&units=metric&appid={os.environ.get('OPEN_WEATHER_API')}"
 
 
 def epoch_time(date):
@@ -140,7 +140,7 @@ def collect_current_weather_data(current_utc_date_generator, cities, csv_folder,
     weather_resource = weather_resources[0]
     rows_generator = lambda json: [json]
     dt_normaliser = normalise_dt
-    for city_name, city_id in cities.enumerate():
+    for city_name, city_id in cities.items():
         collect_weather_data(generate_url(weather_resource, city_id), rows_generator, dt_normaliser,
                              current_utc_date_generator, csv_file_path(csv_folder, weather_resource, city_name), tolerance)
 
@@ -149,7 +149,7 @@ def collect_five_day_weather_forecast_data(current_utc_date_generator, cities, c
     weather_resource = weather_resources[1]
     rows_generator = lambda json: json['list']
     dt_normaliser = lambda dt, current_dt, tolerance: dt
-    for city_name, city_id in cities.enumerate():
+    for city_name, city_id in cities.items():
         collect_weather_data(generate_url(weather_resource, city_id), rows_generator, dt_normaliser,
                              current_utc_date_generator, csv_file_path(csv_folder, weather_resource, city_name), tolerance)
 

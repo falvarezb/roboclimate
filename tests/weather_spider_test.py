@@ -1,9 +1,11 @@
 import shutil
 import os
 import json
+import httpretty
+import pytest
 from datetime import date
-from unittest.mock import Mock
-from roboclimate.weather_spider import epoch_time, normalise_dt, init, transform_weather_data_to_csv
+from unittest.mock import Mock, patch
+from roboclimate.weather_spider import epoch_time, normalise_dt, init, transform_weather_data_to_csv, collect_current_weather_data
 
 
 fixtures = dict(
@@ -11,11 +13,19 @@ fixtures = dict(
     current_utc_date=date(2019, 11, 29)
 )
 
+
+@pytest.fixture(scope='function')
+def csv_folder():
+    folder = "tests/temp"
+    if os.path.exists(folder):
+        shutil.rmtree(folder)
+    yield folder
+    shutil.rmtree(folder)
+
+
 # see https://www.epochconverter.com/
-
-
 def test_epoch_time():
-    d = date(2019, 11, 29)
+    d = fixtures['current_utc_date']
     assert epoch_time(d) == {"0": 1574985600,
                              "3": 1574996400,
                              "6": 1575007200,
@@ -27,7 +37,7 @@ def test_epoch_time():
                              }
 
 
-def side_effect(value):
+def epoch_time_side_effect(value):
     if value == fixtures['current_utc_date']:
         return {"0": 1574985600,
                 "3": 1574996400,
@@ -41,44 +51,37 @@ def side_effect(value):
     return None
 
 
-# epoch_time = Mock(side_effect=side_effect)
-
-
-def test_normalise_dt_success():
+@patch('roboclimate.weather_spider.epoch_time')
+def test_normalise_dt_success(mock_epoch_time):
+    mock_epoch_time.side_effect = epoch_time_side_effect
     tolerance = 10
     assert normalise_dt(fixtures['dt'], fixtures['current_utc_date'], tolerance) == 1575061200
 
 
-def test_normalise_dt_fail():
+@patch('roboclimate.weather_spider.epoch_time')
+def test_normalise_dt_fail(mock_epoch_time):
+    mock_epoch_time.side_effect = epoch_time_side_effect
     tolerance = 1
     assert normalise_dt(fixtures['dt'], fixtures['current_utc_date'], tolerance) == fixtures['dt']
 
 
-def test_init():
-    folder = "tests/temp"
+def test_init(csv_folder):
     cities = ["london", "madrid"]
     csv_header = ['field1', 'field2']
 
-    # before test
-    if os.path.exists(folder):
-        shutil.rmtree(folder)
+    init(csv_folder, csv_header, cities)
 
-    init(folder, csv_header, cities)
-
-    with open(f"{folder}/weather_london.csv") as f:
+    with open(f"{csv_folder}/weather_london.csv") as f:
         assert f.readline() == "field1,field2\n"
 
-    with open(f"{folder}/weather_madrid.csv") as f:
+    with open(f"{csv_folder}/weather_madrid.csv") as f:
         assert f.readline() == "field1,field2\n"
 
-    with open(f"{folder}/forecast_london.csv") as f:
+    with open(f"{csv_folder}/forecast_london.csv") as f:
         assert f.readline() == "field1,field2\n"
 
-    with open(f"{folder}/forecast_madrid.csv") as f:
+    with open(f"{csv_folder}/forecast_madrid.csv") as f:
         assert f.readline() == "field1,field2\n"
-
-    # after test
-    shutil.rmtree(folder)
 
 
 def test_transform_current_weather_data_to_csv():
@@ -123,3 +126,36 @@ def test_transform_forecast_weather_data_to_csv():
     assert csv_row[1][4] == 240.503
     assert csv_row[1][5] == 1485810000
     assert csv_row[1][6] == str(fixtures['current_utc_date'])
+
+
+@httpretty.activate
+def test_collect_current_weather_data(csv_folder):
+    cities = {"london": 1}
+    csv_header = ['temp', 'pressure', 'humidity', 'wind_speed', 'wind_deg', 'dt', 'today']
+    tolerance = 60
+    current_utc_date_generator = lambda: date(2017, 1, 30)
+
+    init(csv_folder, csv_header, cities)
+
+    # with open("tests/json_files/weather.json") as f:
+    #     json_body = json.load(f)
+
+    httpretty.register_uri(httpretty.GET, 'http://api.openweathermap.org/data/2.5/weather',
+                           body='{"coord": {"lon": 145.77, "lat": -16.92}, "weather": [{"id": 802, "main": "Clouds", "description": "scattered clouds", "icon": "03n"}], "base": "stations", "main": {"temp": 300.15, "pressure": 1007, "humidity": 74, "temp_min": 300.15, "temp_max": 300.15}, "visibility": 10000, "wind": {"speed": 3.6, "deg": 160}, "clouds": {"all": 40}, "dt": 1485790200, "sys": {"type": 1, "id": 8166, "message": 0.2064, "country": "AU", "sunrise": 1485720272, "sunset": 1485766550}, "id": 2172797, "name": "Cairns", "cod": 200}',
+                           content_type='application/json',
+                           status=200)
+
+    collect_current_weather_data(current_utc_date_generator, cities, csv_folder, tolerance)
+
+    with open(f"{csv_folder}/weather_london.csv") as f:
+        rows = list(map(lambda row: row.split(','), f.readlines()))
+
+    # print(json_body)
+    # print(rows)
+    assert rows[1][0] == '300.15'
+    assert rows[1][1] == '1007'
+    assert rows[1][2] == '74'
+    assert rows[1][3] == '3.6'
+    assert rows[1][4] == '160'
+    assert rows[1][5] == '1485790200'
+    assert rows[1][6] == '2017-01-30\n'
