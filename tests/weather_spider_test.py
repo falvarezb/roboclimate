@@ -5,7 +5,7 @@ import httpretty
 import pytest
 from datetime import date
 from unittest.mock import Mock, patch
-from roboclimate.weather_spider import epoch_time, normalise_dt, init, transform_weather_data_to_csv, collect_current_weather_data
+from roboclimate.weather_spider import epoch_time, normalise_dt, init, transform_weather_data_to_csv, collect_current_weather_data, collect_five_day_weather_forecast_data
 
 
 fixtures = dict(
@@ -137,11 +137,11 @@ def test_collect_current_weather_data(csv_folder):
 
     init(csv_folder, csv_header, cities)
 
-    # with open("tests/json_files/weather.json") as f:
-    #     json_body = json.load(f)
-
+    with open("tests/json_files/weather.json") as f:
+        json_body = f.read()
+    
     httpretty.register_uri(httpretty.GET, 'http://api.openweathermap.org/data/2.5/weather',
-                           body='{"coord": {"lon": 145.77, "lat": -16.92}, "weather": [{"id": 802, "main": "Clouds", "description": "scattered clouds", "icon": "03n"}], "base": "stations", "main": {"temp": 300.15, "pressure": 1007, "humidity": 74, "temp_min": 300.15, "temp_max": 300.15}, "visibility": 10000, "wind": {"speed": 3.6, "deg": 160}, "clouds": {"all": 40}, "dt": 1485790200, "sys": {"type": 1, "id": 8166, "message": 0.2064, "country": "AU", "sunrise": 1485720272, "sunset": 1485766550}, "id": 2172797, "name": "Cairns", "cod": 200}',
+                           body=json_body,
                            content_type='application/json',
                            status=200)
 
@@ -150,8 +150,6 @@ def test_collect_current_weather_data(csv_folder):
     with open(f"{csv_folder}/weather_london.csv") as f:
         rows = list(map(lambda row: row.split(','), f.readlines()))
 
-    # print(json_body)
-    # print(rows)
     assert rows[1][0] == '300.15'
     assert rows[1][1] == '1007'
     assert rows[1][2] == '74'
@@ -159,3 +157,42 @@ def test_collect_current_weather_data(csv_folder):
     assert rows[1][4] == '160'
     assert rows[1][5] == '1485790200'
     assert rows[1][6] == '2017-01-30\n'
+
+
+@httpretty.activate
+def test_collect_five_day_weather_forecast_data(csv_folder):
+    cities = {"london": 1}
+    csv_header = ['temp', 'pressure', 'humidity', 'wind_speed', 'wind_deg', 'dt', 'today']
+    tolerance = 60
+    current_utc_date_generator = lambda: date(2017, 1, 30)
+
+    init(csv_folder, csv_header, cities)
+
+    with open("tests/json_files/forecast.json") as f:
+        json_body = f.read()
+    
+    httpretty.register_uri(httpretty.GET, 'http://api.openweathermap.org/data/2.5/forecast',
+                           body=json_body,
+                           content_type='application/json',
+                           status=200)
+
+    collect_five_day_weather_forecast_data(current_utc_date_generator, cities, csv_folder, tolerance)
+
+    with open(f"{csv_folder}/forecast_london.csv") as f:
+        rows = list(map(lambda row: row.split(','), f.readlines()))
+
+    assert rows[1][0] == '261.45'
+    assert rows[1][1] == '1023.48'
+    assert rows[1][2] == '79'
+    assert rows[1][3] == '4.77'
+    assert rows[1][4] == '232.505'
+    assert rows[1][5] == '1485799200'
+    assert rows[1][6] == '2017-01-30\n'
+
+    assert rows[2][0] == '261.41'
+    assert rows[2][1] == '1022.41'
+    assert rows[2][2] == '76'
+    assert rows[2][3] == '4.76'
+    assert rows[2][4] == '240.503'
+    assert rows[2][5] == '1485810000'
+    assert rows[2][6] == '2017-01-30\n'
