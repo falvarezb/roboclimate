@@ -152,7 +152,6 @@ terraform apply roboclimate.tfplan
 
 Then, ssh into the machine and:
 
-- set the env variable `OPEN_WEATHER_API`
 - start the application `python roboclimate/weather_spider.py`
 
 Export environment settings to provision cloud instance:

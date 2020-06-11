@@ -175,37 +175,16 @@ def main():
 
     logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level='INFO')
     import roboclimate.config as config
-    # cities = {"london": 2643743}
-    # weather_resources = ['weather', 'forecast']
-    # csv_folder = "csv_files"
-    # csv_header = ['temp', 'pressure', 'humidity', 'wind_speed', 'wind_deg', 'dt', 'today']
-    # tolerance = 1200
-
-    # weather_resource_config = {
-    #     "current_weather": {
-    #         "url_generator": url_generator("weather"),
-    #         "name": "weather",
-    #         "csv_file_generator": lambda city: f"{csv_folder}/weather_{city}.csv",
-    #         "rows_generator": lambda json: [json],
-    #         "dt_normaliser": normalise_dt
-    #     },
-    #     "five_day_weather_forecast": {
-    #         "url_generator": url_generator("forecast"),
-    #         "name": "forecast",
-    #         "csv_file_generator": lambda city: f"{csv_folder}/forecast_{city}.csv",
-    #         "rows_generator": lambda json: json['list'],
-    #         "dt_normaliser": lambda dt, current_dt, tolerance: dt
-    #     }
-    # }
 
     init(config.csv_folder, config.csv_header, config.cities.keys())
-    collect_current_weather_data(util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance)
-    collect_five_day_weather_forecast_data(util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance)
+    
+    # collect_current_weather_data(util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance)
+    # collect_five_day_weather_forecast_data(util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance)
 
-    # scheduler = BlockingScheduler()
-    # scheduler.add_job(collect_current_weather_data, 'cron', [weather_resource_config['current_weather'], current_utc_date, cities, tolerance], hour='*/3')
-    # scheduler.add_job(collect_five_day_weather_forecast_data, 'cron', [weather_resource_config['five_day_weather_forecast'], current_utc_date, cities, tolerance], hour=22)
-    # scheduler.start()
+    scheduler = BlockingScheduler()
+    scheduler.add_job(collect_current_weather_data, 'cron', [util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance], hour='*/3')
+    scheduler.add_job(collect_five_day_weather_forecast_data, 'cron', [util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance], hour=22)
+    scheduler.start()
 
 
 if __name__ == '__main__':

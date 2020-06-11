@@ -10,6 +10,7 @@ variable "key_name" {}
 variable "region" {
   default = "eu-west-1"
 }
+variable "open_weather_api" {}
 
 ##################################################################################
 # PROVIDERS
@@ -27,7 +28,7 @@ provider "aws" {
 
 locals {
   common_tags = {
-    Name = "roboclimate_test"     
+    Name = "roboclimate"     
   }
 }
 
@@ -65,7 +66,7 @@ resource "aws_security_group" "roboclimate" {
 
 resource "aws_instance" "roboclimate" {
   ami                    = "ami-018d4e875cb0a2a67"
-  instance_type          = "t2.micro"
+  instance_type          = "t2.nano"
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.roboclimate.id]
 
@@ -79,12 +80,16 @@ resource "aws_instance" "roboclimate" {
 
   provisioner "remote-exec" {
     inline = [
-      "conda install -c conda-forge -y apscheduler"      
+      "sudo yum -y update",
+      "sudo yum -y install tmux",
+      "conda install -c conda-forge -y apscheduler", 
+      "echo 'export PYTHONPATH=/home/ec2-user' >> /home/ec2-user/.bash_profile",
+      "echo \"export OPEN_WEATHER_API=${var.open_weather_api}\" >> /home/ec2-user/.bash_profile"      
     ]
   }
 
   provisioner "file" {
-    source      = "../roboclimate/"
+    source      = "../roboclimate"
     destination = "/home/ec2-user"
   }
 
