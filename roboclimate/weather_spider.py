@@ -142,7 +142,7 @@ def collect_current_weather_data(current_utc_date_generator, cities, csv_folder,
     dt_normaliser = normalise_dt
     for city_name, city_id in cities.items():
         collect_weather_data(generate_url(weather_resource, city_id), rows_generator, dt_normaliser,
-                             current_utc_date_generator, csv_file_path(csv_folder, weather_resource, city_name), tolerance)
+                             current_utc_date_generator, util.csv_file_path(csv_folder, weather_resource, city_name), tolerance)
 
 
 def collect_five_day_weather_forecast_data(current_utc_date_generator, cities, csv_folder, tolerance):
@@ -151,11 +151,8 @@ def collect_five_day_weather_forecast_data(current_utc_date_generator, cities, c
     dt_normaliser = lambda dt, current_dt, tolerance: dt
     for city_name, city_id in cities.items():
         collect_weather_data(generate_url(weather_resource, city_id), rows_generator, dt_normaliser,
-                             current_utc_date_generator, csv_file_path(csv_folder, weather_resource, city_name), tolerance)
+                             current_utc_date_generator, util.csv_file_path(csv_folder, weather_resource, city_name), tolerance)
 
-
-def csv_file_path(csv_folder, weather_resource, city_name):
-    return f"{csv_folder}/{weather_resource}_{city_name}.csv"
 
 
 def init(csv_folder, csv_header, city_names):
@@ -165,7 +162,7 @@ def init(csv_folder, csv_header, city_names):
 
     for weather_resource in weather_resources:
         for city_name in city_names:
-            csv_file = csv_file_path(csv_folder, weather_resource, city_name)
+            csv_file = util.csv_file_path(csv_folder, weather_resource, city_name)
             if not os.path.exists(csv_file):
                 logging.info(f"creating file {csv_file}")
                 write_rows(csv_file, [csv_header])
@@ -177,7 +174,7 @@ def main():
     import roboclimate.config as config
 
     init(config.csv_folder, config.csv_header, config.cities.keys())
-    
+
     # collect_current_weather_data(util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance)
     # collect_five_day_weather_forecast_data(util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance)
 

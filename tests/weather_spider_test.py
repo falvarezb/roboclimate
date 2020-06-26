@@ -7,10 +7,11 @@ from datetime import date
 from unittest.mock import Mock, patch
 from roboclimate.weather_spider import epoch_time, normalise_dt, init, transform_weather_data_to_csv, collect_current_weather_data, collect_five_day_weather_forecast_data
 
-
-fixtures = dict(
-    dt=1575061195,  # Friday, 29 November 2019 20:59:55 UTC
-    current_utc_date=date(2019, 11, 29)
+@pytest.fixture(scope='function')
+def fixtures():
+    return dict(
+        dt=1575061195,  # Friday, 29 November 2019 20:59:55 UTC
+        current_utc_date=date(2019, 11, 29)
 )
 
 
@@ -24,7 +25,7 @@ def csv_folder():
 
 
 # see https://www.epochconverter.com/
-def test_epoch_time():
+def test_epoch_time(fixtures):
     d = fixtures['current_utc_date']
     assert epoch_time(d) == {"0": 1574985600,
                              "3": 1574996400,
@@ -37,30 +38,32 @@ def test_epoch_time():
                              }
 
 
-def epoch_time_side_effect(value):
-    if value == fixtures['current_utc_date']:
-        return {"0": 1574985600,
-                "3": 1574996400,
-                "6": 1575007200,
-                "9": 1575018000,
-                "12": 1575028800,
-                "15": 1575039600,
-                "18": 1575050400,
-                "21": 1575061200
-                }
-    return None
+def epoch_time_side_effect_gen(current_utc_date):
+    def epoch_time_side_effect(value):
+        if value == current_utc_date:
+            return {"0": 1574985600,
+                    "3": 1574996400,
+                    "6": 1575007200,
+                    "9": 1575018000,
+                    "12": 1575028800,
+                    "15": 1575039600,
+                    "18": 1575050400,
+                    "21": 1575061200
+                    }
+        return None
+    return epoch_time_side_effect
 
 
 @patch('roboclimate.weather_spider.epoch_time')
-def test_normalise_dt_success(mock_epoch_time):
-    mock_epoch_time.side_effect = epoch_time_side_effect
+def test_normalise_dt_success(mock_epoch_time, fixtures):
+    mock_epoch_time.side_effect = epoch_time_side_effect_gen(fixtures['current_utc_date'])
     tolerance = 10
     assert normalise_dt(fixtures['dt'], fixtures['current_utc_date'], tolerance) == 1575061200
 
 
 @patch('roboclimate.weather_spider.epoch_time')
-def test_normalise_dt_fail(mock_epoch_time):
-    mock_epoch_time.side_effect = epoch_time_side_effect
+def test_normalise_dt_fail(mock_epoch_time, fixtures):
+    mock_epoch_time.side_effect = epoch_time_side_effect_gen(fixtures['current_utc_date'])
     tolerance = 1
     assert normalise_dt(fixtures['dt'], fixtures['current_utc_date'], tolerance) == fixtures['dt']
 
@@ -84,7 +87,7 @@ def test_init(csv_folder):
         assert f.readline() == "field1,field2\n"
 
 
-def test_transform_current_weather_data_to_csv():
+def test_transform_current_weather_data_to_csv(fixtures):
     with open("tests/json_files/weather.json") as f:
         data_json = json.load(f)
 
@@ -102,7 +105,7 @@ def test_transform_current_weather_data_to_csv():
     assert csv_row[6] == str(fixtures['current_utc_date'])
 
 
-def test_transform_forecast_weather_data_to_csv():
+def test_transform_forecast_weather_data_to_csv(fixtures):
     with open("tests/json_files/forecast.json") as f:
         data_json = json.load(f)
 
