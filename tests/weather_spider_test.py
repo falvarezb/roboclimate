@@ -11,6 +11,7 @@ from roboclimate.weather_spider import epoch_time, normalise_dt, init, transform
 def fixtures():
     return dict(
         dt=1575061195,  # Friday, 29 November 2019 20:59:55 UTC
+        dt_on_the_dot=1575061200, # Friday, 29 November 2019 21:00:00 UTC
         current_utc_date=date(2019, 11, 29)
 )
 
@@ -27,28 +28,28 @@ def csv_folder():
 # see https://www.epochconverter.com/
 def test_epoch_time(fixtures):
     d = fixtures['current_utc_date']
-    assert epoch_time(d) == {"0": 1574985600,
-                             "3": 1574996400,
-                             "6": 1575007200,
-                             "9": 1575018000,
-                             "12": 1575028800,
-                             "15": 1575039600,
-                             "18": 1575050400,
-                             "21": 1575061200
+    assert epoch_time(d) == {"0": 1574985600.0,
+                             "3": 1574996400.0,
+                             "6": 1575007200.0,
+                             "9": 1575018000.0,
+                             "12": 1575028800.0,
+                             "15": 1575039600.0,
+                             "18": 1575050400.0,
+                             "21": 1575061200.0
                              }
 
 
 def epoch_time_side_effect_gen(current_utc_date):
     def epoch_time_side_effect(value):
         if value == current_utc_date:
-            return {"0": 1574985600,
-                    "3": 1574996400,
-                    "6": 1575007200,
-                    "9": 1575018000,
-                    "12": 1575028800,
-                    "15": 1575039600,
-                    "18": 1575050400,
-                    "21": 1575061200
+            return {"0": 1574985600.0,
+                    "3": 1574996400.0,
+                    "6": 1575007200.0,
+                    "9": 1575018000.0,
+                    "12": 1575028800.0,
+                    "15": 1575039600.0,
+                    "18": 1575050400.0,
+                    "21": 1575061200.0
                     }
         return None
     return epoch_time_side_effect
@@ -58,7 +59,13 @@ def epoch_time_side_effect_gen(current_utc_date):
 def test_normalise_dt_success(mock_epoch_time, fixtures):
     mock_epoch_time.side_effect = epoch_time_side_effect_gen(fixtures['current_utc_date'])
     tolerance = 10
-    assert normalise_dt(fixtures['dt'], fixtures['current_utc_date'], tolerance) == 1575061200
+    assert normalise_dt(fixtures['dt'], fixtures['current_utc_date'], tolerance) == 1575061200.0
+
+@patch('roboclimate.weather_spider.epoch_time')
+def test_normalise_dt_success_when_dt_on_the_dot(mock_epoch_time, fixtures):
+    mock_epoch_time.side_effect = epoch_time_side_effect_gen(fixtures['current_utc_date'])
+    tolerance = 10
+    assert normalise_dt(fixtures['dt_on_the_dot'], fixtures['current_utc_date'], tolerance) == 1575061200.0
 
 
 @patch('roboclimate.weather_spider.epoch_time')

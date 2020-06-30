@@ -130,7 +130,7 @@ def normalise_dt(dt, current_utc_date, tolerance):
     normalised_dts = epoch_time(current_utc_date)
 
     for hour in iter(normalised_dts):
-        if lower_bound < normalised_dts[hour] < upper_bound:
+        if lower_bound <= normalised_dts[hour] < upper_bound:
             return normalised_dts[hour]
     logging.warning(f"it was not possible to normalise this timestamp {dt} to any of the values in {normalised_dts}")
     return dt
