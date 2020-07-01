@@ -10,7 +10,12 @@ To do so we'll compare the accuracy of different weather models ranging from a n
 
 ## Scope
 
-For now, we consider only one weather variable, temperature, and one location, London.
+For now, we consider only one weather variable, temperature, and five locations: 
+- London
+- Madrid
+- Sydney
+- New York
+- Sao Paulo
 
 
 ## Models
@@ -21,6 +26,7 @@ Consists in assuming that the next value is the same as the one of the last peri
 
 The tricky part is to identify what the last value is. For instance, if we measure the temperature
 every 3 hours and we want to predict the temperature today at 3pm, what is the last value: today's temperature at 12pm, yesterday's temperature at 3pm or maybe last year's temperature on the same day at 3pm?
+
 
 ### Average values
 
@@ -46,6 +52,14 @@ It is the mean absolute error of the forecast values, divided by the mean absolu
 Values greater than one indicate that the naive method performs better than the forecast values under consideration.
 
 https://en.wikipedia.org/wiki/Mean_absolute_scaled_error
+
+
+Currently, the following metrics are supported:
+
+- **"mase"**: based on the value of the last measurement (3 hours before)
+- **"mase1d"**: based on the value of the previous day's measurement
+- **"mase1y"**: based on the value of the previous year's measurement (currently only supported for London)
+- **"mase1y_avg"**: based on the average value of the last 20 years' measurement (currently only supported for London)
 
 ### Mean absolute error (MAE)
 
@@ -159,3 +173,8 @@ Export environment settings to provision cloud instance:
 ```
 conda env export > terraform/roboclimate.yml
 ```
+
+jupyter nbconvert --no-input --to html --execute notebook.ipynb
+ipython kernelspec list
+replace kernelspec with python3
+sudo cp notebook.html /usr/share/nginx/html/roboclimate/index.html
