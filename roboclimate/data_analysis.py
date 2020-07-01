@@ -102,7 +102,7 @@ def read_historical_data(file):
 
 
 def main():
-    london_df = read_historical_data("london_weather_historical_data.csv")
+    # london_df = read_historical_data("london_weather_historical_data.csv")
 
     for city_name in config.cities.keys():
         try:
