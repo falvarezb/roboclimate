@@ -100,8 +100,7 @@ def read_historical_data(file):
     df = df.drop_duplicates('parsed_dt')
     return df.set_index(pd.DatetimeIndex(df['parsed_dt']))
 
-
-def main():
+def analyse_data():
     # london_df = read_historical_data("london_weather_historical_data.csv")
 
     for city_name in config.cities.keys():
@@ -117,6 +116,12 @@ def main():
             pd.DataFrame(metrics).to_csv(metrics_file, index=False)
         except Exception:
             logging.error(f"Error while processing {city_name}", exc_info=True)
+
+
+
+def main():
+    logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level='INFO')
+    analyse_data()
     print('END')
 
 
