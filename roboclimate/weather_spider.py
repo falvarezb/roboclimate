@@ -125,8 +125,8 @@ def normalise_dt(dt, current_utc_date, tolerance):
         POSIX timestamp corresponding to the matching interval of the current date. If matching failed, original dt is returned
 
     """
-    lower_bound = dt
-    upper_bound = dt + tolerance
+    lower_bound = dt - tolerance['negative_tolerance']
+    upper_bound = dt + tolerance['positive_tolerance']
     normalised_dts = epoch_time(current_utc_date)
 
     for hour in iter(normalised_dts):
