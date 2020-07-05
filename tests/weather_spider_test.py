@@ -12,6 +12,7 @@ def fixtures():
     return dict(
         dt=1575061195,  # Friday, 29 November 2019 20:59:55 UTC
         dt_on_the_dot=1575061200, # Friday, 29 November 2019 21:00:00 UTC
+        dt_higher_than_reference=1575061202, # Friday, 29 November 2019 21:00:02 UTC
         current_utc_date=date(2019, 11, 29)
 )
 
@@ -58,20 +59,26 @@ def epoch_time_side_effect_gen(current_utc_date):
 @patch('roboclimate.weather_spider.epoch_time')
 def test_normalise_dt_success(mock_epoch_time, fixtures):
     mock_epoch_time.side_effect = epoch_time_side_effect_gen(fixtures['current_utc_date'])
-    tolerance = 10
+    tolerance = {'positive_tolerance': 10, 'negative_tolerance': 5}
     assert normalise_dt(fixtures['dt'], fixtures['current_utc_date'], tolerance) == 1575061200.0
 
 @patch('roboclimate.weather_spider.epoch_time')
 def test_normalise_dt_success_when_dt_on_the_dot(mock_epoch_time, fixtures):
     mock_epoch_time.side_effect = epoch_time_side_effect_gen(fixtures['current_utc_date'])
-    tolerance = 10
+    tolerance = {'positive_tolerance': 10, 'negative_tolerance': 5}
     assert normalise_dt(fixtures['dt_on_the_dot'], fixtures['current_utc_date'], tolerance) == 1575061200.0
+
+@patch('roboclimate.weather_spider.epoch_time')
+def test_normalise_dt_success_when_dt_higher_than_reference(mock_epoch_time, fixtures):
+    mock_epoch_time.side_effect = epoch_time_side_effect_gen(fixtures['current_utc_date'])
+    tolerance = {'positive_tolerance': 10, 'negative_tolerance': 5}
+    assert normalise_dt(fixtures['dt_higher_than_reference'], fixtures['current_utc_date'], tolerance) == 1575061200.0
 
 
 @patch('roboclimate.weather_spider.epoch_time')
 def test_normalise_dt_fail(mock_epoch_time, fixtures):
     mock_epoch_time.side_effect = epoch_time_side_effect_gen(fixtures['current_utc_date'])
-    tolerance = 1
+    tolerance = {'positive_tolerance': 1, 'negative_tolerance': 5}
     assert normalise_dt(fixtures['dt'], fixtures['current_utc_date'], tolerance) == fixtures['dt']
 
 
@@ -142,7 +149,7 @@ def test_transform_forecast_weather_data_to_csv(fixtures):
 def test_collect_current_weather_data(csv_folder):
     cities = {"london": 1}
     csv_header = ['temp', 'pressure', 'humidity', 'wind_speed', 'wind_deg', 'dt', 'today']
-    tolerance = 60
+    tolerance = {'positive_tolerance': 60, 'negative_tolerance': 5}
     current_utc_date_generator = lambda: date(2017, 1, 30)
 
     init(csv_folder, csv_header, cities)
