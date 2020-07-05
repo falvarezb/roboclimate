@@ -122,7 +122,12 @@ resource "aws_instance" "roboclimate_blue" {
 
   provisioner "file" {
     source      = "../notebook.ipynb"
-    destination = "/home/ec2-user"
+    destination = "/home/ec2-user/notebook.ipynb"
+  }
+
+  provisioner "file" {
+    source      = "../nbconverter.sh"
+    destination = "/home/ec2-user/nbconverter.sh"
   }
 
   provisioner "remote-exec" {
@@ -133,7 +138,10 @@ resource "aws_instance" "roboclimate_blue" {
       "echo 'export PYTHONPATH=/home/ec2-user' >> /home/ec2-user/.bash_profile",
       "echo \"export OPEN_WEATHER_API=${var.open_weather_api}\" >> /home/ec2-user/.bash_profile",
       "sudo yum install nginx -y",
-      "sudo service nginx start"             
+      "sudo service nginx start",
+      "chmod u+x /home/ec2-user/nbconverter.sh",
+      "sudo mkdir /usr/share/nginx/html/roboclimate",
+      "sudo chown ec2-user /usr/share/nginx/html/roboclimate"            
     ]
   }
 
@@ -216,7 +224,10 @@ resource "aws_instance" "roboclimate_green" {
       "echo 'export PYTHONPATH=/home/ec2-user' >> /home/ec2-user/.bash_profile",
       "echo \"export OPEN_WEATHER_API=${var.open_weather_api}\" >> /home/ec2-user/.bash_profile",
       "sudo yum install nginx -y",
-      "sudo service nginx start"             
+      "sudo service nginx start",
+      "chmod u+x /home/ec2-user/nbconverter.sh",
+      "sudo mkdir /usr/share/nginx/html/roboclimate",
+      "sudo chown ec2-user /usr/share/nginx/html/roboclimate"             
     ]
   }
 
