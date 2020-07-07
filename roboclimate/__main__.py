@@ -9,7 +9,7 @@ import roboclimate.util as util
 from roboclimate.data_analysis import analyse_data
 from roboclimate.notebook_transformer import run_notebook
 
-logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level='INFO')
+logging.basicConfig(filename='roboclimate.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level='INFO')
 
 init(config.csv_folder, config.csv_header, config.cities.keys())
 

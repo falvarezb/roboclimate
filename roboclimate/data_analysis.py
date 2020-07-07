@@ -9,6 +9,7 @@ from roboclimate.util import remove_29_feb
 import roboclimate.config as config
 import roboclimate.util as util
 
+logger = logging.getLogger(__name__)
 
 def load_data(file):
     return pd.read_csv(file, usecols=['temp', 'dt', 'today'], dtype={'dt': 'int64'})
@@ -63,9 +64,9 @@ def join_true_temp_and_forecast(true_temp_df, forecast_temp_df):
                 temps_df = pd.DataFrame({i: [j] for i, j in zip(headers, temps)}, index=[row[0]])
                 df = df.append(pd.DataFrame([row[1]]).join(temps_df))
             else:
-                logging.warning(f"number of temperatures {len(temps)} != 5 for timestamp {row[1]['dt']}")
+                logger.warning(f"number of temperatures {len(temps)} != 5 for timestamp {row[1]['dt']}")
         except Exception:
-            logging.error(f"Error while processing row \n {row[1]}", exc_info=True)
+            logger.error(f"Error while processing row \n {row[1]}", exc_info=True)
 
     return df
 
@@ -115,7 +116,7 @@ def analyse_data():
             metrics = forecast_precision(join_data_df)
             pd.DataFrame(metrics).to_csv(metrics_file, index=False)
         except Exception:
-            logging.error(f"Error while processing {city_name}", exc_info=True)
+            logger.error(f"Error while processing {city_name}", exc_info=True)
 
 
 

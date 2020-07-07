@@ -8,6 +8,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 import roboclimate.util as util
 from roboclimate.config import weather_resources
 
+logger = logging.getLogger(__name__)
 
 def fetch_weather_data_as_json(url):
     result = requests.get(url).text
@@ -50,7 +51,7 @@ def collect_weather_data(url, rows_generator, dt_normaliser, current_dt_generato
         rows = transform_weather_data_to_csv(weather_resource_json, current_dt_generator(), rows_generator, dt_normaliser, tolerance)
         write_rows(csv_file, rows)
     except Exception:
-        logging.error(f"Error while reading {url}", exc_info=True)
+        logger.error(f"Error while reading {url}", exc_info=True)
 
 
 def generate_url(weather_resource, city):
@@ -132,7 +133,7 @@ def normalise_dt(dt, current_utc_date, tolerance):
     for hour in iter(normalised_dts):
         if lower_bound <= normalised_dts[hour] < upper_bound:
             return normalised_dts[hour]
-    logging.warning(f"it was not possible to normalise this timestamp {dt} to any of the values in {normalised_dts}")
+    logger.warning(f"it was not possible to normalise this timestamp {dt} to any of the values in {normalised_dts}")
     return dt
 
 
@@ -157,14 +158,14 @@ def collect_five_day_weather_forecast_data(current_utc_date_generator, cities, c
 
 def init(csv_folder, csv_header, city_names):
     if not os.path.exists(csv_folder):
-        logging.info(f"creating folder {csv_folder}")
+        logger.info(f"creating folder {csv_folder}")
         os.makedirs(csv_folder)
 
     for weather_resource in weather_resources:
         for city_name in city_names:
             csv_file = util.csv_file_path(csv_folder, weather_resource, city_name)
             if not os.path.exists(csv_file):
-                logging.info(f"creating file {csv_file}")
+                logger.info(f"creating file {csv_file}")
                 write_rows(csv_file, [csv_header])
 
 
