@@ -84,11 +84,20 @@ This project comprises several applications that combined constitute the data pi
 
 - weather spider
 - data analysis
+- notebook publisher
 
 Assuming that this project has been downloaded into a folder called `roboclimateapp`, the following
 env variable needs to be set:
 
 `export PYTHONPATH=/path/to/roboclimateapp`
+
+The command `python -m roboclimate` schedules the above applications to run:
+
+- **weather spider -> current weather**: every 3 hours
+- **weather spider -> forecast**: every day at 10:00 UTC
+- **data analysis**: every day at 10:30 UTC
+- **notebook publisher**: every day at 11:00 UTC
+
 
 ### Weather spider
 
@@ -145,7 +154,11 @@ To run the application, execute the command:
 `python roboclimate/data_analysis.py`
 
 
-As part of the data analysis, there is a Jupyter notebook, `notebook.ipynb`, displaying some graphs
+### Notebook publisher
+
+Based on the data analysis, a Jupyter notebook is generated, `notebook.ipynb`. 
+
+The notebook is exported to html and published on an NGINX server on the path **/roboclimate**
 
 
 ## Tests
@@ -164,17 +177,22 @@ terraform plan -out roboclimate.tfplan
 terraform apply roboclimate.tfplan
 ```
 
-Then, ssh into the machine and:
+Deployment follows blue-green approach and is controlled with the variables `enable_blue_application` and `enable_green_application` defined in `robocliamte.tf`.
 
-- start the application `python roboclimate/weather_spider.py`
+The blue deployment MUST NOT be deleted until after copying the csv files from blue to green and verifying that it works
+correctly.
+
+With every subsequent deployment, blue-green deployments exchange their role.
+
+After running terraform:
+
+- run the locally generated file `copy_csv_files.sh` to copy csv files from the old to the new machine
+- ssh into the new machine and start the application `python -m roboclimate &`
+- logs can be followed on the file `roboclimate.log`
+- the notebook will be published on <machine_hostname>/roboclimate
 
 Export environment settings to provision cloud instance:
 
 ```
 conda env export > terraform/roboclimate.yml
 ```
-
-jupyter nbconvert --no-input --to html --execute notebook.ipynb
-ipython kernelspec list
-replace kernelspec with python3
-sudo cp notebook.html /usr/share/nginx/html/roboclimate/index.html
