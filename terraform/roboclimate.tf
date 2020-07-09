@@ -213,7 +213,12 @@ resource "aws_instance" "roboclimate_green" {
 
   provisioner "file" {
     source      = "../notebook.ipynb"
-    destination = "/home/ec2-user"
+    destination = "/home/ec2-user/notebook.ipynb"
+  }
+
+  provisioner "file" {
+    source      = "../nbconverter.sh"
+    destination = "/home/ec2-user/nbconverter.sh"
   }
 
   provisioner "remote-exec" {
