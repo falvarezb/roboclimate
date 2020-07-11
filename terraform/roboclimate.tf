@@ -16,7 +16,7 @@ variable "green_instance" {}
 
 
 variable "enable_blue_application" {
-  default = true
+  default = false
   type    = bool
 }
 
