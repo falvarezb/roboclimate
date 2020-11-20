@@ -11,6 +11,5 @@
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.nosetestsEnabled": false,
-    "python.dataScience.jupyterServerURI": "local",
-    "python.pythonPath": "/Library/anaconda/envs/roboclimate/bin/python"
+    "jupyter.jupyterServerType": "local"
 }
