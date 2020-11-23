@@ -98,3 +98,7 @@ def mean_absolute_scaled_error_year_avg(real_data_without_feb_29, predicted_data
         print(f"{err} not found in historical data")
         return np.nan
 
+
+
+def mean_absolute_scaled_error_revisited(joined_data):
+    return [mean_absolute_scaled_error(joined_data['temp'], joined_data[f't{i}'], i*8) for i in range(5, 0, -1)]
