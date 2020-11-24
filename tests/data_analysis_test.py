@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from roboclimate.data_analysis import forecast_precision_with_historical_data, read_historical_data, load_data, join_true_temp_and_forecast
+import roboclimate.data_analysis as rda
 
 
 def test_load_true_temp():
@@ -30,50 +31,23 @@ def test_remove_duplicates_from_historical_data():
     assert historical_data.iloc[0].temp == 3
 
 
+
 def test_forecast_precision():
     """
         temp   dt              today       t5   t4   t3   t2   t1
     0   1      1575082800      2019-11-30  4.0  3    2.0  1    1.0
     1   2      1575093600      2019-11-30  3    1    4.0  5    3  
     """
-    joined_data = pd.DataFrame({'temp': [1, 2], 'dt': [1575082800, 1575093600], 'today': ['2019-11-30']*2,
+    joined_data = pd.DataFrame({'temp': [1, 2], 'dt': [1575082800, 1575093600], 'today': ['2019-11-30'] * 2,
                                 't5': [4.0, 3], 't4': [3, 1], 't3': [2.0, 4.0], 't2': [1, 5], 't1': [1.0, 3]})
-    historical_data = read_historical_data("tests/csv_files/historical_data.csv")
 
-    result = forecast_precision_with_historical_data(joined_data, historical_data)
+    result = rda.forecast_precision(joined_data)
 
     assert result['mae'] == [2, 1.5, 1.5, 1.5, 0.5]
     assert result['rmse'] == [2.23606797749979, 1.5811388300841898, 1.5811388300841898, 2.1213203435596424, 0.7071067811865476]
     assert result['medae'] == [2, 1.5, 1.5, 1.5, 0.5]
-    assert result['mase'] == [1, 1, 2, 3, 1]
-    assert result['mase1d'] == [np.nan, np.nan, np.nan, np.nan, np.nan]
-    assert result['mase1y'] == [0.8, 0.6, 0.6, 0.6, 0.2]
-    assert result['mase1y_avg'] == [np.nan, np.nan, np.nan, np.nan, np.nan]
-
-
-def test_forecast_precision_mase1d():
-    """
-        temp   dt              today       t5   t4   t3   t2   t1
-    0   1      1575082800      2019-11-30  4.0  3    2.0  1    1.0
-    1   2      1575093600      2019-11-30  3    1    4.0  5    3  
-    2   1      1575104400      2019-11-30  4.0  3    2.0  1    1.0
-    3   2      1575115200      2019-11-30  3    1    4.0  5    3  
-    4   1      1575126000      2019-11-30  4.0  3    2.0  1    1.0
-    5   2      1575136800      2019-11-30  3    1    4.0  5    3  
-    6   1      1575147600      2019-11-30  4.0  3    2.0  1    1.0
-    7   2      1575158400      2019-12-01  3    1    4.0  5    3  
-    8   2      1575169200      2019-12-01  4.0  3    2.0  1    1.0
-    """
-    joined_data = pd.DataFrame({'temp': [1, 2, 1, 2, 1, 2, 1, 2, 2], 'dt': [1575082800, 1575093600, 1575104400, 1575115200, 1575126000, 1575136800, 1575147600, 1575158400, 1575169200], 'today': ['2019-11-30']*7 + ['2019-12-01']*2,
-                                't5': [4.0, 3, 4.0, 3, 4.0, 3, 4.0, 3, 4.0],
-                                't4': [3, 1, 3, 1, 3, 1, 3, 1, 3],
-                                't3': [2.0, 4.0, 2.0, 4.0, 2.0, 4.0, 2.0, 4.0, 2.0],
-                                't2': [1, 5, 1, 5, 1, 5, 1, 5, 1],
-                                't1': [1.0, 3, 1.0, 3, 1.0, 3, 1.0, 3, 1.0]})
-    historical_data = read_historical_data("tests/csv_files/historical_data.csv")
-
-    result = forecast_precision_with_historical_data(joined_data, historical_data)
-    assert result['mase1d'] == [2, 1, 0, 1, 1]
+    assert 'mase' in result
+    assert 'mase1y' in result
 
 
 def test_forecast_precision_mase1y_avg():
@@ -91,22 +65,7 @@ def test_forecast_precision_mase1y_avg():
     years_back = 2
 
     result = forecast_precision_with_historical_data(joined_data, historical_data, years_back)
-    assert result['mase1y_avg'] == [1, 2/3, 1/3, 0, 0]
-
-
-def test_29_feb_discarded_when_calculating_mase1y():
-    """
-        temp   dt              today       t5   t4   t3   t2   t1
-    0   1      1582858800      2020-02-28  4.0  3    2.0  1    1.0
-    1   2      1582945200      2020-02-29  3    1    4.0  5    3
-    """
-    joined_data = pd.DataFrame({'temp': [1, 2], 'dt': [1582858800, 1582945200], 'today': ['2020-02-28', '2020-02-29'],
-                                't5': [4.0, 3], 't4': [3, 1], 't3': [2.0, 4.0], 't2': [1, 5], 't1': [1.0, 3]})
-    historical_data = read_historical_data("tests/csv_files/historical_data_29_feb.csv")
-
-    result = forecast_precision_with_historical_data(joined_data, historical_data)
-
-    assert result['mase1y'] == [1.5, 1, 0.5, 0, 0]
+    assert result['mase1y_avg'] == [1, 2 / 3, 1 / 3, 0, 0]
 
 
 def test_join_one_element_in_current_weather():
@@ -124,7 +83,7 @@ def test_join_one_element_in_current_weather():
 
     """
     current_weather_df = pd.DataFrame({'temp': [0.5], 'dt': [100], 'today': ['2019-11-30']})
-    forecast_df = pd.DataFrame({'temp': [1, 2, 1.5, 3, 4], 'dt': [100]*5, 'today': ['2019-11-30', '2019-11-28', '2019-11-27', '2019-11-29', '2019-11-26']})
+    forecast_df = pd.DataFrame({'temp': [1, 2, 1.5, 3, 4], 'dt': [100] * 5, 'today': ['2019-11-30', '2019-11-28', '2019-11-27', '2019-11-29', '2019-11-26']})
 
     result = join_true_temp_and_forecast(current_weather_df, forecast_df)
     assert result.equals(pd.DataFrame({'temp': [0.5], 'dt': [100], 'today': ['2019-11-30'], 't5': [4.0], 't4': [1.5], 't3': [2.0], 't2': [3.0], 't1': [1.0]}))
@@ -149,12 +108,12 @@ def test_join_two_elements_in_current_weather():
     8   3      200      2019-11-29
     9   1      200      2019-11-26
     """
-    current_weather_df = pd.DataFrame({'temp': [0.5, 0.6], 'dt': [100, 200], 'today': ['2019-11-30']*2})
-    forecast_df = pd.DataFrame({'temp': [1, 2, 1.5, 3, 4, 5, 2, 4, 3, 1], 'dt': [100]*5 + [200]*5,
-                                'today': ['2019-11-30', '2019-11-28', '2019-11-27', '2019-11-29', '2019-11-26']*2})
+    current_weather_df = pd.DataFrame({'temp': [0.5, 0.6], 'dt': [100, 200], 'today': ['2019-11-30'] * 2})
+    forecast_df = pd.DataFrame({'temp': [1, 2, 1.5, 3, 4, 5, 2, 4, 3, 1], 'dt': [100] * 5 + [200] * 5,
+                                'today': ['2019-11-30', '2019-11-28', '2019-11-27', '2019-11-29', '2019-11-26'] * 2})
 
     result = join_true_temp_and_forecast(current_weather_df, forecast_df)
-    expected = pd.DataFrame({'temp': [0.5, 0.6], 'dt': [100, 200], 'today': ['2019-11-30']*2,
+    expected = pd.DataFrame({'temp': [0.5, 0.6], 'dt': [100, 200], 'today': ['2019-11-30'] * 2,
                              't5': [4.0, 1], 't4': [1.5, 4], 't3': [2.0, 2], 't2': [3.0, 3], 't1': [1.0, 5]})
 
     assert result.equals(expected)
@@ -173,7 +132,7 @@ def test_join_record_discarded_when_missing_temperatures():
     3   3      100      2019-11-26
     """
     current_weather_df = pd.DataFrame({'temp': [0.5], 'dt': [100], 'today': ['2019-11-30']})
-    forecast_df = pd.DataFrame({'temp': [1, 2, 1.5, 3], 'dt': [100]*4, 'today': ['2019-11-30', '2019-11-28', '2019-11-29', '2019-11-26']})
+    forecast_df = pd.DataFrame({'temp': [1, 2, 1.5, 3], 'dt': [100] * 4, 'today': ['2019-11-30', '2019-11-28', '2019-11-29', '2019-11-26']})
 
-    result = join_true_temp_and_forecast(current_weather_df, forecast_df)    
+    result = join_true_temp_and_forecast(current_weather_df, forecast_df)
     assert result.equals(pd.DataFrame())

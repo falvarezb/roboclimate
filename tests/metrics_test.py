@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from roboclimate.metrics import mean_absolute_scaled_error_revisited as maser, mean_absolute_scaled_error_1year_revisited as maser1y
+from roboclimate.config import day_factor
 
 
 def test_maser():
@@ -24,26 +25,29 @@ def test_maser():
     15   2      1575244800      2019-12-02  4.0  3    2.0  1    1.0
     16   2      1575255600      2019-12-02  4.0  3    2.0  1    1.0
     """
-    joined_data = pd.DataFrame({'temp': [1, 2, 1, 2, 1, 2, 1, 2, 2] + [2] * 8,
+    joined_data = pd.DataFrame({'temp': [1, 2, 1, 2, 1, 2, 1, 2, 2] + [2] * day_factor,
                                 'dt': [1575082800, 1575093600, 1575104400, 1575115200, 1575126000, 1575136800, 1575147600, 1575158400, 1575169200, 1575180000, 1575190800, 1575201600, 1575212400, 1575223200, 1575234000, 1575244800, 1575255600],
-                                'today': ['2019-11-30'] * 7 + ['2019-12-01'] * 8 + ['2019-12-02'] * 2,
-                                't5': [4.0, 3, 4.0, 3, 4.0, 3, 4.0, 3, 4.0] + [4.0] * 8,
-                                't4': [3, 1, 3, 1, 3, 1, 3, 1, 3] + [3] * 8,
-                                't3': [2.0, 4.0, 2.0, 4.0, 2.0, 4.0, 2.0, 4.0, 2.0] + [2.0] * 8,
-                                't2': [1, 5, 1, 5, 1, 5, 1, 5, 1] + [1] * 8,
-                                't1': [1.0, 3, 1.0, 3, 1.0, 3, 1.0, 3, 1.0] + [1.0] * 8})
+                                'today': ['2019-11-30'] * 7 + ['2019-12-01'] * day_factor + ['2019-12-02'] * 2,
+                                't5': [4.0, 3, 4.0, 3, 4.0, 3, 4.0, 3, 4.0] + [4.0] * day_factor,
+                                't4': [3, 1, 3, 1, 3, 1, 3, 1, 3] + [3] * day_factor,
+                                't3': [2.0, 4.0, 2.0, 4.0, 2.0, 4.0, 2.0, 4.0, 2.0] + [2.0] * day_factor,
+                                't2': [1, 5, 1, 5, 1, 5, 1, 5, 1] + [1] * day_factor,
+                                't1': [1.0, 3, 1.0, 3, 1.0, 3, 1.0, 3, 1.0] + [1.0] * day_factor})
 
     assert maser(joined_data) == [np.nan, np.nan, np.nan, 1, 2.25]
 
 
 def test_maser_1y():
-    joined_data = pd.DataFrame({'temp': [1] * (59 * 8) + [5] * 8 + [1] * (306 * 8) + [2] * (60 * 8),
-                                'dt': [1575082800] * (59 * 8) + [1582934400, 1582945200, 1582956000, 1582966800, 1582977600, 1582988400, 1582999200, 1583010000] + [1575082800] * (366 * 8),
-                                'today': ['yyyy-mm-dd'] * (426 * 8),
-                                't5': [1] * (426 * 8),
-                                't4': [1] * (426 * 8),
-                                't3': [1] * (426 * 8),
-                                't2': [1] * (426 * 8),
-                                't1': [1] * (426 * 8)})
+    leap_year_temp = [1] * (59 * day_factor) + [5] * day_factor + [1] * (306 * day_factor)
+    year2_temp = [2] * (60 * day_factor)
+    total_data_points = len(leap_year_temp) + len(year2_temp)
+    joined_data = pd.DataFrame({'temp': leap_year_temp + year2_temp,
+                                'dt': [1575082800] * (59 * day_factor) + [1582934400, 1582945200, 1582956000, 1582966800, 1582977600, 1582988400, 1582999200, 1583010000] + [1575082800] * (366 * day_factor),
+                                'today': ['yyyy-mm-dd'] * total_data_points,
+                                't5': [1] * total_data_points,
+                                't4': [1] * total_data_points,
+                                't3': [1] * total_data_points,
+                                't2': [1] * total_data_points,
+                                't1': [1] * total_data_points})
 
     assert maser1y(joined_data) == [1, 1, 1, 1, 1]
