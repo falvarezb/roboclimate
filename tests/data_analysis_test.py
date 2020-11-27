@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from roboclimate.data_analysis import forecast_precision_with_historical_data, load_data, join_true_temp_and_forecast
+from roboclimate.data_analysis import load_data, join_true_temp_and_forecast
 import roboclimate.data_analysis as rda
 import roboclimate.util as rutil
 
@@ -35,22 +35,7 @@ def test_forecast_precision():
     assert 'mase1y' in result
 
 
-def test_forecast_precision_mase1y_avg():
-    """
-        temp   dt              today       t5   t4   t3   t2   t1
-    0   1      1575082800      2019-11-30  4.0  3    2.0  1    1.0
-    """
-    joined_data = pd.DataFrame({'temp': [1], 'dt': [1575082800], 'today': ['2019-11-30'],
-                                't5': [4.0],
-                                't4': [3],
-                                't3': [2.0],
-                                't2': [1],
-                                't1': [1.0]})
-    historical_data = rutil.read_historical_data("tests/csv_files/historical_data_year_avg.csv")
-    years_back = 2
 
-    result = forecast_precision_with_historical_data(joined_data, historical_data, years_back)
-    assert result['mase1y_avg'] == [1, 2 / 3, 1 / 3, 0, 0]
 
 
 def test_join_one_element_in_current_weather():

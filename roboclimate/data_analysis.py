@@ -4,12 +4,13 @@ import pandas as pd
 from sklearn.metrics import mean_absolute_error as mae
 from sklearn.metrics import mean_squared_error as mse
 from sklearn.metrics import median_absolute_error as medae
-from roboclimate.metrics import mean_absolute_scaled_error_year_avg as mase_year_avg, mean_absolute_scaled_error_revisited, mean_absolute_scaled_error_1year_revisited
+from roboclimate.metrics import mean_absolute_scaled_error_year_avg as mase_year_avg, mean_absolute_scaled_error_tx, mean_absolute_scaled_error_1year
 from roboclimate.util import remove_29_feb
 import roboclimate.config as config
 import roboclimate.util as util
 
 logger = logging.getLogger(__name__)
+
 
 def load_data(file):
     return pd.read_csv(file, usecols=['temp', 'dt', 'today'], dtype={'dt': 'int64'})
@@ -71,23 +72,14 @@ def join_true_temp_and_forecast(true_temp_df, forecast_temp_df):
     return df
 
 
-def forecast_precision_with_historical_data(joined_data, historical_data, years_back=19):
-    joined_data_without_29_feb = remove_29_feb(joined_data)
-    return {
-        "mase1y_avg": [mase_year_avg(joined_data_without_29_feb['temp'], joined_data_without_29_feb[f't{i}'], joined_data_without_29_feb['dt'], historical_data['temp'], years_back) for i in range(5, 0, -1)]
-    }
-
-
-def forecast_precision(joined_data):    
+def forecast_precision(joined_data):
     return {
         "mae": [mae(joined_data['temp'], joined_data[f't{i}']) for i in range(5, 0, -1)],
         "rmse": [sqrt(mse(joined_data['temp'], joined_data[f't{i}'])) for i in range(5, 0, -1)],
         "medae": [medae(joined_data['temp'], joined_data[f't{i}']) for i in range(5, 0, -1)],
-        "mase": mean_absolute_scaled_error_revisited(joined_data),
-        "mase1y": mean_absolute_scaled_error_1year_revisited(joined_data)
+        "mase": mean_absolute_scaled_error_tx(joined_data),
+        "mase1y": mean_absolute_scaled_error_1year(joined_data)
     }
-
-
 
 
 def analyse_data():
@@ -106,7 +98,6 @@ def analyse_data():
             pd.DataFrame(metrics).to_csv(metrics_file, index=False)
         except Exception:
             logger.error(f"Error while processing {city_name}", exc_info=True)
-
 
 
 def main():

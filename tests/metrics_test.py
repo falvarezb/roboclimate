@@ -1,7 +1,9 @@
 import pandas as pd
 import numpy as np
-from roboclimate.metrics import mean_absolute_scaled_error_revisited as maser, mean_absolute_scaled_error_1year_revisited as maser1y
+from roboclimate.metrics import mean_absolute_scaled_error_tx as maser, mean_absolute_scaled_error_1year as maser1y
 from roboclimate.config import day_factor
+import roboclimate.metrics as rmet
+import roboclimate.util as rutil
 
 
 def test_maser():
@@ -51,3 +53,21 @@ def test_maser_1y():
                                 't1': [1] * total_data_points})
 
     assert maser1y(joined_data) == [1, 1, 1, 1, 1]
+
+
+def test_forecast_precision_mase1y_avg():
+    """
+        temp   dt              today       t5   t4   t3   t2   t1
+    0   1      1575082800      2019-11-30  4.0  3    2.0  1    1.0
+    """
+    joined_data = pd.DataFrame({'temp': [1], 'dt': [1575082800], 'today': ['2019-11-30'],
+                                't5': [4.0],
+                                't4': [3],
+                                't3': [2.0],
+                                't2': [1],
+                                't1': [1.0]})
+    historical_data = rutil.read_historical_data("tests/csv_files/historical_data_year_avg.csv")
+    years_back = 2
+
+    result = rmet.mean_absolute_scaled_error_year_avg(joined_data, historical_data, years_back)
+    assert result == [1, 2 / 3, 1 / 3, 0, 0]
