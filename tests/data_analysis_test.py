@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
-from roboclimate.data_analysis import forecast_precision_with_historical_data, read_historical_data, load_data, join_true_temp_and_forecast
+from roboclimate.data_analysis import forecast_precision_with_historical_data, load_data, join_true_temp_and_forecast
 import roboclimate.data_analysis as rda
+import roboclimate.util as rutil
 
 
 def test_load_true_temp():
@@ -14,22 +15,6 @@ def test_load_forecast_temp():
     data = load_data('tests/csv_files/forecast.csv')
     expected_df = pd.DataFrame({'temp': [10, 20], 'dt': [100, 200], 'today': ['2019-11-26', '2019-11-27']})
     assert data.equals(expected_df)
-
-
-def test_read_historical_data():
-    result = read_historical_data("tests/csv_files/historical_data.csv")
-
-    assert result.shape[0] == 2
-    assert result.iloc[0].temp == 3
-    assert result.iloc[1].temp == 5
-
-
-def test_remove_duplicates_from_historical_data():
-    historical_data = read_historical_data("tests/csv_files/historical_data_duplicates.csv")
-
-    assert historical_data.shape[0] == 1
-    assert historical_data.iloc[0].temp == 3
-
 
 
 def test_forecast_precision():
@@ -61,7 +46,7 @@ def test_forecast_precision_mase1y_avg():
                                 't3': [2.0],
                                 't2': [1],
                                 't1': [1.0]})
-    historical_data = read_historical_data("tests/csv_files/historical_data_year_avg.csv")
+    historical_data = rutil.read_historical_data("tests/csv_files/historical_data_year_avg.csv")
     years_back = 2
 
     result = forecast_precision_with_historical_data(joined_data, historical_data, years_back)

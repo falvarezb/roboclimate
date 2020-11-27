@@ -1,4 +1,5 @@
 from datetime import datetime, date
+import pandas as pd
 
 
 def current_utc_date_generator():
@@ -38,3 +39,10 @@ def date_and_timestamp(start_datetime, end_datetime_not_included):
     """
     step_3hours = 3600*3
     return [(x, date.fromtimestamp(x).isoformat()) for x in range(int(start_datetime.timestamp()), int(end_datetime_not_included.timestamp()), step_3hours)]
+
+
+def read_historical_data(file):
+    df = pd.read_csv(file)
+    df['parsed_dt'] = df['dt_iso'].apply(lambda x: x[:19])
+    df = df.drop_duplicates('parsed_dt')
+    return df.set_index(pd.DatetimeIndex(df['parsed_dt']))

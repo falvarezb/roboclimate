@@ -88,11 +88,7 @@ def forecast_precision(joined_data):
     }
 
 
-def read_historical_data(file):
-    df = pd.read_csv(file)
-    df['parsed_dt'] = df['dt_iso'].apply(lambda x: x[:19])
-    df = df.drop_duplicates('parsed_dt')
-    return df.set_index(pd.DatetimeIndex(df['parsed_dt']))
+
 
 def analyse_data():
     # london_df = read_historical_data("london_weather_historical_data.csv")
