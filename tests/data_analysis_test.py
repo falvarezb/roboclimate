@@ -1,8 +1,6 @@
 import pandas as pd
-import numpy as np
 from roboclimate.data_analysis import load_data, join_true_temp_and_forecast
 import roboclimate.data_analysis as rda
-import roboclimate.util as rutil
 
 
 def test_load_true_temp():
@@ -21,7 +19,7 @@ def test_forecast_precision():
     """
         temp   dt              today       t5   t4   t3   t2   t1
     0   1      1575082800      2019-11-30  4.0  3    2.0  1    1.0
-    1   2      1575093600      2019-11-30  3    1    4.0  5    3  
+    1   2      1575093600      2019-11-30  3    1    4.0  5    3
     """
     joined_data = pd.DataFrame({'temp': [1, 2], 'dt': [1575082800, 1575093600], 'today': ['2019-11-30'] * 2,
                                 't5': [4.0, 3], 't4': [3, 1], 't3': [2.0, 4.0], 't2': [1, 5], 't1': [1.0, 3]})
@@ -40,16 +38,16 @@ def test_forecast_precision():
 
 def test_join_one_element_in_current_weather():
     """
-        temp   dt       today       
-    0   0.5    100      2019-11-30 
+        temp   dt       today
+    0   0.5    100      2019-11-30
 
 
-        temp   dt       today       
+        temp   dt       today
     0   1      100      2019-11-30
     1   2      100      2019-11-28
     2   1.5    100      2019-11-27
     3   3      100      2019-11-29
-    4   4      100      2019-11-26  
+    4   4      100      2019-11-26
 
     """
     current_weather_df = pd.DataFrame({'temp': [0.5], 'dt': [100], 'today': ['2019-11-30']})
@@ -61,12 +59,12 @@ def test_join_one_element_in_current_weather():
 
 def test_join_two_elements_in_current_weather():
     """
-        temp   dt       today       
+        temp   dt       today
     0   0.5    100      2019-11-30
     1   0.6    200      2019-11-30
 
 
-        temp   dt       today       
+        temp   dt       today
     0   1      100      2019-11-30
     1   2      100      2019-11-28
     2   1.5    100      2019-11-27
@@ -91,11 +89,11 @@ def test_join_two_elements_in_current_weather():
 
 def test_join_record_discarded_when_missing_temperatures():
     """
-        temp   dt       today       
-    0   0.5    100      2019-11-30 
+        temp   dt       today
+    0   0.5    100      2019-11-30
 
 
-        temp   dt       today       
+        temp   dt       today
     0   1      100      2019-11-30
     1   2      100      2019-11-28
     2   1.5    100      2019-11-29

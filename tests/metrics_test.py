@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from roboclimate.metrics import mean_absolute_scaled_error_tx as maser, mean_absolute_scaled_error_1year as maser1y
+from roboclimate.metrics import mean_absolute_scaled_error_tx as masetx, mean_absolute_scaled_error_1year as mase1y
 from roboclimate.config import day_factor
 import roboclimate.metrics as rmet
 import roboclimate.util as rutil
@@ -36,7 +36,7 @@ def test_maser():
                                 't2': [1, 5, 1, 5, 1, 5, 1, 5, 1] + [1] * day_factor,
                                 't1': [1.0, 3, 1.0, 3, 1.0, 3, 1.0, 3, 1.0] + [1.0] * day_factor})
 
-    assert maser(joined_data) == [np.nan, np.nan, np.nan, 1, 2.25]
+    assert masetx(joined_data) == [np.nan, np.nan, np.nan, 1, 2.25]
 
 
 def test_maser_1y():
@@ -52,7 +52,7 @@ def test_maser_1y():
                                 't2': [1] * total_data_points,
                                 't1': [1] * total_data_points})
 
-    assert maser1y(joined_data) == [1, 1, 1, 1, 1]
+    assert mase1y(joined_data) == [1, 1, 1, 1, 1]
 
 
 def test_forecast_precision_mase1y_avg():

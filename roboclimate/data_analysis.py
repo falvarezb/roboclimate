@@ -4,8 +4,7 @@ import pandas as pd
 from sklearn.metrics import mean_absolute_error as mae
 from sklearn.metrics import mean_squared_error as mse
 from sklearn.metrics import median_absolute_error as medae
-from roboclimate.metrics import mean_absolute_scaled_error_year_avg as mase_year_avg, mean_absolute_scaled_error_tx, mean_absolute_scaled_error_1year
-from roboclimate.util import remove_29_feb
+from roboclimate.metrics import mean_absolute_scaled_error_tx as masetx, mean_absolute_scaled_error_1year as mase1y
 import roboclimate.config as config
 import roboclimate.util as util
 
@@ -77,8 +76,8 @@ def forecast_precision(joined_data):
         "mae": [mae(joined_data['temp'], joined_data[f't{i}']) for i in range(5, 0, -1)],
         "rmse": [sqrt(mse(joined_data['temp'], joined_data[f't{i}'])) for i in range(5, 0, -1)],
         "medae": [medae(joined_data['temp'], joined_data[f't{i}']) for i in range(5, 0, -1)],
-        "mase": mean_absolute_scaled_error_tx(joined_data),
-        "mase1y": mean_absolute_scaled_error_1year(joined_data)
+        "mase": masetx(joined_data),
+        "mase1y": mase1y(joined_data)
     }
 
 
