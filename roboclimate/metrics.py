@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from sklearn.metrics import mean_absolute_error as mae
 import numpy as np
 from roboclimate.util import n_years_ago, remove_29_feb
+import roboclimate.config as rconf
 
 
 def mean_absolute_scaled_error(real_data, predicted_data, period=1):
@@ -52,7 +53,7 @@ def mean_absolute_scaled_error_1year(joined_data):
     TODO: instead of stopping the entire calculation, just discard the offending data point and continue calculation with rest of data
     """
     joined_data_without_29_feb = remove_29_feb(joined_data)
-    return [mean_absolute_scaled_error(joined_data_without_29_feb['temp'], joined_data_without_29_feb[f't{i}'], 365 * 8) for i in range(5, 0, -1)]
+    return [mean_absolute_scaled_error(joined_data_without_29_feb['temp'], joined_data_without_29_feb[f't{i}'], 365 * rconf.day_factor) for i in range(5, 0, -1)]
 
 
 def mean_absolute_scaled_error_year_avg(joined_data, historical_data, years_back=19):
@@ -80,4 +81,4 @@ def mean_absolute_scaled_error_year_avg(joined_data, historical_data, years_back
 
 
 def mean_absolute_scaled_error_tx(joined_data):
-    return [mean_absolute_scaled_error(joined_data['temp'], joined_data[f't{i}'], i * 8) for i in range(5, 0, -1)]
+    return [mean_absolute_scaled_error(joined_data['temp'], joined_data[f't{i}'], i * rconf.day_factor) for i in range(5, 0, -1)]

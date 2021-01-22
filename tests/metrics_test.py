@@ -6,7 +6,7 @@ import roboclimate.metrics as rmet
 import roboclimate.util as rutil
 
 
-def test_maser():
+def test_mase():
     """
          temp   dt              today       t5   t4   t3   t2   t1
     00   1      1575082800      2019-11-30  4.0  3    2.0  1    1.0
@@ -39,7 +39,7 @@ def test_maser():
     assert masetx(joined_data) == [np.nan, np.nan, np.nan, 1, 2.25]
 
 
-def test_maser_1y():
+def test_mase_1y():
     leap_year_temp = [1] * (59 * day_factor) + [5] * day_factor + [1] * (306 * day_factor)
     year2_temp = [2] * (60 * day_factor)
     total_data_points = len(leap_year_temp) + len(year2_temp)

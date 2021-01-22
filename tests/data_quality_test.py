@@ -22,7 +22,7 @@ def test_missing_temps_without_dates(dts_mock, load_csv_files_mock):
     load_csv_files_mock.return_value = {"true_temp_df": pd.DataFrame({'temp': [1, 2, 3], 'dt': [100, 200, 300]})}
     dts_mock.return_value = pd.DataFrame({'dt': [100, 200, 300, 400]})
     start_dt = dt.datetime(2020, 11, 28, 3, 0, 0, tzinfo=dt.timezone.utc)
-    city = rdq.City('london', start_dt)
+    city = rdq.City(1, 'xx', start_dt)
 
     rdq.missing_temps(city)
     dts_mock.assert_called_once_with(start_dt, ANY)

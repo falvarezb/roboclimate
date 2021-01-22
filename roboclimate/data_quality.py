@@ -2,15 +2,8 @@ from collections import namedtuple
 import datetime as dt
 import pandas as pd
 import roboclimate.config as rconf
+from roboclimate.config import City
 import roboclimate.util as rutil
-
-City = namedtuple('City', 'name firstMeasurement')
-city_names = list(rconf.cities.keys())
-cities = [City(city_names[0], dt.datetime(2019, 11, 28, 3, 0, 0, tzinfo=dt.timezone.utc)),
-          City(city_names[1], dt.datetime(2020, 6, 11, 18, 0, 0, tzinfo=dt.timezone.utc)),
-          City(city_names[2], dt.datetime(2020, 6, 11, 18, 0, 0, tzinfo=dt.timezone.utc)),
-          City(city_names[3], dt.datetime(2020, 6, 11, 18, 0, 0, tzinfo=dt.timezone.utc)),
-          City(city_names[4], dt.datetime(2020, 6, 11, 18, 0, 0, tzinfo=dt.timezone.utc))]
 
 
 def load_csv_files(city: City) -> dict:
@@ -76,6 +69,6 @@ def missing_forecasts(city: City, start_dt: dt.datetime = None, end_dt: dt.datet
 
 
 if __name__ == "__main__":
-    for city in cities:
+    for city in rconf.cities:
         print(city.name)
         print(missing_temps(city))
