@@ -6,13 +6,9 @@ import logging
 import requests
 from apscheduler.schedulers.blocking import BlockingScheduler
 import roboclimate.util as util
-from roboclimate.config import weather_resources
+from roboclimate.config import weather_resources, City
 
 logger = logging.getLogger(__name__)
-
-def fetch_weather_data_as_json(url):
-    result = requests.get(url).text
-    return json.loads(result)
 
 
 def transform_weather_data_to_csv(weather_resource_json, current_dt, rows_generator, dt_normaliser, tolerance):
@@ -47,15 +43,15 @@ def collect_weather_data(url, rows_generator, dt_normaliser, current_dt_generato
     """
 
     try:
-        weather_resource_json = fetch_weather_data_as_json(url)
+        weather_resource_json = requests.get(url).json() 
         rows = transform_weather_data_to_csv(weather_resource_json, current_dt_generator(), rows_generator, dt_normaliser, tolerance)
         write_rows(csv_file, rows)
     except Exception:
         logger.error(f"Error while reading {url}", exc_info=True)
 
 
-def generate_url(weather_resource, city):
-    return f"http://api.openweathermap.org/data/2.5/{weather_resource}?id={city}&units=metric&appid={os.environ.get('OPEN_WEATHER_API')}"
+def generate_url(weather_resource, city: City):
+    return f"http://api.openweathermap.org/data/2.5/{weather_resource}?id={city.id}&units=metric&appid={os.environ.get('OPEN_WEATHER_API')}"
 
 
 def epoch_time(date):
