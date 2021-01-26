@@ -6,7 +6,12 @@ cities = {"london": City(2643743, 'london', dt.datetime(2019, 11, 28, 3, 0, 0, t
           "madrid": City(3117735, 'madrid', dt.datetime(2020, 6, 11, 18, 0, 0, tzinfo=dt.timezone.utc)),
           "saopaulo": City(3448439, 'saopaulo', dt.datetime(2020, 6, 11, 18, 0, 0, tzinfo=dt.timezone.utc)),
           "sydney": City(2147714, 'sydney', dt.datetime(2020, 6, 11, 18, 0, 0, tzinfo=dt.timezone.utc)),
-          "newyork": City(5128581, 'newyork', dt.datetime(2020, 6, 11, 18, 0, 0, tzinfo=dt.timezone.utc))}
+          "newyork": City(5128581, 'newyork', dt.datetime(2020, 6, 11, 18, 0, 0, tzinfo=dt.timezone.utc)),
+          "moscow": City(524901, 'moscow', None),
+          "tokyo": City(1850147, 'tokyo', None),
+          "nairobi": City(184745, 'nairobi', None),
+          "asuncion": City(3439389, 'asuncion', None),
+          "lagos": City(2332459, 'lagos', None)}
 
 weather_resources = ['weather', 'forecast']
 csv_folder = "csv_files"
