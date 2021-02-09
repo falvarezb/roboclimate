@@ -7,11 +7,11 @@ cities = {"london": City(2643743, 'london', dt.datetime(2019, 11, 28, 3, 0, 0, t
           "saopaulo": City(3448439, 'saopaulo', dt.datetime(2020, 6, 11, 18, 0, 0, tzinfo=dt.timezone.utc)),
           "sydney": City(2147714, 'sydney', dt.datetime(2020, 6, 11, 18, 0, 0, tzinfo=dt.timezone.utc)),
           "newyork": City(5128581, 'newyork', dt.datetime(2020, 6, 11, 18, 0, 0, tzinfo=dt.timezone.utc)),
-          "moscow": City(524901, 'moscow', None),
-          "tokyo": City(1850147, 'tokyo', None),
-          "nairobi": City(184745, 'nairobi', None),
-          "asuncion": City(3439389, 'asuncion', None),
-          "lagos": City(2332459, 'lagos', None)}
+          "moscow": City(524901, 'moscow', dt.datetime(2021, 1, 27, 3, 0, 0, tzinfo=dt.timezone.utc)),
+          "tokyo": City(1850147, 'tokyo', dt.datetime(2021, 1, 27, 3, 0, 0, tzinfo=dt.timezone.utc)),
+          "nairobi": City(184745, 'nairobi', dt.datetime(2021, 1, 27, 3, 0, 0, tzinfo=dt.timezone.utc)),
+          "asuncion": City(3439389, 'asuncion', dt.datetime(2021, 1, 27, 3, 0, 0, tzinfo=dt.timezone.utc)),
+          "lagos": City(2332459, 'lagos', dt.datetime(2021, 1, 27, 3, 0, 0, tzinfo=dt.timezone.utc))}
 
 weather_resources = ['weather', 'forecast']
 csv_folder = "csv_files"
