@@ -1,3 +1,5 @@
+from typing import Mapping
+from threading import Thread
 import json
 import csv
 from datetime import timezone, datetime
@@ -133,13 +135,15 @@ def normalise_dt(dt, current_utc_date, tolerance):
     return dt
 
 
-def collect_current_weather_data(current_utc_date_generator, cities, csv_folder, tolerance):
+def collect_current_weather_data(current_utc_date_generator, cities: Mapping[str, City], csv_folder, tolerance):
     weather_resource = weather_resources[0]
     rows_generator = lambda json: [json]
     dt_normaliser = normalise_dt
+    
     for city_name, city_id in cities.items():
-        collect_weather_data(generate_url(weather_resource, city_id), rows_generator, dt_normaliser,
-                             current_utc_date_generator, util.csv_file_path(csv_folder, weather_resource, city_name), tolerance)
+        url = generate_url(weather_resource, city_id)
+        csv_file = util.csv_file_path(csv_folder, weather_resource, city_name)
+        Thread(target=collect_weather_data, name=city_name, args=(url, rows_generator, dt_normaliser, current_utc_date_generator, csv_file, tolerance)).start()        
 
 
 def collect_five_day_weather_forecast_data(current_utc_date_generator, cities, csv_folder, tolerance):
