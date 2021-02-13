@@ -12,15 +12,8 @@ init(config.csv_folder, config.csv_header, config.cities.keys())
 
 scheduler = BlockingScheduler()
 scheduler.add_job(collect_current_weather_data, 'cron', [util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance], hour='*/3')
-scheduler.add_job(collect_five_day_weather_forecast_data, 'cron', [util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance], hour=22)
+scheduler.add_job(collect_five_day_weather_forecast_data, 'cron', [
+                  util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance], hour=22)
 scheduler.add_job(analyse_data, 'cron', [], hour=22, minute=30)
 scheduler.add_job(publish_notebook, 'cron', [], hour=23)
 scheduler.start()
-
-
-
-    
-
-
-
-
