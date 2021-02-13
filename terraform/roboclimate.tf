@@ -16,7 +16,7 @@ variable "green_instance" {}
 
 
 variable "enable_blue_application" {
-  default = false
+  default = true
   type    = bool
 }
 
@@ -134,7 +134,7 @@ resource "aws_instance" "roboclimate_blue" {
     inline = [
       "sudo yum -y update",
       "sudo yum -y install tmux",
-      "conda install -c conda-forge -y apscheduler", 
+      "sudo conda install -c conda-forge -y apscheduler", 
       "echo 'export PYTHONPATH=/home/ec2-user' >> /home/ec2-user/.bash_profile",
       "echo \"export OPEN_WEATHER_API=${var.open_weather_api}\" >> /home/ec2-user/.bash_profile",
       "sudo yum install nginx -y",
