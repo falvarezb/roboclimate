@@ -1,10 +1,7 @@
 import logging
-import os
-import csv
 from apscheduler.schedulers.blocking import BlockingScheduler
 from roboclimate.weather_spider import collect_current_weather_data, collect_five_day_weather_forecast_data, init
 import roboclimate.config as config
-from roboclimate.config import weather_resources
 import roboclimate.util as util
 from roboclimate.data_analysis import analyse_data
 from roboclimate.notebook_publisher import publish_notebook
