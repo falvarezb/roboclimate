@@ -23,7 +23,9 @@ def remove_29_feb(df):
     return df.drop(df[df['dt_iso'].apply(lambda x: (x.month, x.day)) == (2, 29)].index)
 
 
-def csv_file_path(csv_folder, filename, city_name):
+def csv_file_path(csv_folder, filename, city_name, weather_variable = None):
+    if weather_variable:
+        return f"{csv_folder}/{weather_variable}/{filename}_{city_name}.csv"
     return f"{csv_folder}/{filename}_{city_name}.csv"
 
 
