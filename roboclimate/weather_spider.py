@@ -9,6 +9,7 @@ import requests
 from apscheduler.schedulers.blocking import BlockingScheduler
 import roboclimate.util as util
 from roboclimate.config import weather_resources, City
+import roboclimate.config as config
 
 logger = logging.getLogger(__name__)
 
@@ -157,9 +158,11 @@ def collect_five_day_weather_forecast_data(current_utc_date_generator, cities, c
 
 
 def init(csv_folder, csv_header, city_names):
-    if not os.path.exists(csv_folder):
-        logger.info(f"creating folder {csv_folder}")
-        os.makedirs(csv_folder)
+    for _, weather_variable in config.weather_variables.items():
+        folder = f"{csv_folder}/{weather_variable}"
+        if not os.path.exists(folder):
+            logger.info(f"creating folder {folder}")
+            os.makedirs(folder)
 
     for weather_resource in weather_resources:
         for city_name in city_names:

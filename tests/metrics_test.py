@@ -36,7 +36,7 @@ def test_mase():
                                 't2': [1, 5, 1, 5, 1, 5, 1, 5, 1] + [1] * day_factor,
                                 't1': [1.0, 3, 1.0, 3, 1.0, 3, 1.0, 3, 1.0] + [1.0] * day_factor})
 
-    assert masetx(joined_data) == [np.nan, np.nan, np.nan, 1, 2.25]
+    assert masetx(joined_data, 'temp') == [np.nan, np.nan, np.nan, 1, 2.25]
 
 
 def test_mase_1y():
@@ -52,7 +52,7 @@ def test_mase_1y():
                                 't2': [1] * total_data_points,
                                 't1': [1] * total_data_points})
 
-    assert mase1y(joined_data) == [1, 1, 1, 1, 1]
+    assert mase1y(joined_data, 'temp') == [1, 1, 1, 1, 1]
 
 
 def test_forecast_precision_mase1y_avg():
@@ -69,5 +69,5 @@ def test_forecast_precision_mase1y_avg():
     historical_data = rutil.read_historical_data("tests/csv_files/historical_data_year_avg.csv")
     years_back = 2
 
-    result = rmet.mean_absolute_scaled_error_year_avg(joined_data, historical_data, years_back)
+    result = rmet.mean_absolute_scaled_error_year_avg(joined_data, historical_data, 'temp', years_back)
     assert result == [1, 2 / 3, 1 / 3, 0, 0]
