@@ -1,6 +1,7 @@
 import logging
 from math import sqrt
 import pandas as pd
+import numpy as np
 from sklearn.metrics import mean_absolute_error as mae
 from sklearn.metrics import mean_squared_error as mse
 from sklearn.metrics import median_absolute_error as medae
@@ -56,6 +57,8 @@ def join_true_temp_and_forecast(true_temp_df, forecast_temp_df, weather_variable
     """
 
     headers = ['t5', 't4', 't3', 't2', 't1']
+    # discarding empty values
+    true_temp_df = true_temp_df[true_temp_df[weather_variable] != np.nan]
     df = pd.DataFrame()
     for row in true_temp_df.iterrows():
         try:
@@ -64,7 +67,7 @@ def join_true_temp_and_forecast(true_temp_df, forecast_temp_df, weather_variable
                 temps_df = pd.DataFrame({i: [j] for i, j in zip(headers, temps)}, index=[row[0]])
                 df = df.append(pd.DataFrame([row[1]]).join(temps_df))
             else:
-                logger.warning(f"number of temperatures {len(temps)} != 5 for timestamp {row[1]['dt']}")
+                logger.warning(f"number of {weather_variable} {len(temps)} != 5 for timestamp {row[1]['dt']}")
         except Exception:
             logger.error(f"Error while processing row \n {row[1]}", exc_info=True)
 
@@ -98,7 +101,7 @@ def analyse_data(weather_variable: str):
             metrics = forecast_precision(join_data_df, weather_variable)
             pd.DataFrame(metrics).to_csv(metrics_file, index=False)
         except Exception:
-            logger.error(f"Error while processing {city_name}", exc_info=True)
+            logger.error(f"Error while processing {weather_variable} for {city_name}", exc_info=True)
 
 
 def main():

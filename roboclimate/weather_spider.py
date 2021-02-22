@@ -1,7 +1,5 @@
 from typing import Mapping
 from threading import Thread
-import json
-import csv
 from datetime import timezone, datetime
 import os
 import logging
@@ -16,13 +14,6 @@ logger = logging.getLogger(__name__)
 
 def transform_weather_data_to_csv(weather_resource_json, current_dt, rows_generator, dt_normaliser, tolerance):
     return [[j['main']['temp'], j['main']['pressure'], j['main']['humidity'], j['wind']['speed'], j['wind'].get('deg', ""), dt_normaliser(j['dt'], current_dt, tolerance), str(current_dt)[:10]] for j in rows_generator(weather_resource_json)]
-
-
-def write_rows(csv_file, rows):
-    with open(csv_file, 'a', newline='') as csvfile:
-        csv_writer = csv.writer(csvfile)
-        for row in rows:
-            csv_writer.writerow(row)
 
 
 def collect_weather_data(url, rows_generator, dt_normaliser, current_dt_generator, csv_file, tolerance):
@@ -48,7 +39,7 @@ def collect_weather_data(url, rows_generator, dt_normaliser, current_dt_generato
     try:
         weather_resource_json = requests.get(url).json() 
         rows = transform_weather_data_to_csv(weather_resource_json, current_dt_generator(), rows_generator, dt_normaliser, tolerance)
-        write_rows(csv_file, rows)
+        util.write_rows(csv_file, rows)
     except Exception:
         logger.error(f"Error while reading {url}", exc_info=True)
 
@@ -156,28 +147,11 @@ def collect_five_day_weather_forecast_data(current_utc_date_generator, cities, c
                              current_utc_date_generator, util.csv_file_path(csv_folder, weather_resource, city_name), tolerance)
 
 
-
-def init(csv_folder, csv_header, city_names):
-    for _, weather_variable in config.weather_variables.items():
-        folder = f"{csv_folder}/{weather_variable}"
-        if not os.path.exists(folder):
-            logger.info(f"creating folder {folder}")
-            os.makedirs(folder)
-
-    for weather_resource in weather_resources:
-        for city_name in city_names:
-            csv_file = util.csv_file_path(csv_folder, weather_resource, city_name)
-            if not os.path.exists(csv_file):
-                logger.info(f"creating file {csv_file}")
-                write_rows(csv_file, [csv_header])
-
-
 def main():
 
-    logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level='INFO')
-    import roboclimate.config as config
+    logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level='INFO')    
 
-    init(config.csv_folder, config.csv_header, config.cities.keys())
+    util.init(config.csv_folder, config.csv_header, config.cities.keys())
 
     # collect_current_weather_data(util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance)
     # collect_five_day_weather_forecast_data(util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance)

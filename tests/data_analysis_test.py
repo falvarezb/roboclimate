@@ -1,6 +1,7 @@
 import pandas as pd
 from roboclimate.data_analysis import load_data, join_true_temp_and_forecast
 import roboclimate.data_analysis as rda
+import numpy as np
 
 
 def test_load_true_temp():
@@ -31,9 +32,6 @@ def test_forecast_precision():
     assert result['medae'] == [2, 1.5, 1.5, 1.5, 0.5]
     assert 'mase' in result
     assert 'mase1y' in result
-
-
-
 
 
 def test_join_one_element_in_current_weather():
@@ -87,7 +85,7 @@ def test_join_two_elements_in_current_weather():
     assert result.equals(expected)
 
 
-def test_join_record_discarded_when_missing_temperatures():
+def test_join_record_discarded_when_missing_forecasts():
     """
         temp   dt       today
     0   0.5    100      2019-11-30
@@ -100,6 +98,26 @@ def test_join_record_discarded_when_missing_temperatures():
     3   3      100      2019-11-26
     """
     current_weather_df = pd.DataFrame({'temp': [0.5], 'dt': [100], 'today': ['2019-11-30']})
+    forecast_df = pd.DataFrame({'temp': [1, 2, 1.5, 3], 'dt': [100] * 4, 'today': ['2019-11-30', '2019-11-28', '2019-11-29', '2019-11-26']})
+
+    result = join_true_temp_and_forecast(current_weather_df, forecast_df, 'temp')
+    assert result.equals(pd.DataFrame())
+
+
+def test_join_record_discarded_when_has_empty_value():
+    """
+        temp   dt       today
+    0    nan   100      2019-11-30
+
+
+        temp   dt       today
+    0   1      100      2019-11-30
+    1   2      100      2019-11-28
+    2   1.5    100      2019-11-29
+    3   3      100      2019-11-26
+    4   3      100      2019-11-27
+    """
+    current_weather_df = pd.DataFrame({'temp': [np.nan], 'dt': [100], 'today': ['2019-11-30']})
     forecast_df = pd.DataFrame({'temp': [1, 2, 1.5, 3], 'dt': [100] * 4, 'today': ['2019-11-30', '2019-11-28', '2019-11-29', '2019-11-26']})
 
     result = join_true_temp_and_forecast(current_weather_df, forecast_df, 'temp')
