@@ -4,8 +4,9 @@ import json
 import pytest
 from datetime import date
 from unittest.mock import Mock, patch
-from roboclimate.weather_spider import epoch_time, normalise_dt, init, transform_weather_data_to_csv, collect_current_weather_data, collect_five_day_weather_forecast_data
+from roboclimate.weather_spider import epoch_time, normalise_dt, transform_weather_data_to_csv, collect_current_weather_data, collect_five_day_weather_forecast_data
 import roboclimate.config as rconf
+import roboclimate.util as rutil
 
 @pytest.fixture(scope='function')
 def fixtures():
@@ -16,7 +17,6 @@ def fixtures():
         current_utc_date=date(2019, 11, 29)
 )
 
-
 @pytest.fixture(scope='function')
 def csv_folder():
     folder = "tests/temp"
@@ -24,7 +24,6 @@ def csv_folder():
         shutil.rmtree(folder)
     yield folder
     shutil.rmtree(folder)
-
 
 # see https://www.epochconverter.com/
 def test_epoch_time(fixtures):
@@ -82,23 +81,7 @@ def test_normalise_dt_fail(mock_epoch_time, fixtures):
     assert normalise_dt(fixtures['dt'], fixtures['current_utc_date'], tolerance) == fixtures['dt']
 
 
-def test_init(csv_folder):
-    cities = rconf.cities
-    csv_header = ['field1', 'field2']
 
-    init(csv_folder, csv_header, cities)
-
-    with open(f"{csv_folder}/weather_london.csv") as f:
-        assert f.readline() == "field1,field2\n"
-
-    with open(f"{csv_folder}/weather_madrid.csv") as f:
-        assert f.readline() == "field1,field2\n"
-
-    with open(f"{csv_folder}/forecast_london.csv") as f:
-        assert f.readline() == "field1,field2\n"
-
-    with open(f"{csv_folder}/forecast_madrid.csv") as f:
-        assert f.readline() == "field1,field2\n"
 
 
 def test_transform_current_weather_data_to_csv(fixtures):
@@ -153,7 +136,7 @@ def test_collect_current_weather_data(env, req, csv_folder):
     tolerance = {'positive_tolerance': 60, 'negative_tolerance': 5}
     current_utc_date_generator = lambda: date(2017, 1, 30)
 
-    init(csv_folder, csv_header, cities)
+    rutil.init(csv_folder, csv_header, cities)
 
     with open("tests/json_files/weather.json") as f:
         json_body = json.loads(f.read())
@@ -187,7 +170,7 @@ def test_collect_five_day_weather_forecast_data(env, req, csv_folder):
     tolerance = 60
     current_utc_date_generator = lambda: date(2017, 1, 30)
 
-    init(csv_folder, csv_header, cities)
+    rutil.init(csv_folder, csv_header, cities)
 
     with open("tests/json_files/forecast.json") as f:
         json_body = json.loads(f.read())

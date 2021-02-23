@@ -2,6 +2,19 @@ from datetime import datetime
 import pandas as pd
 from roboclimate.util import one_year_ago, n_years_ago
 import roboclimate.util as rutil
+import roboclimate.config as rconf
+import pytest
+from unittest.mock import Mock, patch
+import shutil
+import os
+
+@pytest.fixture(scope='function')
+def csv_folder():
+    folder = "tests/temp"
+    if os.path.exists(folder):
+        shutil.rmtree(folder)
+    yield folder
+    shutil.rmtree(folder)
 
 
 def test_one_year_ago():
@@ -49,3 +62,21 @@ def test_remove_duplicates_from_historical_data():
 
     assert historical_data.shape[0] == 1
     assert historical_data.iloc[0].temp == 3
+
+def test_init(csv_folder):
+    cities = rconf.cities
+    csv_header = ['field1', 'field2']
+
+    rutil.init(csv_folder, csv_header, cities)
+
+    with open(f"{csv_folder}/weather_london.csv") as f:
+        assert f.readline() == "field1,field2\n"
+
+    with open(f"{csv_folder}/weather_madrid.csv") as f:
+        assert f.readline() == "field1,field2\n"
+
+    with open(f"{csv_folder}/forecast_london.csv") as f:
+        assert f.readline() == "field1,field2\n"
+
+    with open(f"{csv_folder}/forecast_madrid.csv") as f:
+        assert f.readline() == "field1,field2\n"
