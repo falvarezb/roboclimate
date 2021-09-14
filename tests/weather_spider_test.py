@@ -17,11 +17,11 @@ def fixtures():
         current_utc_date=date(2019, 11, 29)
 )
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope='module')
 def csv_folder():
     folder = "tests/temp"
-    if os.path.exists(folder):
-        shutil.rmtree(folder)
+    if not os.path.exists(folder):        
+        os.mkdir(folder)
     yield folder
     shutil.rmtree(folder)
 
@@ -150,6 +150,7 @@ def test_collect_current_weather_data(env, req, csv_folder):
     
     req.get.assert_any_call("http://api.openweathermap.org/data/2.5/weather?id=2643743&units=metric&appid=id")
 
+    print(f"myfolder:{csv_folder}/weather_london.csv")
     with open(f"{csv_folder}/weather_london.csv") as f:
         rows = list(map(lambda row: row.split(','), f.readlines()))
 
