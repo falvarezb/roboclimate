@@ -4,7 +4,6 @@ import logging
 from roboclimate.config import weather_resources
 import roboclimate.config as config
 import csv
-from datetime import datetime
 import os
 
 logger = logging.getLogger(__name__)

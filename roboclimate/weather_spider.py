@@ -3,11 +3,15 @@ from threading import Thread
 from datetime import timezone, datetime
 import os
 import logging
+from json.decoder import JSONDecodeError
 import requests
+from requests.exceptions import ConnectionError
 from apscheduler.schedulers.blocking import BlockingScheduler
+from tenacity import retry, retry_if_exception_type, wait_fixed, stop_after_attempt
 import roboclimate.util as util
 from roboclimate.config import weather_resources, City
 import roboclimate.config as config
+
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +19,9 @@ logger = logging.getLogger(__name__)
 def transform_weather_data_to_csv(weather_resource_json, current_dt, rows_generator, dt_normaliser, tolerance):
     return [[j['main']['temp'], j['main']['pressure'], j['main']['humidity'], j['wind']['speed'], j['wind'].get('deg', ""), dt_normaliser(j['dt'], current_dt, tolerance), str(current_dt)[:10]] for j in rows_generator(weather_resource_json)]
 
+@retry(retry=retry_if_exception_type(ConnectionError), stop=stop_after_attempt(2), wait=wait_fixed(5), reraise=True)
+def read_remote_resource(url):
+    return requests.get(url)
 
 def collect_weather_data(url, rows_generator, dt_normaliser, current_dt_generator, csv_file, tolerance):
     """
@@ -37,11 +44,16 @@ def collect_weather_data(url, rows_generator, dt_normaliser, current_dt_generato
     """
 
     try:
-        weather_resource_json = requests.get(url).json() 
+        weather_resource_raw = read_remote_resource(url)
+        weather_resource_json = weather_resource_raw.json() 
         rows = transform_weather_data_to_csv(weather_resource_json, current_dt_generator(), rows_generator, dt_normaliser, tolerance)
         util.write_rows(csv_file, rows)
-    except Exception:
-        logger.error(f"Error while reading {url}", exc_info=True)
+    except ConnectionError:
+        logger.error(f"ConnectionError while reading {url}", exc_info=True)
+    except JSONDecodeError:
+        logger.error(f"JSONDecodeError while reading {url} and parsing '{weather_resource_raw.text}'", exc_info=True)
+    except Exception as ex:
+        logger.error(f"Error {ex} while reading {url}", exc_info=True)
 
 
 def generate_url(weather_resource, city: City):
@@ -136,6 +148,7 @@ def collect_current_weather_data(current_utc_date_generator, cities: Mapping[str
         url = generate_url(weather_resource, city_id)
         csv_file = util.csv_file_path(csv_folder, weather_resource, city_name)
         Thread(target=collect_weather_data, name=city_name, args=(url, rows_generator, dt_normaliser, current_utc_date_generator, csv_file, tolerance)).start()        
+        # collect_weather_data(url, rows_generator, dt_normaliser, current_utc_date_generator, csv_file, tolerance)
 
 
 def collect_five_day_weather_forecast_data(current_utc_date_generator, cities, csv_folder, tolerance):
