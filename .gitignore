@@ -27,3 +27,5 @@ city.list.json
 
 htmlcov/
 .coverage
+.python-version
+commands.txt

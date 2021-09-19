@@ -10,10 +10,7 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "console": "integratedTerminal",
-            "env": {
-                "PYTHONPATH":"${PYTHONPATH}:~/MyProjects/roboclimateapp"
-            }
+            "console": "integratedTerminal"
         }
     ]
 }

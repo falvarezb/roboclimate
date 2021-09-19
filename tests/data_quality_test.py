@@ -11,7 +11,7 @@ def test_missing_temps(dts_mock, load_csv_files_mock):
     dts_mock.return_value = pd.DataFrame({'dt': [100, 200, 300, 400]})
     city = Mock()
 
-    result = rdq.missing_temps(city)
+    result = rdq.missing_temps(city, 'temp')
     assert len(result) == 1
     assert result.iloc[0]['dt'] == 400
 
@@ -24,7 +24,7 @@ def test_missing_temps_without_dates(dts_mock, load_csv_files_mock):
     start_dt = dt.datetime(2020, 11, 28, 3, 0, 0, tzinfo=dt.timezone.utc)
     city = rdq.City(1, 'xx', start_dt)
 
-    rdq.missing_temps(city)
+    rdq.missing_temps(city, 'temp')
     dts_mock.assert_called_once_with(start_dt, ANY)
 
 
@@ -37,7 +37,7 @@ def test_missing_temps_with_dates(dts_mock, load_csv_files_mock):
     end_dt = dt.datetime(2020, 11, 28, 4, 0, 0, tzinfo=dt.timezone.utc)
     city = Mock()
 
-    rdq.missing_temps(city, start_dt, end_dt)
+    rdq.missing_temps(city, 'temp', start_dt, end_dt)
     dts_mock.assert_called_once_with(start_dt, end_dt)
 
 
@@ -48,7 +48,7 @@ def test_unexpected_temps(dts_mock, load_csv_files_mock):
     dts_mock.return_value = pd.DataFrame({'dt': [100, 200, 300]})
     city = Mock()
 
-    result = rdq.unexpected_temps(city)
+    result = rdq.unexpected_temps(city, 'temp')
     assert len(result) == 1
     assert result.iloc[0]['temp'] == 3
     assert result.iloc[0]['dt'] == 301
@@ -61,7 +61,7 @@ def test_temps_without_five_forecasts(dts_mock, load_csv_files_mock):
     dts_mock.return_value = pd.DataFrame({'dt': [100, 200, 300, 400]})
     city = Mock()
 
-    result = rdq.temps_without_five_forecasts(city)
+    result = rdq.temps_without_five_forecasts(city, 'temp')
     assert len(result) == 1
     assert result.iloc[0]['dt'] == 400
 
@@ -73,6 +73,6 @@ def test_missing_forecasts(dts_mock, load_csv_files_mock):
     dts_mock.return_value = pd.DataFrame({'today': ['2020-12-01', '2020-12-02', '2020-12-03']})
     city = Mock()
 
-    result = rdq.missing_forecasts(city)
+    result = rdq.missing_forecasts(city, 'temp')
     assert len(result) == 1
     assert result[0] == '2020-12-03'
