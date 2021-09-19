@@ -19,9 +19,11 @@ logger = logging.getLogger(__name__)
 def transform_weather_data_to_csv(weather_resource_json, current_dt, rows_generator, dt_normaliser, tolerance):
     return [[j['main']['temp'], j['main']['pressure'], j['main']['humidity'], j['wind']['speed'], j['wind'].get('deg', ""), dt_normaliser(j['dt'], current_dt, tolerance), str(current_dt)[:10]] for j in rows_generator(weather_resource_json)]
 
+
 @retry(retry=retry_if_exception_type(ConnectionError), stop=stop_after_attempt(2), wait=wait_fixed(5), reraise=True)
 def read_remote_resource(url):
     return requests.get(url)
+
 
 def collect_weather_data(url, rows_generator, dt_normaliser, current_dt_generator, csv_file, tolerance):
     """
@@ -45,7 +47,7 @@ def collect_weather_data(url, rows_generator, dt_normaliser, current_dt_generato
 
     try:
         weather_resource_raw = read_remote_resource(url)
-        weather_resource_json = weather_resource_raw.json() 
+        weather_resource_json = weather_resource_raw.json()
         rows = transform_weather_data_to_csv(weather_resource_json, current_dt_generator(), rows_generator, dt_normaliser, tolerance)
         util.write_rows(csv_file, rows)
     except ConnectionError:
@@ -143,11 +145,11 @@ def collect_current_weather_data(current_utc_date_generator, cities: Mapping[str
     weather_resource = weather_resources[0]
     rows_generator = lambda json: [json]
     dt_normaliser = normalise_dt
-    
+
     for city_name, city_id in cities.items():
         url = generate_url(weather_resource, city_id)
         csv_file = util.csv_file_path(csv_folder, weather_resource, city_name)
-        Thread(target=collect_weather_data, name=city_name, args=(url, rows_generator, dt_normaliser, current_utc_date_generator, csv_file, tolerance)).start()        
+        Thread(target=collect_weather_data, name=city_name, args=(url, rows_generator, dt_normaliser, current_utc_date_generator, csv_file, tolerance)).start()
         # collect_weather_data(url, rows_generator, dt_normaliser, current_utc_date_generator, csv_file, tolerance)
 
 
@@ -162,7 +164,7 @@ def collect_five_day_weather_forecast_data(current_utc_date_generator, cities, c
 
 def main():
 
-    logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level='INFO')    
+    logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level='INFO')
 
     util.init(config.csv_folder, config.csv_header, config.cities.keys())
 
@@ -171,7 +173,8 @@ def main():
 
     scheduler = BlockingScheduler()
     scheduler.add_job(collect_current_weather_data, 'cron', [util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance], hour='*/3')
-    scheduler.add_job(collect_five_day_weather_forecast_data, 'cron', [util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance], hour=22)
+    scheduler.add_job(collect_five_day_weather_forecast_data, 'cron', [
+                      util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance], hour=22)
     scheduler.start()
 
 
