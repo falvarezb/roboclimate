@@ -3,13 +3,13 @@ from requests.models import Response
 import shutil
 import os
 import json
-from json.decoder import JSONDecodeError
 from datetime import date
 from unittest.mock import Mock, patch
 import pytest
 from roboclimate.weather_spider import epoch_time, normalise_dt, transform_weather_data_to_csv, collect_current_weather_data, collect_five_day_weather_forecast_data, collect_weather_data
 import roboclimate.config as rconf
 import roboclimate.util as rutil
+import time
 
 @pytest.fixture(scope='function')
 def fixtures():
@@ -144,12 +144,11 @@ def test_collect_current_weather_data(env, req, csv_folder):
     with open("tests/json_files/weather.json") as f:
         json_body = json.loads(f.read())
     
-    # response_mock = Mock()
-    # response_mock.json.return_value = json_body
     req.get.return_value.json.return_value = json_body
     env.get.return_value='id'
 
     collect_current_weather_data(current_utc_date_generator, cities, csv_folder, tolerance)
+    time.sleep(1)
     
     req.get.assert_any_call("http://api.openweathermap.org/data/2.5/weather?id=2643743&units=metric&appid=id")
     
@@ -204,6 +203,7 @@ def test_collect_five_day_weather_forecast_data(env, req, csv_folder):
     env.get.return_value='id'
 
     collect_five_day_weather_forecast_data(current_utc_date_generator, cities, csv_folder, tolerance)
+    time.sleep(1)
 
     req.get.assert_any_call("http://api.openweathermap.org/data/2.5/forecast?id=2643743&units=metric&appid=id")
 
