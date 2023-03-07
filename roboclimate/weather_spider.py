@@ -1,68 +1,54 @@
 from typing import Mapping
 from threading import Thread
-from datetime import timezone, datetime
+from datetime import timezone, datetime, date
 import os
 import logging
 from json.decoder import JSONDecodeError
 import requests
 from requests.exceptions import ConnectionError
-from apscheduler.schedulers.blocking import BlockingScheduler
 from tenacity import retry, retry_if_exception_type, wait_fixed, stop_after_attempt
-import roboclimate.util as util
-from roboclimate.config import weather_resources, City
-import roboclimate.config as config
+import datetime as dt
+from collections import namedtuple
+import boto3
+
+s3 = boto3.client('s3')
+
+# type alias
+csv_row = "list[str]"
+csv_rows = "list[csv_row]"
+City = namedtuple('City', 'id name firstMeasurement')
+
+# constants
+CITIES = {"london": City(2643743, 'london', dt.datetime(2019, 11, 28, 3, 0, 0, tzinfo=dt.timezone.utc)),
+          "madrid": City(3117735, 'madrid', dt.datetime(2020, 6, 11, 18, 0, 0, tzinfo=dt.timezone.utc)),
+          "saopaulo": City(3448439, 'saopaulo', dt.datetime(2020, 6, 11, 18, 0, 0, tzinfo=dt.timezone.utc)),
+          "sydney": City(2147714, 'sydney', dt.datetime(2020, 6, 11, 18, 0, 0, tzinfo=dt.timezone.utc)),
+          "newyork": City(5128581, 'newyork', dt.datetime(2020, 6, 11, 18, 0, 0, tzinfo=dt.timezone.utc)),
+          "moscow": City(524901, 'moscow', dt.datetime(2021, 1, 27, 3, 0, 0, tzinfo=dt.timezone.utc)),
+          "tokyo": City(1850147, 'tokyo', dt.datetime(2021, 1, 27, 3, 0, 0, tzinfo=dt.timezone.utc)),
+          "nairobi": City(184745, 'nairobi', dt.datetime(2021, 1, 27, 3, 0, 0, tzinfo=dt.timezone.utc)),
+          "asuncion": City(3439389, 'asuncion', dt.datetime(2021, 1, 27, 3, 0, 0, tzinfo=dt.timezone.utc)),
+          "lagos": City(2332459, 'lagos', dt.datetime(2021, 1, 27, 3, 0, 0, tzinfo=dt.timezone.utc))}
+
+WEATHER_RESOURCE = "weather"
+S3_BUCKET_NAME = "roboclimate"
+S3_OBJECT_PREFIX = "weather"
+CSV_HEADER = ['temp', 'pressure', 'humidity', 'wind_speed', 'wind_deg', 'dt', 'today']
+TOLERANCE = {'positive_tolerance': 1200, 'negative_tolerance': 60}  # tolerance in seconds
 
 
 logger = logging.getLogger(__name__)
 
 
-def transform_weather_data_to_csv(weather_resource_json, current_dt, rows_generator, dt_normaliser, tolerance):
-    return [[j['main']['temp'], j['main']['pressure'], j['main']['humidity'], j['wind']['speed'], j['wind'].get('deg', ""), dt_normaliser(j['dt'], current_dt, tolerance), str(current_dt)[:10]] for j in rows_generator(weather_resource_json)]
-
-
-@retry(retry=retry_if_exception_type(ConnectionError), stop=stop_after_attempt(2), wait=wait_fixed(5), reraise=True)
-def read_remote_resource(url):
-    return requests.get(url)
-
-
-def collect_weather_data(url, rows_generator, dt_normaliser, current_dt_generator, csv_file, tolerance):
+def generate_current_utc_date() -> date:
     """
-    Reads weather data from Open Weather's endpoints and store it in a CSV file
-
-    Parameters
-    ----------
-    weather_resource_info : dict
-        info about the weather resource to be fetched
-    current_dt : datetime
-        current UTC date and time
-    city: int
-        city id to get weather data for
-
-    Returns
-    -------
-    None
-        this function only produces side-effects
-
+    Return date object corresponding to the current UTC datetime
     """
-
-    try:
-        weather_resource_raw = read_remote_resource(url)
-        weather_resource_json = weather_resource_raw.json()
-        rows = transform_weather_data_to_csv(weather_resource_json, current_dt_generator(), rows_generator, dt_normaliser, tolerance)
-        util.write_rows(csv_file, rows)
-    except ConnectionError:
-        logger.error(f"ConnectionError while reading {url}", exc_info=True)
-    except JSONDecodeError:
-        logger.error(f"JSONDecodeError while reading {url} and parsing '{weather_resource_raw.text}'", exc_info=True)
-    except Exception as ex:
-        logger.error(f"Error {ex} while reading {url}", exc_info=True)
+    current_utc_dt = datetime.utcnow()
+    return date(current_utc_dt.year, current_utc_dt.month, current_utc_dt.day)
 
 
-def generate_url(weather_resource, city: City):
-    return f"http://api.openweathermap.org/data/2.5/{weather_resource}?id={city.id}&units=metric&appid={os.environ.get('OPEN_WEATHER_API')}"
-
-
-def epoch_time(date):
+def epoch_time(date: date):
     """
     Calculate the POSIX timestamp at the times: 0, 3, 6, 9, 12, 15, 18 and 21 of the date passed as parameter
 
@@ -83,8 +69,8 @@ def epoch_time(date):
     -------
     dict
 
-        dict containing 8 pairs (time, POSIX timestamp) corresponding to the date passed as parameter
-        the keys of the 8 pairs are: "0", "3", "6", "9", "12", "15", "18", "21"
+        dict containing 8 pairs where the keys are the hours "0", "3", "6", "9", "12", "15", "18", "21" and the values are
+        the corresponding POSIX timestamp on the given date
 
     """
 
@@ -95,7 +81,7 @@ def epoch_time(date):
     return dict(zip(keys, values))
 
 
-def normalise_dt(dt, current_utc_date, tolerance):
+def normalise_datetime(dt, current_utc_date, tolerance):
     """
     Open Weather's "five day forecast" endpoint always returns data for 8 specific timestamps: 0, 3, 6, 9, 12, 15, 18 and 21.
 
@@ -141,41 +127,73 @@ def normalise_dt(dt, current_utc_date, tolerance):
     return dt
 
 
-def collect_current_weather_data(current_utc_date_generator, cities: Mapping[str, City], csv_folder, tolerance):
-    weather_resource = weather_resources[0]
-    rows_generator = lambda json: [json]
-    dt_normaliser = normalise_dt
-
-    for city_name, city_id in cities.items():
-        url = generate_url(weather_resource, city_id)
-        csv_file = util.csv_file_path(csv_folder, weather_resource, city_name)
-        Thread(target=collect_weather_data, name=city_name, args=(url, rows_generator, dt_normaliser, current_utc_date_generator, csv_file, tolerance)).start()
-        # collect_weather_data(url, rows_generator, dt_normaliser, current_utc_date_generator, csv_file, tolerance)
+def transform_weather_data_to_csv(weather_data_json, current_utc_datetime, tolerance) -> csv_rows:
+    return [[weather_data_json['main']['temp'], weather_data_json['main']['pressure'], weather_data_json['main']['humidity'], weather_data_json['wind']['speed'], weather_data_json['wind'].get('deg', ""), normalise_datetime(weather_data_json['dt'], current_utc_datetime, tolerance), str(current_utc_datetime)[:10]]]
 
 
-def collect_five_day_weather_forecast_data(current_utc_date_generator, cities, csv_folder, tolerance):
-    weather_resource = weather_resources[1]
-    rows_generator = lambda json: json['list']
-    dt_normaliser = lambda dt, current_dt, tolerance: dt
-    for city_name, city_id in cities.items():
-        collect_weather_data(generate_url(weather_resource, city_id), rows_generator, dt_normaliser,
-                             current_utc_date_generator, util.csv_file_path(csv_folder, weather_resource, city_name), tolerance)
+@retry(retry=retry_if_exception_type(ConnectionError), stop=stop_after_attempt(2), wait=wait_fixed(5), reraise=True)
+def read_remote_resource(url):
+    return requests.get(url)
+
+
+def compose_url(city_id: int):
+    return f"http://api.openweathermap.org/data/2.5/{WEATHER_RESOURCE}?id={city_id}&units=metric&appid={os.environ.get('OPEN_WEATHER_API')}"
+
+
+########################################
+
+
+def fetch_data(city_id) -> requests.Response:
+    try:
+        url = compose_url(city_id)
+        return read_remote_resource(url)
+    except ConnectionError:
+        logger.error(f"ConnectionError while reading {url}", exc_info=True)
+    except Exception as ex:
+        logger.error(f"Error {ex} while reading {url}", exc_info=True)
+
+
+def transform_data(weather_data: requests.Response, generate_current_utc_date, tolerance: "dict[str, int]") -> csv_rows:
+    try:
+        weather_data_json = weather_data.json()
+        return transform_weather_data_to_csv(weather_data_json, generate_current_utc_date(), tolerance)
+    except JSONDecodeError:
+        logger.error(f"JSONDecodeError while parsing '{weather_data.text}'", exc_info=True)
+
+
+def write_f(file_name, data):
+    s3.put_object(Body=data, Bucket=S3_BUCKET_NAME, Key=file_name)
+
+
+def write_data(city_name: str, weather_data_csv: csv_rows, write_f, s3_object_prefix):
+    csv_file_name = f"{s3_object_prefix}/{WEATHER_RESOURCE}_{city_name}.csv"
+    weather_data_csv_with_header = [CSV_HEADER]
+    weather_data_csv_with_header.extend(weather_data_csv)
+    csv_data_serialized = '\n'.join([','.join(map(str, row)) for row in weather_data_csv_with_header])
+    write_f(csv_file_name, csv_data_serialized)
+
+
+def run_thread(city_name, city_id, injected_params):
+    try:
+        weather_data = fetch_data(city_id)
+        weather_data_csv = transform_data(weather_data, injected_params.generate_current_utc_date, injected_params.tolerance)
+        write_data(city_name, weather_data_csv, injected_params.write_f, injected_params.s3_object_prefix)
+    except Exception as ex:
+        logger.error(f"Error {ex} while processing {city_name}", exc_info=True)
 
 
 def main():
-
     logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level='INFO')
-
-    util.init(config.csv_folder, config.csv_header, config.cities.keys())
-
-    # collect_current_weather_data(util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance)
-    # collect_five_day_weather_forecast_data(util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance)
-
-    scheduler = BlockingScheduler()
-    scheduler.add_job(collect_current_weather_data, 'cron', [util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance], hour='*/3')
-    scheduler.add_job(collect_five_day_weather_forecast_data, 'cron', [
-                      util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance], hour=22)
-    scheduler.start()
+    for city_name, city_id in CITIES.items():
+        injected_params = dict(
+            generate_current_utc_date=generate_current_utc_date,
+            write_f=write_f,
+            tolerance=TOLERANCE,
+            s3_object_prefix=S3_OBJECT_PREFIX
+        )
+        # the GIL is always released when doing I/O
+        # (https://docs.python.org/3/glossary.html#term-global-interpreter-lock)
+        Thread(target=run_thread, name=city_name, args=(city_name, city_id, injected_params)).start()
 
 
 if __name__ == '__main__':
