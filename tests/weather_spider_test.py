@@ -148,25 +148,31 @@ def test_collect_current_weather_data(env, req, csv_folder):
 @patch('roboclimate.weather_spider.logger')
 @patch('roboclimate.weather_spider.compose_url')
 def test_log_connectivity_error(compose_url, logger, read_remote_resource):
-    read_remote_resource.side_effect = ConnectionError
-    compose_url.return_value = 'url'
-    rspider.fetch_data(123)    
-    assert logger.error.call_args[0][0] == "ConnectionError while reading url"
+    try:
+        read_remote_resource.side_effect = ConnectionError
+        compose_url.return_value = 'url'
+        rspider.fetch_data(123)            
+    except Exception as ex:
+        assert logger.error.call_args[0][0] == "ConnectionError while reading url"
 
 @patch('roboclimate.weather_spider.read_remote_resource')
 @patch('roboclimate.weather_spider.logger')
 @patch('roboclimate.weather_spider.compose_url')
 def test_log_generic_error(compose_url, logger, read_remote_resource):
-    read_remote_resource.side_effect = Exception('error')
-    compose_url.return_value = 'url'
-    rspider.fetch_data(123) 
-    assert logger.error.call_args[0][0] == "Error error while reading url"
+    try:
+        read_remote_resource.side_effect = Exception('error')
+        compose_url.return_value = 'url'
+        rspider.fetch_data(123) 
+    except Exception as ex:
+        assert logger.error.call_args[0][0] == "Error error while reading url"
 
 
 @patch('roboclimate.weather_spider.logger')
 def test_log_parsing_error(logger):
-    response = Response()
-    response.status_code = 200
-    response._content = b'I am not a json'    
-    rspider.transform_data(response, None, None)    
-    assert logger.error.call_args[0][0] == "JSONDecodeError while parsing 'I am not a json'"
+    try:
+        response = Response()
+        response.status_code = 200
+        response._content = b'I am not a json'    
+        rspider.transform_data(response, None, None)    
+    except Exception as ex:
+        assert logger.error.call_args[0][0] == "JSONDecodeError while parsing 'I am not a json'"

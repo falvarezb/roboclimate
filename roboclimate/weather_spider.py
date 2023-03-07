@@ -1,4 +1,3 @@
-from typing import Mapping
 from threading import Thread
 from datetime import timezone, datetime, date
 import os
@@ -10,8 +9,6 @@ from tenacity import retry, retry_if_exception_type, wait_fixed, stop_after_atte
 import datetime as dt
 from collections import namedtuple
 import boto3
-
-s3 = boto3.client('s3')
 
 # type alias
 csv_row = "list[str]"
@@ -36,8 +33,10 @@ S3_OBJECT_PREFIX = "weather"
 CSV_HEADER = ['temp', 'pressure', 'humidity', 'wind_speed', 'wind_deg', 'dt', 'today']
 TOLERANCE = {'positive_tolerance': 1200, 'negative_tolerance': 60}  # tolerance in seconds
 
-
+# global variables
+s3 = boto3.client('s3')
 logger = logging.getLogger(__name__)
+
 
 
 def generate_current_utc_date() -> date:
@@ -147,18 +146,21 @@ def fetch_data(city_id) -> requests.Response:
     try:
         url = compose_url(city_id)
         return read_remote_resource(url)
-    except ConnectionError:
-        logger.error(f"ConnectionError while reading {url}", exc_info=True)
+    except ConnectionError as ex:
+        logger.error(f"ConnectionError while reading {url}", exc_info=False)
+        raise ex
     except Exception as ex:
-        logger.error(f"Error {ex} while reading {url}", exc_info=True)
+        logger.error(f"Error {ex} while reading {url}", exc_info=False)
+        raise ex
 
 
 def transform_data(weather_data: requests.Response, generate_current_utc_date, tolerance: "dict[str, int]") -> csv_rows:
     try:
         weather_data_json = weather_data.json()
         return transform_weather_data_to_csv(weather_data_json, generate_current_utc_date(), tolerance)
-    except JSONDecodeError:
+    except JSONDecodeError as ex:
         logger.error(f"JSONDecodeError while parsing '{weather_data.text}'", exc_info=True)
+        raise ex
 
 
 def write_f(file_name, data):
@@ -176,10 +178,10 @@ def write_data(city_name: str, weather_data_csv: csv_rows, write_f, s3_object_pr
 def run_thread(city_name, city_id, injected_params):
     try:
         weather_data = fetch_data(city_id)
-        weather_data_csv = transform_data(weather_data, injected_params.generate_current_utc_date, injected_params.tolerance)
-        write_data(city_name, weather_data_csv, injected_params.write_f, injected_params.s3_object_prefix)
+        weather_data_csv = transform_data(weather_data, injected_params['generate_current_utc_date'], injected_params['tolerance'])
+        write_data(city_name, weather_data_csv, injected_params['write_f'], injected_params['s3_object_prefix'])
     except Exception as ex:
-        logger.error(f"Error {ex} while processing {city_name}", exc_info=True)
+        logger.error(f"Error '{ex}' while processing '{city_name}'", exc_info=True)
 
 
 def main():
