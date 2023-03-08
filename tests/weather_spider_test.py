@@ -106,8 +106,8 @@ def test_transform_current_weather_data_to_csv(fixtures):
 
 @patch('roboclimate.weather_spider.requests')
 @patch('roboclimate.weather_spider.os.environ')
-def test_collect_current_weather_data(env, req, csv_folder):    
-    def write_f(file_name, data):
+def test_collect_current_weather_data(env, req, csv_folder):
+    def write_to_filesystem(file_name, data):
         '''
         for testing purposes, we write to the local filesystem instead of S3 bucket
         '''
@@ -115,8 +115,8 @@ def test_collect_current_weather_data(env, req, csv_folder):
             f.write(data)
 
     injected_params = dict(
-        generate_current_utc_date=lambda: date(2017, 1, 30),
-        write_f=write_f,
+        utcnow_date_f=lambda: date(2017, 1, 30),
+        write_f=write_to_filesystem,
         tolerance={'positive_tolerance': 60, 'negative_tolerance': 5},
         s3_object_prefix=csv_folder
     )
@@ -127,7 +127,7 @@ def test_collect_current_weather_data(env, req, csv_folder):
     req.get.return_value.json.return_value = json_body
     env.get.return_value = 'id'
 
-    rspider.run_thread('london', '1', injected_params)
+    rspider.run_city('london', '1', injected_params)
     time.sleep(1)
 
     req.get.assert_any_call("http://api.openweathermap.org/data/2.5/weather?id=1&units=metric&appid=id")
@@ -147,32 +147,29 @@ def test_collect_current_weather_data(env, req, csv_folder):
 @patch('roboclimate.weather_spider.read_remote_resource')
 @patch('roboclimate.weather_spider.logger')
 @patch('roboclimate.weather_spider.compose_url')
-def test_log_connectivity_error(compose_url, logger, read_remote_resource):
+def test_log_error_when_fetching_data(compose_url, logger, read_remote_resource):
     try:
-        read_remote_resource.side_effect = ConnectionError
+        read_remote_resource.side_effect = ConnectionError('error')
         compose_url.return_value = 'url'
-        rspider.fetch_data(123)            
+        rspider.fetch_data(123)
     except Exception as ex:
-        assert logger.error.call_args[0][0] == "ConnectionError while reading url"
-
-@patch('roboclimate.weather_spider.read_remote_resource')
-@patch('roboclimate.weather_spider.logger')
-@patch('roboclimate.weather_spider.compose_url')
-def test_log_generic_error(compose_url, logger, read_remote_resource):
-    try:
-        read_remote_resource.side_effect = Exception('error')
-        compose_url.return_value = 'url'
-        rspider.fetch_data(123) 
-    except Exception as ex:
-        assert logger.error.call_args[0][0] == "Error error while reading url"
+        assert logger.error.call_args[0][0] == "Error 'error' while reading 'url'"
 
 
 @patch('roboclimate.weather_spider.logger')
-def test_log_parsing_error(logger):
+def test_log_error_when_transforming_data(logger):
     try:
         response = Response()
         response.status_code = 200
-        response._content = b'I am not a json'    
-        rspider.transform_data(response, None, None)    
+        response._content = b'I am not a json'
+        rspider.transform_data(response, None, None)
     except Exception as ex:
-        assert logger.error.call_args[0][0] == "JSONDecodeError while parsing 'I am not a json'"
+        assert logger.error.call_args[0][0] == "Error 'Expecting value: line 1 column 1 (char 0)' while parsing 'I am not a json'"
+
+
+@patch('roboclimate.weather_spider.fetch_data')
+@patch('roboclimate.weather_spider.logger')
+def test_log_error_when_running_city(logger, fetch_data):
+    fetch_data.side_effect = Exception('error')
+    rspider.run_city('city name', 123, {})
+    assert logger.error.call_args[0][0] == "Error 'error' while processing 'city name'"

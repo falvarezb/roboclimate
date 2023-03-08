@@ -1,31 +1,26 @@
-from threading import Thread
 from datetime import timezone, datetime, date
 import os
 import logging
-from json.decoder import JSONDecodeError
 import requests
 from requests.exceptions import ConnectionError
 from tenacity import retry, retry_if_exception_type, wait_fixed, stop_after_attempt
-import datetime as dt
-from collections import namedtuple
 import boto3
 
 # type alias
 csv_row = "list[str]"
 csv_rows = "list[csv_row]"
-City = namedtuple('City', 'id name firstMeasurement')
 
 # constants
-CITIES = {"london": City(2643743, 'london', dt.datetime(2019, 11, 28, 3, 0, 0, tzinfo=dt.timezone.utc)),
-          "madrid": City(3117735, 'madrid', dt.datetime(2020, 6, 11, 18, 0, 0, tzinfo=dt.timezone.utc)),
-          "saopaulo": City(3448439, 'saopaulo', dt.datetime(2020, 6, 11, 18, 0, 0, tzinfo=dt.timezone.utc)),
-          "sydney": City(2147714, 'sydney', dt.datetime(2020, 6, 11, 18, 0, 0, tzinfo=dt.timezone.utc)),
-          "newyork": City(5128581, 'newyork', dt.datetime(2020, 6, 11, 18, 0, 0, tzinfo=dt.timezone.utc)),
-          "moscow": City(524901, 'moscow', dt.datetime(2021, 1, 27, 3, 0, 0, tzinfo=dt.timezone.utc)),
-          "tokyo": City(1850147, 'tokyo', dt.datetime(2021, 1, 27, 3, 0, 0, tzinfo=dt.timezone.utc)),
-          "nairobi": City(184745, 'nairobi', dt.datetime(2021, 1, 27, 3, 0, 0, tzinfo=dt.timezone.utc)),
-          "asuncion": City(3439389, 'asuncion', dt.datetime(2021, 1, 27, 3, 0, 0, tzinfo=dt.timezone.utc)),
-          "lagos": City(2332459, 'lagos', dt.datetime(2021, 1, 27, 3, 0, 0, tzinfo=dt.timezone.utc))}
+CITIES = {"london": 2643743,
+          "madrid": 3117735,
+          "saopaulo": 3448439,
+          "sydney": 2147714,
+          "newyork": 5128581,
+          "moscow": 524901,
+          "tokyo": 1850147,
+          "nairobi": 184745,
+          "asuncion": 3439389,
+          "lagos": 2332459}
 
 WEATHER_RESOURCE = "weather"
 S3_BUCKET_NAME = "roboclimate"
@@ -35,11 +30,16 @@ TOLERANCE = {'positive_tolerance': 1200, 'negative_tolerance': 60}  # tolerance 
 
 # global variables
 s3 = boto3.client('s3')
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
+if len(logger.handlers) > 0:
+    # The Lambda environment pre-configures a handler logging to stderr. If a handler is already configured,
+    # `.basicConfig` does not execute. Thus we set the level directly.
+    logger.setLevel(logging.INFO)
+else:
+    logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level='INFO', filename='weather.log')
 
 
-
-def generate_current_utc_date() -> date:
+def utcnow_date() -> date:
     """
     Return date object corresponding to the current UTC datetime
     """
@@ -47,9 +47,9 @@ def generate_current_utc_date() -> date:
     return date(current_utc_dt.year, current_utc_dt.month, current_utc_dt.day)
 
 
-def epoch_time(date: date):
+def epoch_time(date: date) -> 'dict[str,int]':
     """
-    Calculate the POSIX timestamp at the times: 0, 3, 6, 9, 12, 15, 18 and 21 of the date passed as parameter
+    Calculate the POSIX timestamp at the hours: 0, 3, 6, 9, 12, 15, 18 and 21 of the date passed as parameter
 
     According to https://docs.python.org/3.6/library/datetime.html
 
@@ -80,7 +80,7 @@ def epoch_time(date: date):
     return dict(zip(keys, values))
 
 
-def normalise_datetime(dt, current_utc_date, tolerance):
+def normalise_datetime(dt: int, current_utc_date: date, tolerance: 'dict[str,int]'):
     """
     Open Weather's "five day forecast" endpoint always returns data for 8 specific timestamps: 0, 3, 6, 9, 12, 15, 18 and 21.
 
@@ -146,24 +146,28 @@ def fetch_data(city_id) -> requests.Response:
     try:
         url = compose_url(city_id)
         return read_remote_resource(url)
-    except ConnectionError as ex:
-        logger.error(f"ConnectionError while reading {url}", exc_info=False)
-        raise ex
     except Exception as ex:
-        logger.error(f"Error {ex} while reading {url}", exc_info=False)
+        logger.error(f"Error '{ex}' while reading '{url}'", exc_info=False)
         raise ex
 
 
-def transform_data(weather_data: requests.Response, generate_current_utc_date, tolerance: "dict[str, int]") -> csv_rows:
+def transform_data(weather_data: requests.Response, utcnow_date_f, tolerance: "dict[str, int]") -> csv_rows:
     try:
         weather_data_json = weather_data.json()
-        return transform_weather_data_to_csv(weather_data_json, generate_current_utc_date(), tolerance)
-    except JSONDecodeError as ex:
-        logger.error(f"JSONDecodeError while parsing '{weather_data.text}'", exc_info=True)
+        return transform_weather_data_to_csv(weather_data_json, utcnow_date_f(), tolerance)
+    except Exception as ex:
+        logger.error(f"Error '{ex}' while parsing '{weather_data.text}'", exc_info=True)
         raise ex
 
 
-def write_f(file_name, data):
+def write_to_filesystem(file_name, data):
+    logger.info(f'writing file {file_name}')
+    with open(f"{file_name}", 'w', encoding='UTF-8') as f:
+        f.write(data)
+
+
+def write_to_s3(file_name, data):
+    logger.info(f'writing object {file_name} to bucket {S3_BUCKET_NAME}')
     s3.put_object(Body=data, Bucket=S3_BUCKET_NAME, Key=file_name)
 
 
@@ -175,28 +179,34 @@ def write_data(city_name: str, weather_data_csv: csv_rows, write_f, s3_object_pr
     write_f(csv_file_name, csv_data_serialized)
 
 
-def run_thread(city_name, city_id, injected_params):
+def run_city(city_name: str, city_id: int, injected_params: dict):
     try:
         weather_data = fetch_data(city_id)
-        weather_data_csv = transform_data(weather_data, injected_params['generate_current_utc_date'], injected_params['tolerance'])
+        weather_data_csv = transform_data(weather_data, injected_params['utcnow_date_f'], injected_params['tolerance'])
         write_data(city_name, weather_data_csv, injected_params['write_f'], injected_params['s3_object_prefix'])
     except Exception as ex:
         logger.error(f"Error '{ex}' while processing '{city_name}'", exc_info=True)
 
 
-def main():
-    logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level='INFO')
+def weather_handler(event, context):
+    if event is not None:
+        write_f = write_to_s3
+        logger.info('running on AWS env')
+    else:
+        write_f = write_to_filesystem
+        logger.info('running on local env')
+
     for city_name, city_id in CITIES.items():
         injected_params = dict(
-            generate_current_utc_date=generate_current_utc_date,
+            utcnow_date_f=utcnow_date,
             write_f=write_f,
             tolerance=TOLERANCE,
             s3_object_prefix=S3_OBJECT_PREFIX
         )
-        # the GIL is always released when doing I/O
-        # (https://docs.python.org/3/glossary.html#term-global-interpreter-lock)
-        Thread(target=run_thread, name=city_name, args=(city_name, city_id, injected_params)).start()
+
+        run_city(city_name, city_id, injected_params)
 
 
+# when running on AWS env, __name__ = file name specified in AWS runtime's handler
 if __name__ == '__main__':
-    main()
+    weather_handler(None, None)
