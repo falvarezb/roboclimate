@@ -29,3 +29,5 @@ htmlcov/
 .coverage
 .python-version
 commands.txt
+
+deploy/*.zip
