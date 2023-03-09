@@ -24,7 +24,6 @@ CITIES = {"london": 2643743,
           "asuncion": 3439389,
           "lagos": 2332459}
 
-S3_BUCKET_NAME = "roboclimate"
 CSV_HEADER = "temp,pressure,humidity,wind_speed,wind_deg,dt,today"
 
 # global variables
@@ -79,20 +78,21 @@ def write_to_filesystem(file_name: str, data: str):
 
 
 def write_to_s3(file_name: str, data: str):
+    s3_bucket_name = os.environ.get('S3_BUCKET_NAME')
     try:
-        existing_data = s3.get_object(Bucket=S3_BUCKET_NAME, Key=file_name)['Body'].read().decode('UTF-8')
+        existing_data = s3.get_object(Bucket=s3_bucket_name, Key=file_name)['Body'].read().decode('UTF-8')
     except botocore.exceptions.ClientError:
         # add header when file is first created
         data = f"{CSV_HEADER}\n{data}"
     else:
         # append data
         data = f"{existing_data}{data}"
-    logger.info(f'writing object {file_name} in bucket {S3_BUCKET_NAME}')
-    s3.put_object(Body=data, Bucket=S3_BUCKET_NAME, Key=file_name)
+    logger.info(f'writing object {file_name} in bucket {s3_bucket_name}')
+    s3.put_object(Body=data, Bucket=s3_bucket_name, Key=file_name)
 
 
-def write_data(city_name: str, weather_resource: str, weather_data_csv: csv_rows, write_f, s3_object_prefix):
-    csv_file_name = f"{s3_object_prefix}/{weather_resource}_{city_name}.csv"
+def write_data(city_name: str, weather_resource: str, weather_data_csv: csv_rows, write_f, csv_files_path):
+    csv_file_name = f"{csv_files_path}/{weather_resource}_{city_name}.csv"
     csv_data_serialized = ('\n'.join([','.join(map(str, row)) for row in weather_data_csv])) + '\n'
     write_f(csv_file_name, csv_data_serialized)
 
@@ -109,6 +109,6 @@ def run_city(city_name: str, city_id: int, weather_resource: str, run_params: di
     try:
         weather_data = fetch_data(city_id, weather_resource)
         weather_data_csv = transform_data(weather_data, dict(islice(run_params.items(),0,2)), run_params['json_to_csv_f'])
-        write_data(city_name, weather_resource, weather_data_csv, run_params['write_f'], run_params['s3_object_prefix'])
+        write_data(city_name, weather_resource, weather_data_csv, run_params['write_f'], run_params['csv_files_path'])
     except Exception as ex:
         logger.error(f"Error '{ex}' while processing '{city_name}'", exc_info=True)
