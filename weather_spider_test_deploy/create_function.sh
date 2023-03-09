@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -xv
-
 source ./config.sh
 
 aws --profile $AWS_PROFILE iam create-role --role-name $ROLE_NAME \
