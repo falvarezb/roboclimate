@@ -15,5 +15,5 @@ aws --profile $AWS_PROFILE lambda create-function \
   --zip-file fileb://./$ARTIFACT_NAME \
   --timeout 60 \
   --environment \
-  "Variables={OPEN_WEATHER_API=$OPEN_WEATHER_API}" \
+  "Variables={OPEN_WEATHER_API=$OPEN_WEATHER_API,S3_BUCKET_NAME=$S3_BUCKET_NAME}" \
   --role arn:aws:iam::$AWS_ACCOUNT:role/$ROLE_NAME

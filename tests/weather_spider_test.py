@@ -106,13 +106,6 @@ def test_transform_current_weather_data_to_csv(fixtures):
 @patch('common.requests')
 @patch('common.os.environ')
 def test_collect_current_weather_data(env, req, csv_folder):
-    # def write_to_filesystem(file_name, data):
-    #     '''
-    #     for testing purposes, we write to the local filesystem instead of S3 bucket
-    #     '''
-    #     with open(f"{file_name}", 'w', encoding='UTF-8') as f:
-    #         f.write(data)
-
     run_params = dict(
         utcnow_date=date(2017, 1, 30),
         write_f=common.write_to_filesystem,

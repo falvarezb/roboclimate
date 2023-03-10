@@ -30,4 +30,4 @@ htmlcov/
 .python-version
 commands.txt
 
-deploy/*.zip
+*deploy/*.zip
