@@ -1,17 +1,9 @@
 from datetime import timezone, datetime, date
-# import os
-# import logging
-# import requests
-# from requests.exceptions import ConnectionError
-# from tenacity import retry, retry_if_exception_type, wait_fixed, stop_after_attempt
-# import boto3
-# import botocore
 from common import *
 
 # constants
 WEATHER_RESOURCE = "weather"
 CSV_FILES_PATH = "weather"
-CSV_HEADER = "temp,pressure,humidity,wind_speed,wind_deg,dt,today"
 TOLERANCE = {'positive_tolerance': 1200, 'negative_tolerance': 60}  # tolerance in seconds
 
 
