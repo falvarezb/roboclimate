@@ -97,10 +97,10 @@ def write_data(city_name: str, weather_resource: str, weather_data_csv: csv_rows
     write_f(csv_file_name, csv_data_serialized)
 
 
-def transform_data(weather_data: requests.Response, coversion_params: "dict[str,str]", json_to_csv) -> csv_rows:
+def transform_data(weather_data: requests.Response, coversion_params: dict) -> csv_rows:
     try:
         weather_data_json = weather_data.json()
-        return json_to_csv(weather_data_json, coversion_params)
+        return coversion_params['json_to_csv_f'](weather_data_json, coversion_params)
     except Exception as ex:
         logger.error(f"Error '{ex}' while parsing '{weather_data.text}'", exc_info=True)
         raise ex
@@ -108,7 +108,7 @@ def transform_data(weather_data: requests.Response, coversion_params: "dict[str,
 def run_city(city_name: str, city_id: int, weather_resource: str, run_params: dict):
     try:
         weather_data = fetch_data(city_id, weather_resource)
-        weather_data_csv = transform_data(weather_data, dict(islice(run_params.items(),0,2)), run_params['json_to_csv_f'])
+        weather_data_csv = transform_data(weather_data, run_params)
         write_data(city_name, weather_resource, weather_data_csv, run_params['write_f'], run_params['csv_files_path'])
     except Exception as ex:
         logger.error(f"Error '{ex}' while processing '{city_name}'", exc_info=True)

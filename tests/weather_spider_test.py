@@ -3,13 +3,12 @@ import os
 import json
 import time
 from datetime import date
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 import pytest
 from requests.models import Response
 from requests.exceptions import ConnectionError
-import roboclimate.weather_spider as rspider
-import roboclimate.config as rconf
-import roboclimate.util as rutil
+import weather_spider as rspider
+import common
 
 
 @pytest.fixture(scope='function')
@@ -62,28 +61,28 @@ def epoch_time_side_effect_gen(current_utc_date):
     return epoch_time_side_effect
 
 
-@patch('roboclimate.weather_spider.epoch_time')
+@patch('weather_spider.epoch_time')
 def test_normalise_dt_success(mock_epoch_time, fixtures):
     mock_epoch_time.side_effect = epoch_time_side_effect_gen(fixtures['current_utc_date'])
     tolerance = {'positive_tolerance': 10, 'negative_tolerance': 5}
     assert rspider.normalise_datetime(fixtures['dt'], fixtures['current_utc_date'], tolerance) == 1575061200.0
 
 
-@patch('roboclimate.weather_spider.epoch_time')
+@patch('weather_spider.epoch_time')
 def test_normalise_dt_success_when_dt_on_the_dot(mock_epoch_time, fixtures):
     mock_epoch_time.side_effect = epoch_time_side_effect_gen(fixtures['current_utc_date'])
     tolerance = {'positive_tolerance': 10, 'negative_tolerance': 5}
     assert rspider.normalise_datetime(fixtures['dt_on_the_dot'], fixtures['current_utc_date'], tolerance) == 1575061200.0
 
 
-@patch('roboclimate.weather_spider.epoch_time')
+@patch('weather_spider.epoch_time')
 def test_normalise_dt_success_when_dt_higher_than_reference(mock_epoch_time, fixtures):
     mock_epoch_time.side_effect = epoch_time_side_effect_gen(fixtures['current_utc_date'])
     tolerance = {'positive_tolerance': 10, 'negative_tolerance': 5}
     assert rspider.normalise_datetime(fixtures['dt_higher_than_reference'], fixtures['current_utc_date'], tolerance) == 1575061200.0
 
 
-@patch('roboclimate.weather_spider.epoch_time')
+@patch('weather_spider.epoch_time')
 def test_normalise_dt_fail(mock_epoch_time, fixtures):
     mock_epoch_time.side_effect = epoch_time_side_effect_gen(fixtures['current_utc_date'])
     tolerance = {'positive_tolerance': 1, 'negative_tolerance': 5}
@@ -94,7 +93,7 @@ def test_transform_current_weather_data_to_csv(fixtures):
     with open("tests/json_files/weather.json", encoding='UTF-8') as f:
         data_json = json.load(f)
 
-    csv_row = rspider.transform_weather_data_to_csv(data_json, fixtures['current_utc_date'], rspider.TOLERANCE)[0]
+    csv_row = rspider.transform_weather_data_to_csv(data_json, {'utcnow_date':fixtures['current_utc_date'], 'tolerance': rspider.TOLERANCE})[0]
     assert csv_row[0] == 300.15
     assert csv_row[1] == 1007
     assert csv_row[2] == 74
@@ -104,21 +103,22 @@ def test_transform_current_weather_data_to_csv(fixtures):
     assert csv_row[6] == str(fixtures['current_utc_date'])
 
 
-@patch('roboclimate.weather_spider.requests')
-@patch('roboclimate.weather_spider.os.environ')
+@patch('common.requests')
+@patch('common.os.environ')
 def test_collect_current_weather_data(env, req, csv_folder):
-    def write_to_filesystem(file_name, data):
-        '''
-        for testing purposes, we write to the local filesystem instead of S3 bucket
-        '''
-        with open(f"{file_name}", 'w', encoding='UTF-8') as f:
-            f.write(data)
+    # def write_to_filesystem(file_name, data):
+    #     '''
+    #     for testing purposes, we write to the local filesystem instead of S3 bucket
+    #     '''
+    #     with open(f"{file_name}", 'w', encoding='UTF-8') as f:
+    #         f.write(data)
 
-    injected_params = dict(
-        utcnow_date_f=lambda: date(2017, 1, 30),
-        write_f=write_to_filesystem,
+    run_params = dict(
+        utcnow_date=date(2017, 1, 30),
+        write_f=common.write_to_filesystem,
         tolerance={'positive_tolerance': 60, 'negative_tolerance': 5},
-        s3_object_prefix=csv_folder
+        json_to_csv_f=rspider.transform_weather_data_to_csv,
+        csv_files_path=csv_folder
     )
 
     with open("tests/json_files/weather.json", encoding='UTF-8') as f:
@@ -127,7 +127,7 @@ def test_collect_current_weather_data(env, req, csv_folder):
     req.get.return_value.json.return_value = json_body
     env.get.return_value = 'id'
 
-    rspider.run_city('london', '1', injected_params)
+    rspider.run_city('london', '1', rspider.WEATHER_RESOURCE, run_params)
     time.sleep(1)
 
     req.get.assert_any_call("http://api.openweathermap.org/data/2.5/weather?id=1&units=metric&appid=id")
@@ -141,35 +141,35 @@ def test_collect_current_weather_data(env, req, csv_folder):
     assert rows[1][3] == '3.6'
     assert rows[1][4] == '160'
     assert rows[1][5] == '1485790200'
-    assert rows[1][6] == '2017-01-30'
+    assert rows[1][6] == '2017-01-30\n'
 
 
-@patch('roboclimate.weather_spider.read_remote_resource')
-@patch('roboclimate.weather_spider.logger')
-@patch('roboclimate.weather_spider.compose_url')
+@patch('common.read_remote_resource')
+@patch('common.logger')
+@patch('common.compose_url')
 def test_log_error_when_fetching_data(compose_url, logger, read_remote_resource):
     try:
         read_remote_resource.side_effect = ConnectionError('error')
         compose_url.return_value = 'url'
-        rspider.fetch_data(123)
+        rspider.fetch_data(123, rspider.WEATHER_RESOURCE)
     except Exception as ex:
         assert logger.error.call_args[0][0] == "Error 'error' while reading 'url'"
 
 
-@patch('roboclimate.weather_spider.logger')
+@patch('common.logger')
 def test_log_error_when_transforming_data(logger):
     try:
         response = Response()
         response.status_code = 200
         response._content = b'I am not a json'
-        rspider.transform_data(response, None, None)
+        rspider.transform_data(response, None)
     except Exception as ex:
         assert logger.error.call_args[0][0] == "Error 'Expecting value: line 1 column 1 (char 0)' while parsing 'I am not a json'"
 
 
-@patch('roboclimate.weather_spider.fetch_data')
-@patch('roboclimate.weather_spider.logger')
+@patch('common.fetch_data')
+@patch('common.logger')
 def test_log_error_when_running_city(logger, fetch_data):
     fetch_data.side_effect = Exception('error')
-    rspider.run_city('city name', 123, {})
+    rspider.run_city('city name', 123, rspider.WEATHER_RESOURCE, {})
     assert logger.error.call_args[0][0] == "Error 'error' while processing 'city name'"
