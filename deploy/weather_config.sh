@@ -9,3 +9,4 @@ ARTIFACT_NAME=roboclimate-weather-package.zip
 PYTHON_VERSION=python3.8
 HANDLER=weather_spider.weather_handler
 S3_BUCKET_NAME=roboclimate
+PYTHON_FILES="weather_spider.py common.py"
