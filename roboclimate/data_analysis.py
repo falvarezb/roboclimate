@@ -66,8 +66,8 @@ def join_true_temp_and_forecast(true_temp_df, forecast_temp_df, weather_variable
             if len(temps) == len(headers):
                 temps_df = pd.DataFrame({i: [j] for i, j in zip(headers, temps)}, index=[row[0]])
                 df = df.append(pd.DataFrame([row[1]]).join(temps_df))
-            else:
-                logger.warning(f"number of {weather_variable} {len(temps)} != 5 for timestamp {row[1]['dt']}")
+            # else:
+            #     logger.warning(f"number of {weather_variable} {len(temps)} != 5 for timestamp {row[1]['dt']}")
         except Exception:
             logger.error(f"Error while processing row \n {row[1]}", exc_info=True)
 
