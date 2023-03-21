@@ -62,10 +62,12 @@ def join_true_temp_and_forecast(true_temp_df, forecast_temp_df, weather_variable
     df = pd.DataFrame()
     for row in true_temp_df.iterrows():
         try:
-            temps = forecast_temp_df[forecast_temp_df['dt'] == row[1]['dt']].sort_values('today').T.loc[weather_variable]
-            if len(temps) == len(headers):
-                temps_df = pd.DataFrame({i: [j] for i, j in zip(headers, temps)}, index=[row[0]])
-                df = df.append(pd.DataFrame([row[1]]).join(temps_df))
+            tees = forecast_temp_df[forecast_temp_df['dt'] == row[1]['dt']].sort_values('today').T.loc[weather_variable]
+            if len(tees) == len(headers):
+                # df with columns: [t5, t4, t3, t2, t1]
+                tees_df = pd.DataFrame({i: [j] for i, j in zip(headers, tees)}, index=[row[0]])
+                # joining dfs: [temp, dt, today] + [t5, t4, t3, t2, t1]
+                df = df.append(pd.DataFrame([row[1]]).join(tees_df))
             # else:
             #     logger.warning(f"number of {weather_variable} {len(temps)} != 5 for timestamp {row[1]['dt']}")
         except Exception:
