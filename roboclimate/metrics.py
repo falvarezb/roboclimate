@@ -1,19 +1,21 @@
-    # """
-    # Module to implement the mean absolute scaled error (https://en.wikipedia.org/wiki/Mean_absolute_scaled_error)
+"""
 
-    # mean absolute scaled error (mase) is a measure of the precision of a model compared to the naive forecast
-    # the naive forecast consists in assuming that the next value is the same as the one of the prior period.
+Module to implement the mean absolute scaled error (https://en.wikipedia.org/wiki/Mean_absolute_scaled_error)
 
-    # However, "prior period" may mean different things depending on whether the time series under consideration is
-    # seasonal or non-seasonal.
-    # For instance, for the temperature forecast, we may consider as prior value the temperature on the same day and time
-    # of the previous month, year, etc.
+mean absolute scaled error (mase) is a measure of the precision of a model compared to the naive forecast
+the naive forecast consists in assuming that the next value is the same as the one of the prior period.
 
-    # This module contain functions to calculate both seasonal and non-seasonal mase.
+However, "prior period" may mean different things depending on whether the time series under consideration is
+seasonal or non-seasonal.
+For instance, for the temperature forecast, we may consider as prior value the temperature on the same day and time
+of the previous month, year, etc.
 
-    # An additional problem to contend with is data quality: if there are missing values in the time series, it may not be
-    # possible to get the value corresponding to the prior period.   
-    # """
+This module contain functions to calculate both seasonal and non-seasonal mase.
+
+An additional problem to contend with is data quality: if there are missing values in the time series, it may not be
+possible to get the value corresponding to the prior period.   
+
+"""
 
 
 from datetime import datetime, timezone
