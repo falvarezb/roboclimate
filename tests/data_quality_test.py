@@ -4,54 +4,56 @@ import pandas as pd
 import roboclimate.data_quality as rdq
 
 
-@patch('roboclimate.data_quality.load_csv_files')
+@patch('roboclimate.data_quality.load_weather_file')
 @patch('roboclimate.data_quality.dts')
-def test_missing_temps(dts_mock, load_csv_files_mock):
-    load_csv_files_mock.return_value = {"true_temp_df": pd.DataFrame({'temp': [1, 2, 3], 'dt': [100, 200, 300]})}
+def test_missing_weather_datapoints(dts_mock, load_weather_file_mock):
+    load_weather_file_mock.return_value = pd.DataFrame({'temp': [1, 2, 3], 'dt': [100, 200, 300]})
     dts_mock.return_value = pd.DataFrame({'dt': [100, 200, 300, 400]})
     city = Mock()
 
-    result = rdq.missing_temps(city, 'temp')
+    result = rdq.missing_weather_datapoints(city)
     assert len(result) == 1
     assert result.iloc[0]['dt'] == 400
 
 
-@patch('roboclimate.data_quality.load_csv_files')
+@patch('roboclimate.data_quality.load_weather_file')
 @patch('roboclimate.data_quality.dts')
-def test_missing_temps_without_dates(dts_mock, load_csv_files_mock):
-    load_csv_files_mock.return_value = {"true_temp_df": pd.DataFrame({'temp': [1, 2, 3], 'dt': [100, 200, 300]})}
+def test_missing_weather_datapoints_without_dates(dts_mock, load_weather_file_mock):
+    load_weather_file_mock.return_value = pd.DataFrame({'temp': [1, 2, 3], 'dt': [100, 200, 300]})
     dts_mock.return_value = pd.DataFrame({'dt': [100, 200, 300, 400]})
     start_dt = dt.datetime(2020, 11, 28, 3, 0, 0, tzinfo=dt.timezone.utc)
     city = rdq.City(1, 'xx', start_dt)
 
-    rdq.missing_temps(city, 'temp')
+    rdq.missing_weather_datapoints(city)
     dts_mock.assert_called_once_with(start_dt, ANY)
 
 
-@patch('roboclimate.data_quality.load_csv_files')
+@patch('roboclimate.data_quality.load_weather_file')
 @patch('roboclimate.data_quality.dts')
-def test_missing_temps_with_dates(dts_mock, load_csv_files_mock):
-    load_csv_files_mock.return_value = {"true_temp_df": pd.DataFrame({'temp': [1, 2, 3], 'dt': [100, 200, 300]})}
+def test_missing_weather_datapoints_with_dates(dts_mock, load_weather_file_mock):
+    load_weather_file_mock.return_value = pd.DataFrame({'temp': [1, 2, 3], 'dt': [100, 200, 300]})
     dts_mock.return_value = pd.DataFrame({'dt': [100, 200, 300, 400]})
     start_dt = dt.datetime(2020, 11, 28, 3, 0, 0, tzinfo=dt.timezone.utc)
     end_dt = dt.datetime(2020, 11, 28, 4, 0, 0, tzinfo=dt.timezone.utc)
     city = Mock()
 
-    rdq.missing_temps(city, 'temp', start_dt, end_dt)
+    rdq.missing_weather_datapoints(city, start_dt, end_dt)
     dts_mock.assert_called_once_with(start_dt, end_dt)
 
 
-@patch('roboclimate.data_quality.load_csv_files')
+@patch('roboclimate.data_quality.load_weather_file')
 @patch('roboclimate.data_quality.dts')
-def test_unexpected_temps(dts_mock, load_csv_files_mock):
-    load_csv_files_mock.return_value = {"true_temp_df": pd.DataFrame({'temp': [1, 2, 3], 'dt': [100, 200, 301]})}
-    dts_mock.return_value = pd.DataFrame({'dt': [100, 200, 300]})
+def test_unexpected_weather_datapoints(dts_mock, load_weather_file_mock):
+    start_date = dt.datetime(2023, 3, 16, 9, 0, 0, tzinfo=dt.timezone.utc)
+    # 1679043600 = 2023-03-17 09:00:00
+    load_weather_file_mock.return_value = pd.DataFrame({'temp': [1, 2, 3], 'dt': [100, 1679043600, 1679043601]})
+    dts_mock.return_value = pd.DataFrame({'dt': [1, 2, 1679043600]})
     city = Mock()
 
-    result = rdq.unexpected_temps(city, 'temp')
+    result = rdq.unexpected_weather_datapoints(city, start_date)
     assert len(result) == 1
     assert result.iloc[0]['temp'] == 3
-    assert result.iloc[0]['dt'] == 301
+    assert result.iloc[0]['dt'] == 1679043601
 
 
 @patch('roboclimate.data_quality.load_csv_files')
