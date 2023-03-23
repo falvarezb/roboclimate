@@ -1,3 +1,9 @@
+"""Data Explorer
+
+    Functions to explore captured data:  missing values, etc
+"""
+
+
 import datetime as dt
 import pandas as pd
 import roboclimate.config as rconf
