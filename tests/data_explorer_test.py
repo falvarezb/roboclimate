@@ -1,7 +1,7 @@
 from unittest.mock import Mock, patch, ANY
 import datetime as dt
 import pandas as pd
-import roboclimate.data_quality as rdq
+import data_explorer as rdq
 
 
 @patch('roboclimate.data_quality.load_weather_file')
