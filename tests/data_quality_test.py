@@ -63,18 +63,18 @@ def test_temps_without_five_forecasts(dts_mock, load_csv_files_mock):
     dts_mock.return_value = pd.DataFrame({'dt': [100, 200, 300, 400]})
     city = Mock()
 
-    result = rdq.temps_without_five_forecasts(city, 'temp')
+    result = rdq.weather_datapoints_without_five_forecasts(city, 'temp')
     assert len(result) == 1
     assert result.iloc[0]['dt'] == 400
 
 
-@patch('roboclimate.data_quality.load_csv_files')
+@patch('roboclimate.data_quality.load_forecast_file')
 @patch('roboclimate.data_quality.dts')
-def test_missing_forecasts(dts_mock, load_csv_files_mock):
-    load_csv_files_mock.return_value = {"forecast_temp_df": pd.DataFrame({'today': ['2020-12-01', '2020-12-02']})}
+def test_missing_forecast_datapoints(dts_mock, load_forecast_file_mock):
+    load_forecast_file_mock.return_value = pd.DataFrame({'today': ['2020-12-01', '2020-12-02']})
     dts_mock.return_value = pd.DataFrame({'today': ['2020-12-01', '2020-12-02', '2020-12-03']})
     city = Mock()
 
-    result = rdq.missing_forecasts(city, 'temp')
+    result = rdq.missing_forecast_datapoints(city)
     assert len(result) == 1
     assert result[0] == '2020-12-03'

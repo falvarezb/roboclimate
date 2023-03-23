@@ -1,4 +1,3 @@
-from collections import namedtuple
 import datetime as dt
 import pandas as pd
 import roboclimate.config as rconf
@@ -29,7 +28,7 @@ def dts(start: dt.datetime, end: dt.datetime = dt.datetime.now()):
 
 def missing_weather_datapoints(city: City, start_dt: dt.datetime = None, end_dt: dt.datetime = dt.datetime.now()) -> pd.DataFrame:
     """
-    Finds datetimes for which no weather data was recorded    
+    Finds datetimes when no weather data was recorded    
     """
     start_dt = start_dt if start_dt else city.firstMeasurement
     df = load_weather_file(city)
@@ -50,11 +49,11 @@ def unexpected_weather_datapoints(city: City, start_dt: dt.datetime = None, end_
     return merged[merged['_merge'] == 'left_only']  # .groupby('today_x').count()['_merge']
 
 
-def temps_without_five_forecasts(city: City, weather_variable: str, start_dt: dt.datetime = None, end_dt: dt.datetime = dt.datetime.now()) -> pd.DataFrame:
+def weather_datapoints_without_five_forecasts(city: City, weather_variable: str, start_dt: dt.datetime = None, end_dt: dt.datetime = dt.datetime.now()) -> pd.DataFrame:
     """
-    Finds dts for which no all five forecasts were made
+    Finds dts for which not all five forecasts were made
 
-    Given that dts without the five forecasts are omitted when constructing 'join_data_df',
+    Given that dts without the five forecasts are excluded when constructing 'join_data_df',
     said dts can be found by doing the right join between the DataFrames: 'join_data_df' and 'dts'
     """
     start_dt = start_dt if start_dt else city.firstMeasurement
@@ -63,20 +62,22 @@ def temps_without_five_forecasts(city: City, weather_variable: str, start_dt: dt
     return merged[merged['_merge'] == 'right_only']  # .groupby('today_y').count()['_merge']
 
 
-def missing_forecasts(city: City, weather_variable: str, start_dt: dt.datetime = None, end_dt: dt.datetime = dt.datetime.now()) -> pd.DataFrame:
+def missing_forecast_datapoints(city: City, start_dt: dt.datetime = None, end_dt: dt.datetime = dt.datetime.now()) -> pd.DataFrame:
     """
-    Finds days when no forecast was made
-    Returns the right join between the DataFrames: 'forecast_temp_df' and 'dts'
+    Finds days when no forecast was recorded (everyday day 40 forecast datapoints are recorded: 5 days * 8 datetimes/day)    
     """
     start_dt = start_dt if start_dt else city.firstMeasurement
-    files = load_csv_files(city, weather_variable)
-    merged = files['forecast_temp_df'].merge(dts(start_dt, end_dt), how='right', on='today', indicator=True)
+    df = load_forecast_file(city)
+    merged = df.merge(dts(start_dt, end_dt), how='right', on='today', indicator=True)
     return merged[merged['_merge'] == 'right_only'].groupby('today').count().index.values
 
 
 if __name__ == "__main__":
     for city in rconf.cities.values():
         print(city.name)
-        start_dt = dt.datetime(2022, 1, 1, 0, 0, 0, tzinfo=dt.timezone.utc)
-        end_dt = dt.datetime(2023, 3, 21, 21, 0, 0, tzinfo=dt.timezone.utc)
-        print(unexpected_weather_datapoints(city))
+        start_dt = dt.datetime(2023, 3, 9, 0, 0, 0, tzinfo=dt.timezone.utc)
+        end_dt = dt.datetime(2023, 3, 20, 21, 0, 0, tzinfo=dt.timezone.utc)
+        # print(missing_weather_datapoints(city, start_dt, end_dt))
+        # print(unexpected_weather_datapoints(city, start_dt, end_dt))
+        # print(missing_forecast_datapoints(city, start_dt, end_dt))
+        # print(weather_datapoints_without_five_forecasts(city, 'temp', start_dt, end_dt))
