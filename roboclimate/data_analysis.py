@@ -129,7 +129,10 @@ def forecast_precision(joined_data, weather_variable):
     }
 
 
-def analyse_data():
+def select_date_range(df: pd.DataFrame, from_date: str = None, to_date: str = None) -> pd.DataFrame:
+    return (df if from_date is None or to_date is None else df[(df['today'] >= from_date) & (df['today'] <= to_date)])
+
+def analyse_data(from_date: str, to_date: str):
     # london_df = read_historical_data("london_weather_historical_data.csv")
 
     for city_name in config.cities.keys():
@@ -137,17 +140,22 @@ def analyse_data():
             # file pointers
             weather_file = util.csv_file_path(config.csv_folder, config.weather_resources[0], city_name)
             forecast_file = util.csv_file_path(config.csv_folder, config.weather_resources[1], city_name)
-            join_data_dict = join_true_values_and_forecast(load_data(weather_file), load_data(forecast_file))
+            
+            join_data_dict = join_true_values_and_forecast(select_date_range(load_data(weather_file), from_date, to_date), select_date_range(load_data(forecast_file), from_date, to_date))
 
             for _, weather_variable in config.weather_variables.items():
-                join_file = util.csv_file_path(config.csv_folder, "join", city_name, weather_variable)
-                metrics_file = util.csv_file_path(config.csv_folder, "metrics", city_name, weather_variable)
-                join_data_dict[weather_variable].to_csv(join_file, index=False)
-                # metrics = forecast_precision(join_data_df, london_df)
-                metrics = forecast_precision(join_data_dict[weather_variable], weather_variable)
-                pd.DataFrame(metrics).to_csv(metrics_file, index=False)
+                try:
+                    # file pointers
+                    join_file = util.csv_file_path(config.csv_folder, "join", city_name, weather_variable)
+                    metrics_file = util.csv_file_path(config.csv_folder, "metrics", city_name, weather_variable)
+                    
+                    join_data_dict[weather_variable].to_csv(join_file, index=False)                
+                    metrics = forecast_precision(join_data_dict[weather_variable], weather_variable)
+                    pd.DataFrame(metrics).to_csv(metrics_file, index=False)
+                except Exception:
+                    logger.error(f"Error while processing {weather_variable} for {city_name}", exc_info=True)
         except Exception:
-            logger.error(f"Error while processing {weather_variable} for {city_name}", exc_info=True)
+            logger.error(f"Error while processing {city_name}", exc_info=True)
 
 
 def main():
