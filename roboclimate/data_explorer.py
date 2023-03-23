@@ -1,6 +1,6 @@
 """Data Explorer
 
-    Functions to explore captured data:  missing values, etc
+    Functions to explore captured data:  missing values, intervals of captured data, etc
 """
 
 
@@ -10,11 +10,14 @@ import roboclimate.config as rconf
 from roboclimate.config import City
 import roboclimate.util as rutil
 
+
 def load_weather_file(city: City):
     return pd.read_csv(f"csv_files/weather_{city.name}.csv", dtype={'dt': 'int64'})
 
+
 def load_forecast_file(city: City):
     return pd.read_csv(f"csv_files/forecast_{city.name}.csv", dtype={'dt': 'int64'})
+
 
 def load_csv_files(city: City, weather_variable: str) -> dict:
     actual_value_df = pd.read_csv(f"csv_files/weather_{city.name}.csv", usecols=[weather_variable, 'dt', 'today'], dtype={'dt': 'int64'})
@@ -50,7 +53,7 @@ def unexpected_weather_datapoints(city: City, start_dt: dt.datetime = None, end_
     start_dt_ts = start_dt.timestamp()
     end_dt_ts = end_dt.timestamp()
     df = load_weather_file(city)
-    df = df[(df['dt'] >= start_dt_ts) & (df['dt'] < end_dt_ts) ]
+    df = df[(df['dt'] >= start_dt_ts) & (df['dt'] < end_dt_ts)]
     merged = df.merge(dts(start_dt, end_dt), how='left', on='dt', indicator=True)
     return merged[merged['_merge'] == 'left_only']  # .groupby('today_x').count()['_merge']
 
@@ -80,6 +83,22 @@ def missing_forecast_datapoints(city: City, start_dt: dt.datetime = None, end_dt
     return merged[merged['_merge'] == 'right_only'].groupby('today').count().index.values
 
 
+def data_intervals(city: City, weather_variable: str) -> list:
+    step_3hours = 3 * 60 * 60  # number of seconds in between datapoints
+    dts = load_csv_files(city, weather_variable)['join_data_df']['dt']
+    intervals = []
+    interval_left_side = dts[0]
+    left_index = 0
+    for i in range(1, len(dts)):
+        if dts[i] - dts[i - 1] != step_3hours:
+            intervals.append((left_index, dt.datetime.fromtimestamp(interval_left_side).isoformat(), i-1, dt.datetime.fromtimestamp(dts[i - 1]).isoformat()))
+            interval_left_side = dts[i]
+            left_index = i
+
+    intervals.append((left_index, dt.datetime.fromtimestamp(interval_left_side).isoformat(), i-1, dt.datetime.fromtimestamp(dts[i - 1]).isoformat()))
+    return intervals
+
+
 if __name__ == "__main__":
     for city in rconf.cities.values():
         print(city.name)
@@ -89,4 +108,5 @@ if __name__ == "__main__":
         # print(unexpected_weather_datapoints(city, start_dt, end_dt))
         # print(missing_forecast_datapoints(city, start_dt, end_dt))
         # print(weather_datapoints_without_five_forecasts(city, 'temp', start_dt, end_dt))
-    weather_datapoints_without_five_forecasts(rconf.cities['madrid'], 'temp', end_dt = end_dt).to_csv('./madrid_missing.csv')
+    # weather_datapoints_without_five_forecasts(rconf.cities['madrid'], 'temp', end_dt = end_dt).to_csv('./madrid_missing.csv')
+    print("\n\n".join(map(lambda x: f"{x[0]}:{x[2]} -- {x[1]}:{x[3]}", data_intervals(rconf.cities['madrid'], 'temp'))))
