@@ -2,7 +2,6 @@
 import logging
 from math import sqrt
 import pandas as pd
-import numpy as np
 from sklearn.metrics import mean_absolute_error as mae
 from sklearn.metrics import mean_squared_error as mse
 from sklearn.metrics import median_absolute_error as medae
@@ -20,15 +19,15 @@ def load_data(file):
 #     return pd.read_csv(file, usecols=[weather_variable, 'dt', 'today'], dtype={'dt': 'int64'})
 
 
-def join_true_values_and_forecast(true_values_df, forecast_df):
+def join_actual_values_and_forecast(actual_values_df, forecast_df):
     """
 
     Joins the records from weather.csv and forecast.csv by the field dt, effectively
-    matching the true values of the weather variables with the forecast done over the 5 previous days.
+    matching the actual values of the weather variables with the forecast done over the 5 previous days.
     If the forecast of any of the 5 previous days is not available, the entire record is discarded
 
-    true_values_df
-    ------------
+    actual_values_df
+    -----------------
 
       temp    pressure  .....    dt   today
     0   0.5   1010               100  2019-11-30
@@ -49,7 +48,12 @@ def join_true_values_and_forecast(true_values_df, forecast_df):
     7   4.0    1000                 200     2019-11-26
     8   3.0    1030                 200     2019-11-28
     9   1.0    1000                 200     2019-11-25
-
+    10  2.1    1005                 300     2019-11-29
+    11  2.2    1006                 300     2019-11-27
+    12  2.3    1007                 300     2019-11-26
+    13  2.4    1008                 300     2019-11-28
+    14  2.5    1009                 300     2019-11-25
+    
 
     result
     ------
@@ -69,11 +73,11 @@ def join_true_values_and_forecast(true_values_df, forecast_df):
 
     headers = ['t5', 't4', 't3', 't2', 't1']
     # discarding empty values
-    true_values_df.dropna(inplace=True)
+    actual_values_df.dropna(inplace=True)
     # initializing dataframes
     dfs_dict = {weather_variable: pd.DataFrame() for _, weather_variable in config.weather_variables.items()}
 
-    for row in true_values_df.iterrows():
+    for row in actual_values_df.iterrows():
         try:
             # 1st row (dt=100)
             # -----------------
@@ -132,7 +136,7 @@ def forecast_precision(joined_data, weather_variable):
 def select_date_range(df: pd.DataFrame, from_date: str = None, to_date: str = None) -> pd.DataFrame:
     return (df if from_date is None or to_date is None else df[(df['today'] >= from_date) & (df['today'] <= to_date)])
 
-def analyse_data(from_date: str, to_date: str):
+def analyse_data(from_date: str = None, to_date: str = None):
     # london_df = read_historical_data("london_weather_historical_data.csv")
 
     for city_name in config.cities.keys():
@@ -141,7 +145,7 @@ def analyse_data(from_date: str, to_date: str):
             weather_file = util.csv_file_path(config.csv_folder, config.weather_resources[0], city_name)
             forecast_file = util.csv_file_path(config.csv_folder, config.weather_resources[1], city_name)
             
-            join_data_dict = join_true_values_and_forecast(select_date_range(load_data(weather_file), from_date, to_date), select_date_range(load_data(forecast_file), from_date, to_date))
+            join_data_dict = join_actual_values_and_forecast(select_date_range(load_data(weather_file), from_date, to_date), select_date_range(load_data(forecast_file), from_date, to_date))
 
             for _, weather_variable in config.weather_variables.items():
                 try:

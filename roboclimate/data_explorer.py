@@ -61,6 +61,8 @@ def weather_datapoints_without_five_forecasts(city: City, weather_variable: str,
 
     Given that dts without the five forecasts are excluded when constructing 'join_data_df',
     said dts can be found by doing the right join between the DataFrames: 'join_data_df' and 'dts'
+
+    So based on the above implementation, in reality this function returns missing weather datapoints + weather datapoints without 5 forecasts
     """
     start_dt = start_dt if start_dt else city.firstMeasurement
     files = load_csv_files(city, weather_variable)
@@ -82,8 +84,9 @@ if __name__ == "__main__":
     for city in rconf.cities.values():
         print(city.name)
         start_dt = dt.datetime(2023, 3, 9, 0, 0, 0, tzinfo=dt.timezone.utc)
-        end_dt = dt.datetime(2023, 3, 20, 21, 0, 0, tzinfo=dt.timezone.utc)
+        end_dt = dt.datetime(2023, 3, 21, 0, 0, 0, tzinfo=dt.timezone.utc)
         # print(missing_weather_datapoints(city, start_dt, end_dt))
         # print(unexpected_weather_datapoints(city, start_dt, end_dt))
         # print(missing_forecast_datapoints(city, start_dt, end_dt))
         # print(weather_datapoints_without_five_forecasts(city, 'temp', start_dt, end_dt))
+    weather_datapoints_without_five_forecasts(rconf.cities['madrid'], 'temp', end_dt = end_dt).to_csv('./madrid_missing.csv')

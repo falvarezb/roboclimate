@@ -2,8 +2,8 @@
 
 Module to implement the mean absolute scaled error (https://en.wikipedia.org/wiki/Mean_absolute_scaled_error)
 
-mean absolute scaled error (mase) is a measure of the precision of a model compared to the naive forecast
-the naive forecast consists in assuming that the next value is the same as the one of the prior period.
+Mean absolute scaled error (mase) is a measure of the precision of a model compared to the naive forecast
+The naive forecast consists in assuming that the next value is the same as the one of the prior period.
 
 However, "prior period" may mean different things depending on whether the time series under consideration is
 seasonal or non-seasonal.
@@ -13,7 +13,10 @@ of the previous month, year, etc.
 This module contain functions to calculate both seasonal and non-seasonal mase.
 
 An additional problem to contend with is data quality: if there are missing values in the time series, it may not be
-possible to get the value corresponding to the prior period.   
+possible to get the value corresponding to the prior period. 
+The implementation of this module rests on the content of the 'join_*.csv' files, therefore any 'hole' in those files 
+will have an impact on the calculation of the mase. The function 'data_explorer.weather_datapoints_without_five_forecasts'
+can be used to identify the 'holes' in 'join_*.csv' files.
 
 """
 
