@@ -20,17 +20,15 @@ can be used to identify the 'holes' in 'join_*.csv' files.
 
 """
 
-
 from datetime import datetime, timezone
-from sklearn.metrics import mean_absolute_error as mae
+# from sklearn.metrics import mean_absolute_error as mae
 import numpy as np
 from roboclimate.util import n_years_ago, remove_29_feb
 import roboclimate.config as rconf
 
 
 
-
-def mean_absolute_scaled_error(real_data, predicted_data, period=1) -> float:
+def mean_absolute_scaled_error(real_data, predicted_data, dts, period=1) -> float:
     """
     This function is the basic building block of this module.
     By default this function takes as prior period the previous value in the time series, that is the temperature corresponding to 3 hours ago.
@@ -40,7 +38,7 @@ def mean_absolute_scaled_error(real_data, predicted_data, period=1) -> float:
 
     real_data: array
 
-        array of true values (recorded at 3-hour intervals)
+        array of actual values recorded at 3-hour intervals
 
     predicted_data: array
 
@@ -62,10 +60,30 @@ def mean_absolute_scaled_error(real_data, predicted_data, period=1) -> float:
         elements in the data series), np.nan is returned
 
     """
+    step_3hours = 3 * 60 * 60  # number of seconds in between datapoints
 
     if len(real_data) <= period:
         return np.nan
-    return mae(real_data[period:], predicted_data[period:]) / mae(real_data[period:], real_data[:-period])
+    
+    period_in_seconds = step_3hours * period
+    forecast_zip = zip(real_data[period:], predicted_data[period:])
+    naive_forecast_zip = zip(real_data[period:], real_data[:-period])
+    dt_zip = zip(dts[period:], dts[:-period])
+    mae1 = 0
+    mae2 = 0
+
+    for dt_current, dt_previous in dt_zip:
+        real_value, forecast_value = next(forecast_zip)
+        _, naive_forecast_value = next(naive_forecast_zip)
+        if dt_current-dt_previous == period_in_seconds:            
+            mae1 += abs(real_value-forecast_value)            
+            mae2 += abs(real_value-naive_forecast_value)
+
+    try:
+        return mae1/mae2
+    except ZeroDivisionError:
+        return np.nan
+    # return mae(real_data[period:], predicted_data[period:], dts) / mae(real_data[period:], real_data[:-period], dts)
 
 
 
@@ -163,4 +181,4 @@ def mean_absolute_scaled_error_tx(joined_data, weather_variable) -> 'list[float]
 
         if a model cannot be calculated becase there are no enough elements in the data series, np.nan is returned for said model   
     """
-    return [mean_absolute_scaled_error(joined_data[weather_variable], joined_data[f't{i}'], i * rconf.day_factor) for i in range(5, 0, -1)]
+    return [mean_absolute_scaled_error(joined_data[weather_variable], joined_data[f't{i}'], joined_data['dt'], i * rconf.day_factor) for i in range(5, 0, -1)]

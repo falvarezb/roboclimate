@@ -127,8 +127,8 @@ def forecast_precision(joined_data, weather_variable):
         "mae": [mae(joined_data[weather_variable], joined_data[f't{i}']) for i in range(5, 0, -1)],
         "rmse": [sqrt(mse(joined_data[weather_variable], joined_data[f't{i}'])) for i in range(5, 0, -1)],
         "medae": [medae(joined_data[weather_variable], joined_data[f't{i}']) for i in range(5, 0, -1)],
-        "mase": masetx(joined_data, weather_variable),
-        "mase1y": mase1y(joined_data, weather_variable)
+        "mase": masetx(joined_data, weather_variable)
+        # "mase1y": mase1y(joined_data, weather_variable)
     }
 
 
@@ -188,7 +188,8 @@ def analyse_city_data(city_name: str, intervals: list = None):
 
 def main():
     logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level='INFO')
-    analyse_city_data('madrid', [(2328,2840)])
+    # analyse_city_data('madrid', [(2328,2840)])
+    analyse_data()
     logger.info('END')
 
 
