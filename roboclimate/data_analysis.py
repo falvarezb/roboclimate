@@ -117,7 +117,7 @@ def join_actual_values_and_forecast(actual_values_df, forecast_df):
             # else:
             #     logger.warning(f"number of {weather_variable} {len(temps)} != 5 for timestamp {row[1]['dt']}")
         except Exception:
-            logger.error(f"Error while processing row \n {row[1]}", exc_info=True)
+            logger.error("Error while processing row \n %s", row[1], exc_info=True)
 
     return dfs_dict
 
@@ -143,7 +143,7 @@ def select_intervals(join_data_df: pd.DataFrame, intervals: list) -> pd.DataFram
 
 
 def analyse_data(intervals: list = None):
-    for city_name in config.cities.keys():
+    for city_name in config.cities:
         analyse_city_data(city_name, intervals)
 
 
@@ -181,9 +181,9 @@ def analyse_city_data(city_name: str, intervals: list = None):
                 metrics = forecast_precision(selected_df, weather_variable)
                 pd.DataFrame(metrics).to_csv(metrics_file, index=False)
             except Exception:
-                logger.error(f"Error while processing {weather_variable} for {city_name}", exc_info=True)
+                logger.error("Error while processing %s for %s", weather_variable, city_name, exc_info=True)
     except Exception:
-        logger.error(f"Error while processing {city_name}", exc_info=True)
+        logger.error("Error while processing %s", city_name, exc_info=True)
 
 
 def main():
