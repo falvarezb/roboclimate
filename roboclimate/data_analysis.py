@@ -53,7 +53,7 @@ def join_actual_values_and_forecast(actual_values_df, forecast_df):
     12  2.3    1007                 300     2019-11-26
     13  2.4    1008                 300     2019-11-28
     14  2.5    1009                 300     2019-11-25
-    
+
 
     result
     ------
@@ -99,20 +99,20 @@ def join_actual_values_and_forecast(actual_values_df, forecast_df):
                     # 0     4.0 1.5 2.0 3.0 1.0
                     #
                     tees_df = pd.DataFrame({i: [j] for i, j in zip(headers, transposed_forecast_df.loc[weather_variable])}, index=[row[0]])
-                    
+
                     # weather_variable = temp
                     # ------------------------
                     #     temp  dt   today
                     # 0   0.5   100  2019-11-30
-                    # 
+                    #
                     weather_variable_df = pd.DataFrame({weather_variable: [row[1][weather_variable]], 'dt': [
                                                        row[1]['dt']], 'today': [row[1]['today']]}, index=[row[0]])
-                    
+
                     # weather_variable = temp
                     # ------------------------
                     #     temp  dt   today      t5  t4  t3  t2  t1
-                    # 0   0.5   100  2019-11-30 4.0 1.5 2.0 3.0 1.0                    
-                    # 
+                    # 0   0.5   100  2019-11-30 4.0 1.5 2.0 3.0 1.0
+                    #
                     joined_df = df.append(weather_variable_df.join(tees_df))
                     dfs_dict[weather_variable] = joined_df
             # else:
@@ -133,39 +133,48 @@ def forecast_precision(joined_data, weather_variable):
     }
 
 
-def select_date_range(df: pd.DataFrame, from_date: str = None, to_date: str = None) -> pd.DataFrame:
-    return (df if from_date is None or to_date is None else df[(df['today'] >= from_date) & (df['today'] <= to_date)])
+def select_intervals(join_data_df: pd.DataFrame, intervals: list) -> pd.DataFrame:
+    if intervals is None:
+        return join_data_df
+    else:
+        df = join_data_df
+        for interval in intervals:
+            df = df.iloc[interval[0]:interval[1]]
+        return df
 
-def analyse_data(from_date: str = None, to_date: str = None):
-    # london_df = read_historical_data("london_weather_historical_data.csv")
 
+def analyse_data(intervals: list = None):
     for city_name in config.cities.keys():
-        try:
-            # file pointers
-            weather_file = util.csv_file_path(config.csv_folder, config.weather_resources[0], city_name)
-            forecast_file = util.csv_file_path(config.csv_folder, config.weather_resources[1], city_name)
-            
-            join_data_dict = join_actual_values_and_forecast(select_date_range(load_data(weather_file), from_date, to_date), select_date_range(load_data(forecast_file), from_date, to_date))
+        analyse_city_data(city_name, intervals)
 
-            for _, weather_variable in config.weather_variables.items():
-                try:
-                    # file pointers
-                    join_file = util.csv_file_path(config.csv_folder, "join", city_name, weather_variable)
-                    metrics_file = util.csv_file_path(config.csv_folder, "metrics", city_name, weather_variable)
-                    
-                    join_data_dict[weather_variable].to_csv(join_file, index=False)                
-                    metrics = forecast_precision(join_data_dict[weather_variable], weather_variable)
-                    pd.DataFrame(metrics).to_csv(metrics_file, index=False)
-                except Exception:
-                    logger.error(f"Error while processing {weather_variable} for {city_name}", exc_info=True)
-        except Exception:
-            logger.error(f"Error while processing {city_name}", exc_info=True)
+
+def analyse_city_data(city_name: str, intervals: list = None):
+    try:
+        # file pointers
+        weather_file = util.csv_file_path(config.csv_folder, config.weather_resources[0], city_name)
+        forecast_file = util.csv_file_path(config.csv_folder, config.weather_resources[1], city_name)
+
+        join_data_dict = join_actual_values_and_forecast(load_data(weather_file), load_data(forecast_file))
+
+        for _, weather_variable in config.weather_variables.items():
+            try:
+                # file pointers
+                join_file = util.csv_file_path(config.csv_folder, "join", city_name, weather_variable)
+                metrics_file = util.csv_file_path(config.csv_folder, "metrics", city_name, weather_variable)
+
+                selected_df = select_intervals(join_data_dict[weather_variable], intervals)
+                selected_df.to_csv(join_file, index=False)
+                metrics = forecast_precision(selected_df, weather_variable)
+                pd.DataFrame(metrics).to_csv(metrics_file, index=False)
+            except Exception:
+                logger.error(f"Error while processing {weather_variable} for {city_name}", exc_info=True)
+    except Exception:
+        logger.error(f"Error while processing {city_name}", exc_info=True)
 
 
 def main():
     logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level='INFO')
-    # for _, weather_variable in config.weather_variables.items():
-    analyse_data()
+    analyse_city_data('madrid', [(2328,2840)])
     logger.info('END')
 
 

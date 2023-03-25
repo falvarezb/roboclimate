@@ -1,6 +1,6 @@
 """Data Explorer
 
-    Functions to explore captured data:  missing values, intervals of captured data, etc
+    Functions to explore captured data:  missing values, data intervals, etc
 """
 
 
@@ -84,6 +84,22 @@ def missing_forecast_datapoints(city: City, start_dt: dt.datetime = None, end_dt
 
 
 def data_intervals(city: City, weather_variable: str) -> list:
+    """Returns list of data intervals from a given 'join_data' file
+
+    An interval is a sequence of contiguous datapoints (two datapoints are contiguous if
+    their 'dt' values differ by 3h, 3*60*60 seconds)
+
+    Args:
+        city (City):
+        weather_variable (str):
+
+    Returns:
+        list: list of intervals, each interval is represented by a tuple, the values of a tuple t are:
+        t[0] --> position of the first row of the interval in the join_data dataframe
+        t[1] --> datetime (iso format) of the beginning of the interval
+        t[2] --> position of the last row of the interval in the join_data dataframe
+        t[3] --> datetime (iso format) of the end of the interval
+    """
     step_3hours = 3 * 60 * 60  # number of seconds in between datapoints
     dts = load_csv_files(city, weather_variable)['join_data_df']['dt']
     intervals = []
@@ -98,6 +114,15 @@ def data_intervals(city: City, weather_variable: str) -> list:
     intervals.append((left_index, dt.datetime.fromtimestamp(interval_left_side).isoformat(), i-1, dt.datetime.fromtimestamp(dts[i - 1]).isoformat()))
     return intervals
 
+def print_intervals(intervals: list):
+    """Print list of intervals in a user-friendly manner
+
+    0:895 -- 2020-06-16T01:00:00:2020-10-05T22:00:00
+    896:2255 -- 2020-10-11T01:00:00:2021-03-29T22:00:00
+    2256:2319 -- 2021-04-04T01:00:00:2021-04-11T22:00:00
+    """
+    print("\n".join(map(lambda x: f"{x[0]}:{x[2]} -- {x[1]}:{x[3]}", intervals)))
+
 
 if __name__ == "__main__":
     for city in rconf.cities.values():
@@ -108,5 +133,5 @@ if __name__ == "__main__":
         # print(unexpected_weather_datapoints(city, start_dt, end_dt))
         # print(missing_forecast_datapoints(city, start_dt, end_dt))
         # print(weather_datapoints_without_five_forecasts(city, 'temp', start_dt, end_dt))
-    # weather_datapoints_without_five_forecasts(rconf.cities['madrid'], 'temp', end_dt = end_dt).to_csv('./madrid_missing.csv')
-    print("\n\n".join(map(lambda x: f"{x[0]}:{x[2]} -- {x[1]}:{x[3]}", data_intervals(rconf.cities['madrid'], 'temp'))))
+    # weather_datapoints_without_five_forecasts(rconf.cities['madrid'], 'temp', end_dt = end_dt).to_csv('./madrid_missing.csv')    
+    print_intervals(data_intervals(rconf.cities['madrid'], 'temp'))
