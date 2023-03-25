@@ -164,8 +164,10 @@ The notebook is exported to html and published on an NGINX server on the path **
 ## Tests
 
 ```
-pytest --cov-report html --cov=roboclimate tests/
+pytest --cov-branch --cov-report html --cov=roboclimate tests/
 ```
+
+Coverage report is generated in the folder `htmlcov`
 
 ## Deployment
 
