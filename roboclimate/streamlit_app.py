@@ -119,6 +119,77 @@ metric_option = st.sidebar.selectbox(
 
 
 st.title('Roboclimate')
+
+col1, col2 = st.columns([3,1])
+with col1:
+    st.markdown(
+        """
+        Have you ever complained about the inaccuracy of the weather forecast? If so, this page is for you. 
+        
+        Here we analyse the precision of a forecast model based on the values of multiple weather variables 
+        - temperature
+        - pressure
+        - humidity
+        - wind speed 
+        - wind direction
+        
+        measured in 10 different cities across the world:
+        - London
+        - Madrid
+        - Sydney
+        - New York
+        - Sao Paulo
+        - Moscow
+        - Tokyo
+        - Nairobi
+        - Lagos
+        - Asuncion        
+        """
+    )
+
+
+    st.header('Methodology')
+    st.markdown(
+        """
+        Weather measurements are taken at 3-hour intervals from midnight until 9pm every day, totalling 8 datapoints per day.
+        Also every day, we obtain the forecast for the next 5 days (resulting in new 5*8 datapoints per day)
+
+        This way it is possible to build a dataset where each actual weather measurement can be compared to its values
+        forecasted during the previous 5 days. Those values will be denoted as`t1` (forecast made 1 day ago), 
+        `t2` (forecast made 2 days ago) and so on up to `t5`.
+
+        Weather measurements and forecasts are provided by [OpenWeather's API](https://openweathermap.org)
+        """
+    )
+    st.subheader('Metrics')
+    st.markdown(
+        """
+        In order to evaluate the accuracy of the forecasts, we'll consider the following metrics.
+
+        ##### Mean Absolute Error (MAE)
+        Average of the absolute value of the errors ('errors' are the difference between real and forecasted values)
+
+        ##### Root Mean Squared Error (RMSE)
+
+        Square root of the average of the square of the errors. It weighs outliers more heavily than MAE as a result of the squaring of each term.
+
+        ##### Mean Absolute Scaled Error (MASE)
+
+        MASE is a measure of the precision of a model compared to the naive forecast.
+        It is calculated as the MAE of the forecast divided by the MAE of the naive forecast.
+
+        Therefore, `MASE > 1` indicates that the naive method performs better than the model it is compared to. 
+
+        The naive forecast consists in assuming that the next value is the same as the one of the prior period.
+
+        However, "prior period" may mean different things depending on whether the time series under consideration is
+        seasonal or non-seasonal.
+        For instance, for the temperature forecast, we may consider as prior value the temperature on the same day and time
+        of the previous month, year, etc. In our case, the most natural choice is to take the actual value of the corresponding 
+        weather variable when the forecast was made, e.g. for mase(t5) we'd take the value measured 5 days ago.
+        """
+    )
+
 st.header('Forecast analysis by city')
 
 
