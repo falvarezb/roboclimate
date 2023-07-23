@@ -3,7 +3,7 @@
     Functions to explore captured data:  missing values, data intervals, etc
 """
 
-
+from typing import List, Tuple
 import datetime as dt
 import pandas as pd
 import roboclimate.config as rconf
@@ -83,7 +83,7 @@ def missing_forecast_datapoints(city: City, start_dt: dt.datetime = None, end_dt
     return merged[merged['_merge'] == 'right_only'].groupby('today').count().index.values
 
 
-def data_intervals(city: City, weather_variable: str) -> list:
+def data_intervals(city: City, weather_variable: str) -> List[Tuple[int, str, int, str]]:
     """Returns list of data intervals from a given 'join_data' file
 
     An interval is a sequence of contiguous datapoints (two datapoints are contiguous if
@@ -114,12 +114,12 @@ def data_intervals(city: City, weather_variable: str) -> list:
     intervals.append((left_index, dt.datetime.fromtimestamp(interval_left_side).isoformat(), i-1, dt.datetime.fromtimestamp(dts[i - 1]).isoformat()))
     return intervals
 
-def print_intervals(intervals: list):
+def print_intervals(intervals: List[Tuple[int, str, int, str]]):
     """Print list of intervals in a user-friendly manner
 
-    0:895 -- 2020-06-16T01:00:00:2020-10-05T22:00:00
-    896:2255 -- 2020-10-11T01:00:00:2021-03-29T22:00:00
-    2256:2319 -- 2021-04-04T01:00:00:2021-04-11T22:00:00
+    0:895 || 2020-06-16T01:00:00 -- 2020-10-05T22:00:00
+    896:2255 || 2020-10-11T01:00:00 -- 2021-03-29T22:00:00
+    2256:2319 || 2021-04-04T01:00:00 -- 2021-04-11T22:00:00
     """
     print("\n".join(map(lambda x: f"{x[0]}:{x[2]} || {x[1]} -- {x[3]}", intervals)))
 

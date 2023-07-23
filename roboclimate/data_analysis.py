@@ -1,4 +1,5 @@
 
+from typing import List, Tuple
 import logging
 from math import sqrt
 import pandas as pd
@@ -132,23 +133,14 @@ def forecast_precision(joined_data, weather_variable):
     }
 
 
-def select_intervals(join_data_df: pd.DataFrame, intervals: list) -> pd.DataFrame:
-    if intervals is None:
-        return join_data_df
-    else:
-        df = join_data_df
-        for interval in intervals:
-            df = df.iloc[interval[0]:interval[1]]
-        return df
+def select_intervals(join_data_df: pd.DataFrame, intervals: List[Tuple[int, int]]) -> pd.DataFrame:
+    df = join_data_df
+    for interval in intervals:
+        df = df.iloc[interval[0]:interval[1]]
+    return df
 
-
-def analyse_data(intervals: list = None):
-    for city_name in config.cities:
-        analyse_city_data(city_name, intervals)
-
-
-def analyse_city_data(city_name: str, intervals: list = None):
-    """Calculates metrics corresponding to the given city and intervals
+def analyse_city_data(city_name: str, intervals: List[Tuple[int, int]] = []):
+    """Calculates metrics corresponding to the given city in the specified intervals
 
     Two file types are generated for each weather attribute: join_{city}.csv and
     metrics_{city}.csv.
@@ -186,11 +178,15 @@ def analyse_city_data(city_name: str, intervals: list = None):
         logger.error("Error while processing %s", city_name, exc_info=True)
 
 
+def analyse_data(intervals: List[Tuple[int, int]] = []):
+    for city_name in config.cities:
+        analyse_city_data(city_name, intervals)
+
 def main():
     logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level='INFO')
-    analyse_city_data('london', None)
+    # analyse_city_data('london', None)
     # analyse_city_data('madrid', [(2328,2840)])
-    # analyse_data()
+    analyse_data()
     logger.info('END')
 
 
