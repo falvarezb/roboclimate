@@ -1,4 +1,6 @@
-"""Module with functions to analyse the data collected by the weather and forecast spiders
+"""Data Analysis
+
+Module with functions to analyse the data collected by the weather and forecast spiders
 
 For each weather variable and each city, data is analysed to calculate metrics about the accuracy of the forecasts.
 
