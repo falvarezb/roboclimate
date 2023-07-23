@@ -71,8 +71,6 @@ def join_actual_values_and_forecast(actual_values_df, forecast_df):
     """
 
     headers = ['t5', 't4', 't3', 't2', 't1']
-    # discarding empty values
-    actual_values_df.dropna(inplace=True)
     # initializing dataframes
     dfs_dict = {weather_variable: pd.DataFrame() for _, weather_variable in config.weather_variables.items()}
 
@@ -112,8 +110,10 @@ def join_actual_values_and_forecast(actual_values_df, forecast_df):
                     #     temp  dt   today      t5  t4  t3  t2  t1
                     # 0   0.5   100  2019-11-30 4.0 1.5 2.0 3.0 1.0
                     #
-                    joined_df = df.append(weather_variable_df.join(tees_df))
-                    dfs_dict[weather_variable] = joined_df
+                    joined_df = weather_variable_df.join(tees_df)
+                    # discarding row if there is any empty value
+                    joined_df.dropna(inplace=True)
+                    dfs_dict[weather_variable] = df.append(joined_df)
             # else:
             #     logger.warning(f"number of {weather_variable} {len(temps)} != 5 for timestamp {row[1]['dt']}")
         except Exception:
@@ -188,8 +188,9 @@ def analyse_city_data(city_name: str, intervals: list = None):
 
 def main():
     logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level='INFO')
+    analyse_city_data('london', None)
     # analyse_city_data('madrid', [(2328,2840)])
-    analyse_data()
+    # analyse_data()
     logger.info('END')
 
 

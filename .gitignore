@@ -31,3 +31,4 @@ htmlcov/
 commands.txt
 
 *deploy/*.zip
+csv_files_backup/

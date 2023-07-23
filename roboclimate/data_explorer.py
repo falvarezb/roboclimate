@@ -121,17 +121,20 @@ def print_intervals(intervals: list):
     896:2255 -- 2020-10-11T01:00:00:2021-03-29T22:00:00
     2256:2319 -- 2021-04-04T01:00:00:2021-04-11T22:00:00
     """
-    print("\n".join(map(lambda x: f"{x[0]}:{x[2]} -- {x[1]}:{x[3]}", intervals)))
+    print("\n".join(map(lambda x: f"{x[0]}:{x[2]} || {x[1]} -- {x[3]}", intervals)))
 
 
 if __name__ == "__main__":
-    for city in rconf.cities.values():
-        print(city.name)
-        start_dt = dt.datetime(2023, 3, 9, 0, 0, 0, tzinfo=dt.timezone.utc)
-        end_dt = dt.datetime(2023, 3, 21, 0, 0, 0, tzinfo=dt.timezone.utc)
-        # print(missing_weather_datapoints(city, start_dt, end_dt))
-        # print(unexpected_weather_datapoints(city, start_dt, end_dt))
-        # print(missing_forecast_datapoints(city, start_dt, end_dt))
-        # print(weather_datapoints_without_five_forecasts(city, 'temp', start_dt, end_dt))
+    # for city in rconf.cities.values():
+    #     print(city.name)
+    #     start_dt = dt.datetime(2023, 3, 9, 0, 0, 0, tzinfo=dt.timezone.utc)
+    #     end_dt = dt.datetime(2023, 3, 21, 0, 0, 0, tzinfo=dt.timezone.utc)
+    #     print(missing_weather_datapoints(city, start_dt, end_dt))
+    #     print(unexpected_weather_datapoints(city, start_dt, end_dt))
+    #     print(missing_forecast_datapoints(city, start_dt, end_dt))
+    #     print(weather_datapoints_without_five_forecasts(city, 'temp', start_dt, end_dt))
     # weather_datapoints_without_five_forecasts(rconf.cities['madrid'], 'temp', end_dt = end_dt).to_csv('./madrid_missing.csv')    
-    print_intervals(data_intervals(rconf.cities['madrid'], 'temp'))
+    print_intervals(data_intervals(rconf.cities['london'], 'temp'))
+    # start_dt = dt.datetime(2023, 1, 1, 0, 0, 0, tzinfo=dt.timezone.utc)
+    # end_dt = dt.datetime(2023, 7, 1, 0, 0, 0, tzinfo=dt.timezone.utc)
+    # print(missing_weather_datapoints(rconf.cities['london'], start_dt, end_dt))
