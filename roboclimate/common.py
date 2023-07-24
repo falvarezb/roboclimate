@@ -2,11 +2,10 @@ from datetime import datetime, date
 import os
 import logging
 import requests
-from requests.exceptions import ConnectionError
+from requests.exceptions import ConnectionError as RequestsConnectionError, Timeout
 from tenacity import retry, retry_if_exception_type, wait_fixed, stop_after_attempt
 import boto3
 import botocore
-from itertools import islice
 
 # type alias
 csv_row = "list[str]"
@@ -47,9 +46,9 @@ def utcnow_date() -> date:
     return date(current_utc_dt.year, current_utc_dt.month, current_utc_dt.day)
 
 
-@retry(retry=retry_if_exception_type(ConnectionError), stop=stop_after_attempt(2), wait=wait_fixed(5), reraise=True)
+@retry(retry=retry_if_exception_type((RequestsConnectionError, Timeout)), stop=stop_after_attempt(2), wait=wait_fixed(5), reraise=True)
 def read_remote_resource(url):
-    return requests.get(url)
+    return requests.get(url, timeout=10)
 
 
 def compose_url(city_id: int, weather_resource: str):
@@ -61,12 +60,12 @@ def fetch_data(city_id: int, weather_resource: str) -> requests.Response:
         url = compose_url(city_id, weather_resource)
         return read_remote_resource(url)
     except Exception as ex:
-        logger.error(f"Error '{ex}' while reading '{url}'", exc_info=False)
+        logger.error("Error '%s' while reading '%s'", ex, url, exc_info=False)
         raise ex
 
 
 def write_to_filesystem(file_name: str, data: str):
-    logger.info(f'writing file {file_name}')
+    logger.info('writing file %s', file_name)
     if os.path.exists(file_name):
         # append data
         with open(f"{file_name}", 'a', encoding='UTF-8') as f:
@@ -87,7 +86,7 @@ def write_to_s3(file_name: str, data: str):
     else:
         # append data
         data = f"{existing_data}{data}"
-    logger.info(f'writing object {file_name} in bucket {s3_bucket_name}')
+    logger.info('writing object %s in bucket %s', file_name, s3_bucket_name)
     s3.put_object(Body=data, Bucket=s3_bucket_name, Key=file_name)
 
 
@@ -102,13 +101,14 @@ def transform_data(weather_data: requests.Response, coversion_params: dict) -> c
         weather_data_json = weather_data.json()
         return coversion_params['json_to_csv_f'](weather_data_json, coversion_params)
     except Exception as ex:
-        logger.error(f"Error '{ex}' while parsing '{weather_data.text}'", exc_info=True)
+        logger.error("Error '%s' while parsing '%s'", ex, weather_data.text, exc_info=True)
         raise ex
-    
+
+
 def run_city(city_name: str, city_id: int, weather_resource: str, run_params: dict):
     try:
         weather_data = fetch_data(city_id, weather_resource)
         weather_data_csv = transform_data(weather_data, run_params)
         write_data(city_name, weather_resource, weather_data_csv, run_params['write_f'], run_params['csv_files_path'])
     except Exception as ex:
-        logger.error(f"Error '{ex}' while processing '{city_name}'", exc_info=True)
+        logger.error("Error '%s' while processing '%s'", ex, city_name, exc_info=True)

@@ -2,11 +2,12 @@
 module with common elements to "weather_spider" and "forecast_spider"
 '''
 
-from common import *
+from common import logger, run_city, write_to_s3, write_to_filesystem, utcnow_date, CITIES
 
 # constants
 WEATHER_RESOURCE = "forecast"
 CSV_FILES_PATH = "forecast"
+
 
 def transform_weather_data_to_csv(weather_resource_json, conversion_params):
     current_utc_date = conversion_params['utcnow_date']

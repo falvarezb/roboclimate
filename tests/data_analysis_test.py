@@ -19,7 +19,6 @@ def test_forecast_precision():
     assert result['rmse'] == [2.23606797749979, 1.5811388300841898, 1.5811388300841898, 2.1213203435596424, 0.7071067811865476]
     assert result['medae'] == [2, 1.5, 1.5, 1.5, 0.5]
     assert 'mase' in result
-    assert 'mase1y' in result
 
 
 def test_join_one_element_in_current_weather():

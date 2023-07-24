@@ -123,7 +123,7 @@ def test_collect_current_weather_data(env, req, csv_folder):
     rspider.run_city('london', '1', rspider.WEATHER_RESOURCE, run_params)
     time.sleep(1)
 
-    req.get.assert_any_call("http://api.openweathermap.org/data/2.5/weather?id=1&units=metric&appid=id")
+    req.get.assert_any_call("http://api.openweathermap.org/data/2.5/weather?id=1&units=metric&appid=id", timeout=10)
 
     with open(f"{csv_folder}/weather_london.csv", encoding='UTF-8') as f:
         rows = list(map(lambda row: row.split(','), f.readlines()))
@@ -144,9 +144,11 @@ def test_log_error_when_fetching_data(compose_url, logger, read_remote_resource)
     try:
         read_remote_resource.side_effect = ConnectionError('error')
         compose_url.return_value = 'url'
-        rspider.fetch_data(123, rspider.WEATHER_RESOURCE)
-    except Exception as ex:
-        assert logger.error.call_args[0][0] == "Error 'error' while reading 'url'"
+        common.fetch_data(123, rspider.WEATHER_RESOURCE)
+    except Exception:        
+        assert logger.error.call_args[0][0] == "Error '%s' while reading '%s'"
+        assert logger.error.call_args[0][1].args[0] == 'error'
+        assert logger.error.call_args[0][2] == "url"
 
 
 @patch('common.logger')
@@ -155,9 +157,11 @@ def test_log_error_when_transforming_data(logger):
         response = Response()
         response.status_code = 200
         response._content = b'I am not a json'
-        rspider.transform_data(response, None)
-    except Exception as ex:
-        assert logger.error.call_args[0][0] == "Error 'Expecting value: line 1 column 1 (char 0)' while parsing 'I am not a json'"
+        common.transform_data(response, None)
+    except Exception:
+        assert logger.error.call_args[0][0] == "Error '%s' while parsing '%s'"
+        assert logger.error.call_args[0][1].args[0] == 'Expecting value: line 1 column 1 (char 0)'
+        assert logger.error.call_args[0][2] == 'I am not a json'       
 
 
 @patch('common.fetch_data')
@@ -165,4 +169,6 @@ def test_log_error_when_transforming_data(logger):
 def test_log_error_when_running_city(logger, fetch_data):
     fetch_data.side_effect = Exception('error')
     rspider.run_city('city name', 123, rspider.WEATHER_RESOURCE, {})
-    assert logger.error.call_args[0][0] == "Error 'error' while processing 'city name'"
+    assert logger.error.call_args[0][0] == "Error '%s' while processing '%s'"
+    assert logger.error.call_args[0][1].args[0] == 'error'
+    assert logger.error.call_args[0][2] == "city name"

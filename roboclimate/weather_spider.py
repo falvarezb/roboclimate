@@ -1,5 +1,5 @@
 from datetime import timezone, datetime, date
-from common import *
+from common import logger, write_to_s3, write_to_filesystem, utcnow_date, run_city, csv_rows, CITIES
 
 # constants
 WEATHER_RESOURCE = "weather"
@@ -82,7 +82,7 @@ def normalise_datetime(dt: int, current_utc_date: date, tolerance: 'dict[str,int
     for hour in iter(normalised_dts):
         if lower_bound <= normalised_dts[hour] < upper_bound:
             return normalised_dts[hour]
-    logger.warning(f"it was not possible to normalise this timestamp {dt} to any of the values in {normalised_dts}")
+    logger.warning("it was not possible to normalise this timestamp %s to any of the values in %s", dt, normalised_dts)
     return dt
 
 
@@ -101,13 +101,13 @@ def weather_handler(event, context):
         logger.info('running on local env')
 
     for city_name, city_id in CITIES.items():
-        run_params = dict(
-            utcnow_date=utcnow_date(),
-            tolerance=TOLERANCE,
-            json_to_csv_f=transform_weather_data_to_csv,
-            write_f=write_f,
-            csv_files_path=CSV_FILES_PATH
-        )
+        run_params = {
+            'utcnow_date': utcnow_date(),
+            'tolerance': TOLERANCE,
+            'json_to_csv_f': transform_weather_data_to_csv,
+            'write_f': write_f,
+            'csv_files_path': CSV_FILES_PATH
+        }
 
         run_city(city_name, city_id, WEATHER_RESOURCE, run_params)
 

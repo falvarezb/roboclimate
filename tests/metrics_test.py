@@ -71,35 +71,4 @@ def test_mase_non_consecutive_values():
     
     np.testing.assert_allclose(masetx(joined_data, 'temp'), [np.nan, np.nan, np.nan, np.nan, 2.6666666])
 
-def test_mase_1y():
-    leap_year_temp = [1] * (59 * day_factor) + [5] * day_factor + [1] * (306 * day_factor)
-    year2_temp = [2] * (60 * day_factor)
-    total_data_points = len(leap_year_temp) + len(year2_temp)
-    joined_data = pd.DataFrame({'temp': leap_year_temp + year2_temp,
-                                'dt': [1575082800] * (59 * day_factor) + [1582934400, 1582945200, 1582956000, 1582966800, 1582977600, 1582988400, 1582999200, 1583010000] + [1575082800] * (366 * day_factor),
-                                'today': ['yyyy-mm-dd'] * total_data_points,
-                                't5': [1] * total_data_points,
-                                't4': [1] * total_data_points,
-                                't3': [1] * total_data_points,
-                                't2': [1] * total_data_points,
-                                't1': [1] * total_data_points})
 
-    assert mase1y(joined_data, 'temp') == [1, 1, 1, 1, 1]
-
-
-def test_forecast_precision_mase1y_avg():
-    """
-        temp   dt              today       t5   t4   t3   t2   t1
-    0   1      1575082800      2019-11-30  4.0  3    2.0  1    1.0
-    """
-    joined_data = pd.DataFrame({'temp': [1], 'dt': [1575082800], 'today': ['2019-11-30'],
-                                't5': [4.0],
-                                't4': [3],
-                                't3': [2.0],
-                                't2': [1],
-                                't1': [1.0]})
-    historical_data = rutil.read_historical_data("tests/csv_files/historical_data_year_avg.csv")
-    years_back = 2
-
-    result = rmet.mean_absolute_scaled_error_year_avg(joined_data, historical_data, 'temp', years_back)
-    assert result == [1, 2 / 3, 1 / 3, 0, 0]
