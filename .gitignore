@@ -31,4 +31,7 @@ htmlcov/
 commands.txt
 
 *deploy/*.zip
+**/terraform/*.zip
+**/terraform/weather_pkg/
+**/terraform/forecast_pkg/
 csv_files_backup/
