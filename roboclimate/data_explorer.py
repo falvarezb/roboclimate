@@ -3,7 +3,7 @@
 Functions to explore the quality of the data collected by the weather and forecast spiders.
 
 - missing_weather_datapoints: check date/times when weather info failed to be recorded when it should
-- unexpected_weather_datapoints: check date/times when weather info was recorded when it should not 
+- unexpected_weather_datapoints: check date/times when weather info was recorded when it should not
 - weather_datapoints_without_five_forecasts: find weather data points for which not all 5 forecasts were recorded
 - data_point_gaps: find date/time gaps in the 'join*' files calculated by the 'data_analysis' module
 
@@ -49,7 +49,7 @@ def dts(start: dt.datetime, end: dt.datetime = dt.datetime.now()):
 
 def missing_weather_datapoints(city: City, start_dt: dt.datetime = None, end_dt: dt.datetime = dt.datetime.now()) -> pd.DataFrame:
     """
-    Finds datetimes when no weather data was recorded    
+    Finds datetimes when no weather data was recorded
     """
     start_dt = start_dt if start_dt else city.firstMeasurement
     df = load_weather_file(city)
@@ -59,7 +59,7 @@ def missing_weather_datapoints(city: City, start_dt: dt.datetime = None, end_dt:
 
 def unexpected_weather_datapoints(city: City, start_dt: dt.datetime = None, end_dt: dt.datetime = dt.datetime.now()) -> pd.DataFrame:
     """
-    Finds weather data recorded at dts other than the times 0,3,6,9,12,15,18,21 of each day    
+    Finds weather data recorded at dts other than the times 0,3,6,9,12,15,18,21 of each day
     This should not happen so it would be indicative of a bug
     """
     start_dt = start_dt if start_dt else city.firstMeasurement
@@ -88,7 +88,7 @@ def weather_datapoints_without_five_forecasts(city: City, weather_variable: str,
 
 def missing_forecast_datapoints(city: City, start_dt: dt.datetime = None, end_dt: dt.datetime = dt.datetime.now()) -> pd.DataFrame:
     """
-    Finds days when no forecast was recorded (everyday day 40 forecast datapoints are recorded: 5 days * 8 datetimes/day)    
+    Finds days when no forecast was recorded (everyday day 40 forecast datapoints are recorded: 5 days * 8 datetimes/day)
     """
     start_dt = start_dt if start_dt else city.firstMeasurement
     df = load_forecast_file(city)

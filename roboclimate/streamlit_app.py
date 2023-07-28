@@ -106,7 +106,7 @@ with st.sidebar:
 
     weather_var_option = st.selectbox(
         'choose a weather variable',
-        [wvar for wvar in rconf.weather_variables.values()])
+        list(rconf.weather_variables.values()))
 
     city_name_option = st.sidebar.selectbox(
         'select a city',

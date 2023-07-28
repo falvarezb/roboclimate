@@ -13,7 +13,7 @@ of the previous month, year, etc.
 This module contain functions to calculate both seasonal and non-seasonal mase.
 
 An additional problem to contend with is data quality: if there are missing values in the time series, it may not be
-possible to get the value corresponding to the prior period. 
+possible to get the value corresponding to the prior period.
 The implementation of this module rests on the content of the 'join_*.csv' files, therefore any 'hole' in those files 
 will have an impact on the calculation of the mase. The function 'data_explorer.weather_datapoints_without_five_forecasts'
 can be used to identify the 'holes' in 'join_*.csv' files.
@@ -25,7 +25,6 @@ from datetime import datetime, timezone
 import numpy as np
 from roboclimate.util import n_years_ago, remove_29_feb
 import roboclimate.config as rconf
-
 
 
 def mean_absolute_scaled_error(real_data, predicted_data, dts, period=1) -> float:
@@ -64,7 +63,7 @@ def mean_absolute_scaled_error(real_data, predicted_data, dts, period=1) -> floa
 
     if len(real_data) <= period:
         return np.nan
-    
+
     period_in_seconds = step_3hours * period
     forecast_zip = zip(real_data[period:], predicted_data[period:])
     naive_forecast_zip = zip(real_data[period:], real_data[:-period])
@@ -75,16 +74,15 @@ def mean_absolute_scaled_error(real_data, predicted_data, dts, period=1) -> floa
     for dt_current, dt_previous in dt_zip:
         real_value, forecast_value = next(forecast_zip)
         _, naive_forecast_value = next(naive_forecast_zip)
-        if dt_current-dt_previous == period_in_seconds:            
-            mae1 += abs(real_value-forecast_value)            
-            mae2 += abs(real_value-naive_forecast_value)
+        if dt_current - dt_previous == period_in_seconds:
+            mae1 += abs(real_value - forecast_value)
+            mae2 += abs(real_value - naive_forecast_value)
 
     try:
-        return mae1/mae2
+        return mae1 / mae2
     except ZeroDivisionError:
         return np.nan
     # return mae(real_data[period:], predicted_data[period:], dts) / mae(real_data[period:], real_data[:-period], dts)
-
 
 
 def mean_absolute_scaled_error_1year(joined_data, weather_variable):
@@ -106,7 +104,7 @@ def mean_absolute_scaled_error_1year(joined_data, weather_variable):
     weather_variable: str
         name of the weather variable contained by joined_data; in the previous example is 'temp'
 
-    
+
     Returns
     -------
 
@@ -171,7 +169,7 @@ def mean_absolute_scaled_error_tx(joined_data, weather_variable) -> 'list[float]
     weather_variable: str
         name of the weather variable contained by joined_data; in the previous example is 'temp'
 
-    
+
     Returns
     -------
 
