@@ -58,7 +58,7 @@ def read_historical_data(file):
 
 
 def write_rows(csv_file, rows):
-    with open(csv_file, 'a', newline='') as csvfile:
+    with open(csv_file, 'a', newline='', encoding="utf-8") as csvfile:
         csv_writer = csv.writer(csvfile)
         for row in rows:
             csv_writer.writerow(row)
@@ -68,14 +68,14 @@ def init(csv_folder, csv_header, city_names):
     for _, weather_variable in config.weather_variables.items():
         folder = f"{csv_folder}/{weather_variable}"
         if not os.path.exists(folder):
-            logger.info(f"creating folder {folder}")
+            logger.info("creating folder %s", folder)
             os.makedirs(folder)
 
     for weather_resource in weather_resources:
         for city_name in city_names:
             csv_file = csv_file_path(csv_folder, weather_resource, city_name)
             if not os.path.exists(csv_file):
-                logger.info(f"creating file {csv_file}")
+                logger.info("creating file %s", csv_file)
                 write_rows(csv_file, [csv_header])
 
 

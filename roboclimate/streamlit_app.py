@@ -1,10 +1,10 @@
 import numpy as np
+import matplotlib.pyplot as plt
 import streamlit as st
 import roboclimate.data_explorer as rdq
 import roboclimate.config as rconf
-import matplotlib.pyplot as plt
 
-padding = 0
+PADDING = 0
 st.set_page_config(page_title="Roboclimate", layout="wide")
 
 
