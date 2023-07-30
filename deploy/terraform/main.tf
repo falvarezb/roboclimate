@@ -5,7 +5,7 @@ provider "aws" {
 
   default_tags {
     tags = {
-      name = "t_roboclimate"
+      app = "t_roboclimate"
     }
   }
 
@@ -15,8 +15,10 @@ locals {
   weather = {
     pkg_folder = "weather_pkg"
     artifact = "weather_pkg.zip"
-    function_name = "t_roboclimate_weather"    
+    function_name = "t_roboclimate_weather"  
+    handler =  "weather_spider.weather_handler" 
   }
+  runtime = "python3.8"
   lambda_iam_role = "t_roboclimate_weather_role"
   lambda_policy = "AWSLambdaExecute"
   lambda_eni_policy = "AWSLambdaVPCAccessExecutionRole"
@@ -31,8 +33,8 @@ data "archive_file" "weather" {
 
 resource "aws_lambda_function" "weather" {
   function_name = local.weather.function_name
-  runtime = "python3.8"
-  handler = "weather_spider.weather_handler"
+  runtime = local.runtime
+  handler = local.weather.handler
   role = aws_iam_role.lambda_exec.arn
   filename = "${path.module}/${local.weather.artifact}"
   timeout = 10
@@ -115,12 +117,20 @@ resource "aws_subnet" "lambda_subnet1" {
   vpc_id            = aws_default_vpc.default.id
   cidr_block        = var.lambda_cidr_subnet1
   availability_zone = var.lambda_az1
+
+  tags = {
+    Name = "roboclimate1"    
+  }
 }
 
 resource "aws_subnet" "lambda_subnet2" {
   vpc_id            = aws_default_vpc.default.id
   cidr_block        = var.lambda_cidr_subnet2
   availability_zone = var.lambda_az2
+
+  tags = {
+    Name = "roboclimate2"    
+  }
 }
 
 # Create a security group for the EFS mount target
@@ -135,11 +145,19 @@ resource "aws_security_group" "efs_mount_target_sg" {
     protocol    = "tcp"
     cidr_blocks = [var.lambda_cidr_subnet1, var.lambda_cidr_subnet2]
   }
+
+  tags = {
+    Name = "roboclimate efs"
+  }
 }
 
 # Create an Elastic File System (EFS)
 resource "aws_efs_file_system" "roboclimate" {
   creation_token = "roboclimate"
+
+  tags = {
+    Name = "roboclimate"    
+  }
 
 }
 
@@ -174,6 +192,10 @@ resource "aws_efs_access_point" "roboclimate" {
     gid = 1000
     uid = 1000
   }
+
+  tags = {
+    Name = "roboclimate"    
+  }
 }
 
 ############## Bastion host ##########################
@@ -197,6 +219,10 @@ resource "aws_security_group" "bastion_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }  
+
+  tags = {
+    Name = "roboclimate bastion"    
+  }
 }
 
 # Create the EC2 instance for the bastion host
@@ -215,20 +241,25 @@ resource "aws_instance" "bastion_host" {
   # https://github.com/aws/efs-utils
   user_data = <<-EOT
     #!/bin/bash
-    # Downloading EFS mount helper, https://docs.aws.amazon.com/efs/latest/ug/mounting-fs-mount-helper-ec2-linux.html
-    mkdir ${var.bastion_mount_path_to_lwf}
-    sudo mkdir ${var.bastion_mount_path_to_root}
-    sudo apt-get update
-    sudo apt-get -y install nfs-common  
 
-    sudo apt-get -y install git binutils
+    # Create local folders to mount different paths of the EFS filesystem
+    mkdir ${var.bastion_mount_path_to_lwf}
+    chown -R ubuntu:ubuntu ${var.bastion_mount_path_to_lwf}
+    mkdir ${var.bastion_mount_path_to_root}    
+    chown -R ubuntu:ubuntu ${var.bastion_mount_path_to_root}
+
+    # Downloading EFS mount helper, https://docs.aws.amazon.com/efs/latest/ug/mounting-fs-mount-helper-ec2-linux.html
+    apt-get update
+    apt-get -y install nfs-common  
+
+    apt-get -y install git binutils
     git clone https://github.com/aws/efs-utils
     cd efs-utils
     ./build-deb.sh
-    sudo apt-get -y install ./build/amazon-efs-utils*deb
+    apt-get -y install ./build/amazon-efs-utils*deb
 
-    sudo mount -t efs ${aws_efs_file_system.roboclimate.id}:/ ${var.bastion_mount_path_to_root}
-    sudo mount -t efs -o tls,accesspoint=${aws_efs_access_point.roboclimate.id} ${aws_efs_file_system.roboclimate.id}:/ ${var.bastion_mount_path_to_lwf}
+    mount -t efs ${aws_efs_file_system.roboclimate.id}:/ ${var.bastion_mount_path_to_root}
+    mount -t efs -o tls,accesspoint=${aws_efs_access_point.roboclimate.id} ${aws_efs_file_system.roboclimate.id}:/ ${var.bastion_mount_path_to_lwf}
     # Update /etc/fstab for Automatic Mounting: To ensure the EFS file system is mounted automatically on boot, 
     # add an entry to the /etc/fstab file
     echo "${aws_efs_file_system.roboclimate.id}:/ ${var.bastion_mount_path_to_root} efs defaults 0 0" | sudo tee -a /etc/fstab
@@ -238,6 +269,6 @@ resource "aws_instance" "bastion_host" {
 
 
   tags = {
-    Name = "Bastion Host"    
+    Name = "roboclimate bastion"    
   }
 }
