@@ -1,9 +1,9 @@
+import os
 from datetime import timezone, datetime, date
 from common import logger, write_to_s3, write_to_filesystem, utcnow_date, run_city, csv_rows, CITIES
 
 # constants
 WEATHER_RESOURCE = "weather"
-CSV_FILES_PATH = "weather"
 TOLERANCE = {'positive_tolerance': 1200, 'negative_tolerance': 60}  # tolerance in seconds
 
 
@@ -94,10 +94,8 @@ def transform_weather_data_to_csv(weather_data_json: dict, conversion_params: di
 
 def weather_handler(event, context):
     if event is not None:
-        write_f = write_to_s3
         logger.info('running on AWS env')
     else:
-        write_f = write_to_filesystem
         logger.info('running on local env')
 
     for city_name, city_id in CITIES.items():
@@ -105,8 +103,8 @@ def weather_handler(event, context):
             'utcnow_date': utcnow_date(),
             'tolerance': TOLERANCE,
             'json_to_csv_f': transform_weather_data_to_csv,
-            'write_f': write_f,
-            'csv_files_path': CSV_FILES_PATH
+            'write_f': write_to_filesystem,
+            'csv_files_path': os.environ.get('ROBOCLIMATE_CSV_FILES_PATH')
         }
 
         run_city(city_name, city_id, WEATHER_RESOURCE, run_params)

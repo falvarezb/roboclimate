@@ -43,7 +43,8 @@ resource "aws_lambda_function" "weather" {
   environment {
     variables = {
       OPEN_WEATHER_API = var.open_weather_api
-      S3_BUCKET_NAME = var.bucket_name    
+      S3_BUCKET_NAME = var.bucket_name
+      ROBOCLIMATE_CSV_FILES_PATH = var.lambda_mount_path
     }
   }
 
@@ -57,7 +58,7 @@ resource "aws_lambda_function" "weather" {
   file_system_config {
     arn             = aws_efs_file_system.roboclimate.arn
     # Local mount path inside the lambda function's execution environment. Must start with '/mnt/'
-    local_mount_path = "/mnt/efs" 
+    local_mount_path = var.lambda_mount_path
   }
 
   # Explicitly declare dependency on EFS mount target.
