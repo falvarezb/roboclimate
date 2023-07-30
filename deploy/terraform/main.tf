@@ -58,14 +58,14 @@ resource "aws_lambda_function" "weather" {
 
   # Specify the file system configuration for connecting to EFS
   file_system_config {
-    arn             = aws_efs_file_system.roboclimate.arn
+    arn             = aws_efs_access_point.roboclimate.arn
     # Local mount path inside the lambda function's execution environment. Must start with '/mnt/'
     local_mount_path = var.lambda_mount_path
   }
 
   # Explicitly declare dependency on EFS mount target.
   # When creating or updating Lambda functions, mount target must be in 'available' lifecycle state.
-  depends_on = [aws_efs_mount_target.roboclimate_efs_mount_target1, aws_efs_mount_target.roboclimate_efs_mount_target2]
+  # depends_on = [aws_efs_mount_target.roboclimate_efs_mount_target1, aws_efs_mount_target.roboclimate_efs_mount_target2]
 }
 
 resource "aws_cloudwatch_log_group" "weather" {
@@ -243,9 +243,9 @@ resource "aws_instance" "bastion_host" {
     #!/bin/bash
 
     # Create local folders to mount different paths of the EFS filesystem
-    mkdir ${var.bastion_mount_path_to_lwf}
+    mkdir -p ${var.bastion_mount_path_to_lwf}
     chown -R ubuntu:ubuntu ${var.bastion_mount_path_to_lwf}
-    mkdir ${var.bastion_mount_path_to_root}    
+    mkdir -p ${var.bastion_mount_path_to_root}    
     chown -R ubuntu:ubuntu ${var.bastion_mount_path_to_root}
 
     # Downloading EFS mount helper, https://docs.aws.amazon.com/efs/latest/ug/mounting-fs-mount-helper-ec2-linux.html
