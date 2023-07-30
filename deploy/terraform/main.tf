@@ -37,7 +37,7 @@ resource "aws_lambda_function" "weather" {
   handler = local.weather.handler
   role = aws_iam_role.lambda_exec.arn
   filename = "${path.module}/${local.weather.artifact}"
-  timeout = 10
+  timeout = 60
   # Update the Lambda function whenever the deployment package changes
   source_code_hash = data.archive_file.weather.output_base64sha256
   publish = true
@@ -144,6 +144,13 @@ resource "aws_security_group" "efs_mount_target_sg" {
     to_port     = 2049
     protocol    = "tcp"
     cidr_blocks = [var.lambda_cidr_subnet1, var.lambda_cidr_subnet2]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags = {
