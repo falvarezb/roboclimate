@@ -1,3 +1,5 @@
+# https://docs.aws.amazon.com/lambda/latest/dg/welcome.html
+
 provider "aws" {
   region = var.aws_region
 
@@ -69,6 +71,8 @@ resource "aws_cloudwatch_log_group" "weather" {
   retention_in_days = 30
 }
 
+# Lambda execution roles
+# https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html
 resource "aws_iam_role" "lambda_exec" {
   name = local.lambda_iam_role
 
@@ -92,6 +96,7 @@ resource "aws_iam_role_policy_attachment" "lambda_policy" {
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_eni_policy" {
+  # https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc.html
   # policy to create and manage ENIs (Elastic Network Interfaces)
   role       = aws_iam_role.lambda_exec.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/${local.lambda_eni_policy}"
@@ -156,7 +161,7 @@ resource "aws_efs_access_point" "roboclimate" {
   file_system_id = aws_efs_file_system.roboclimate.id
 
   root_directory {
-    path = "/roboclimate"
+    path = var.lwf_path
     creation_info {
       owner_gid   = 1000
       owner_uid   = 1000
@@ -167,5 +172,71 @@ resource "aws_efs_access_point" "roboclimate" {
   posix_user {
     gid = 1000
     uid = 1000
+  }
+}
+
+############## Bastion host ##########################
+# Bastion host in the EFS's VPC to get access to the EFS from local machine
+# We need this access to copy the csv files
+
+# Create a security group for the bastion host with SSH access from my local IP
+resource "aws_security_group" "bastion_sg" {
+  name_prefix = "bastion-sg"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["147.12.250.110/32"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }  
+}
+
+# Create the EC2 instance for the bastion host
+resource "aws_instance" "bastion_host" {
+  # Ubuntu Server 22.04 LTS (HVM), SSD Volume Type
+  ami           = "ami-01dd271720c1ba44f"
+  instance_type = "t2.nano"
+
+  key_name               = var.key_name
+  vpc_security_group_ids = [aws_security_group.bastion_sg.id]
+
+  subnet_id = aws_subnet.lambda_subnet1.id
+  associate_public_ip_address = true
+
+  # User data script to set up the bastion host
+  # https://github.com/aws/efs-utils
+  user_data = <<-EOT
+    #!/bin/bash
+    # Downloading EFS mount helper, https://docs.aws.amazon.com/efs/latest/ug/mounting-fs-mount-helper-ec2-linux.html
+    mkdir ${var.bastion_mount_path_to_lwf}
+    sudo mkdir ${var.bastion_mount_path_to_root}
+    sudo apt-get update
+    sudo apt-get -y install nfs-common  
+
+    sudo apt-get -y install git binutils
+    git clone https://github.com/aws/efs-utils
+    cd efs-utils
+    ./build-deb.sh
+    sudo apt-get -y install ./build/amazon-efs-utils*deb
+
+    sudo mount -t efs ${aws_efs_file_system.roboclimate.id}:/ ${var.bastion_mount_path_to_root}
+    sudo mount -t efs -o tls,accesspoint=${aws_efs_access_point.roboclimate.id} ${aws_efs_file_system.roboclimate.id}:/ ${var.bastion_mount_path_to_lwf}
+    # Update /etc/fstab for Automatic Mounting: To ensure the EFS file system is mounted automatically on boot, 
+    # add an entry to the /etc/fstab file
+    echo "${aws_efs_file_system.roboclimate.id}:/ ${var.bastion_mount_path_to_root} efs defaults 0 0" | sudo tee -a /etc/fstab
+    echo "${aws_efs_file_system.roboclimate.id}:/ ${var.bastion_mount_path_to_lwf} efs _netdev,tls,accesspoint=${aws_efs_access_point.roboclimate.id} 0 0" | sudo tee -a /etc/fstab
+    echo "Bastion host setup complete."
+  EOT
+
+
+  tags = {
+    Name = "Bastion Host"    
   }
 }

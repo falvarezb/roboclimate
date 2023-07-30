@@ -37,3 +37,33 @@ variable "open_weather_api" {
   type        = string
   sensitive   = true
 }
+
+variable "key_name" {
+  description = "ssh key name to connect to EC2 instances"
+  type        = string
+  default = "fjab-aws"
+}
+
+variable "lambda_mount_path" {
+  description = "local path in lambda function to mount lambda function's working folder of the EFS filesystem"
+  type        = string
+  default = "/mnt/efs" 
+}
+
+variable "bastion_mount_path_to_root" {
+  description = "local path in bastion host to mount root of the EFS filesystem"
+  type        = string
+  default = "/home/ubuntu/efs/root" 
+}
+
+variable "bastion_mount_path_to_lwf" {
+  description = "local path in bastion host to mount lambda function's working folder (lwf) of the EFS filesystem"
+  type        = string
+  default = "/home/ubuntu/efs/lwf" 
+}
+
+variable "lwf_path" {
+  description = "path of lambda function's working folder (lwf) in the EFS filesystem"
+  type        = string
+  default = "/roboclimate" 
+}
