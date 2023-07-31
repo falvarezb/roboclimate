@@ -122,7 +122,7 @@ resource "aws_subnet" "lambda_subnet1" {
   map_public_ip_on_launch = false
 
   tags = {
-    Name = "roboclimate1"
+    Name = "roboclimate_lambda1"
   }
 }
 
@@ -133,7 +133,7 @@ resource "aws_subnet" "lambda_subnet2" {
   map_public_ip_on_launch = false
 
   tags = {
-    Name = "roboclimate2"
+    Name = "roboclimate_lambda2"
   }
 }
 
@@ -145,6 +145,10 @@ resource "aws_route_table" "lambda_subnet" {
   route {
     cidr_block = "0.0.0.0/0"
     instance_id = aws_instance.nat_instance.id
+  }
+
+    tags = {
+    Name = "roboclimate"
   }
 }
 
@@ -241,6 +245,10 @@ resource "aws_subnet" "nat_subnet" {
   cidr_block              = var.nat_cidr_subnet
   availability_zone       = var.lambda_az1
   map_public_ip_on_launch = true
+
+    tags = {
+    Name = "roboclimate_nat"
+  }
 }
 
 
@@ -292,7 +300,7 @@ resource "aws_instance" "nat_instance" {
 
 ############## Bastion host ##########################
 # Bastion host in the EFS's VPC to get access to the EFS from local machine
-# We need this access to copy the csv files
+# We need this access to be able to upload/download the csv files
 
 # Create a security group for the bastion host with SSH access from my local IP
 resource "aws_security_group" "bastion_sg" {
@@ -326,7 +334,8 @@ resource "aws_instance" "bastion_host" {
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.bastion_sg.id]
 
-  subnet_id                   = aws_subnet.lambda_subnet1.id
+  # same public subnet as the NAT
+  subnet_id                   = aws_subnet.nat_subnet.id
   associate_public_ip_address = true
 
   # User data script to set up the bastion host
