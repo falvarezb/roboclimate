@@ -342,7 +342,7 @@ resource "aws_instance" "bastion_host" {
   # https://github.com/aws/efs-utils
   user_data = <<-EOT
     #!/bin/bash
-
+    set -ex
     # Create local folders to mount different paths of the EFS filesystem
     mkdir -p ${var.bastion_mount_path_to_lwf}
     chown -R ubuntu:ubuntu ${var.bastion_mount_path_to_lwf}
