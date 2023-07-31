@@ -13,39 +13,41 @@ provider "aws" {
 
 locals {
   weather = {
-    pkg_folder = "weather_pkg"
-    artifact = "weather_pkg.zip"
-    function_name = "t_roboclimate_weather"  
-    handler =  "weather_spider.weather_handler" 
+    pkg_folder    = "weather_pkg"
+    artifact      = "weather_pkg.zip"
+    function_name = "t_roboclimate_weather"
+    handler       = "weather_spider.weather_handler"
   }
-  runtime = "python3.8"
-  lambda_iam_role = "t_roboclimate_weather_role"
-  lambda_policy = "AWSLambdaExecute"
+  runtime           = "python3.8"
+  lambda_iam_role   = "t_roboclimate_weather_role"
+  lambda_policy     = "AWSLambdaExecute"
   lambda_eni_policy = "AWSLambdaVPCAccessExecutionRole"
 
 }
 
+############## Lambda function ##########################
+
 data "archive_file" "weather" {
-  type = "zip"
+  type        = "zip"
   source_dir  = "${path.module}/${local.weather.pkg_folder}"
   output_path = "${path.module}/${local.weather.artifact}"
 }
 
 resource "aws_lambda_function" "weather" {
   function_name = local.weather.function_name
-  runtime = local.runtime
-  handler = local.weather.handler
-  role = aws_iam_role.lambda_exec.arn
-  filename = "${path.module}/${local.weather.artifact}"
-  timeout = 60
+  runtime       = local.runtime
+  handler       = local.weather.handler
+  role          = aws_iam_role.lambda_exec.arn
+  filename      = "${path.module}/${local.weather.artifact}"
+  timeout       = 60
   # Update the Lambda function whenever the deployment package changes
   source_code_hash = data.archive_file.weather.output_base64sha256
-  publish = true
+  publish          = true
 
   environment {
     variables = {
-      OPEN_WEATHER_API = var.open_weather_api
-      S3_BUCKET_NAME = var.bucket_name
+      OPEN_WEATHER_API           = var.open_weather_api
+      S3_BUCKET_NAME             = var.bucket_name
       ROBOCLIMATE_CSV_FILES_PATH = var.lambda_mount_path
     }
   }
@@ -58,14 +60,14 @@ resource "aws_lambda_function" "weather" {
 
   # Specify the file system configuration for connecting to EFS
   file_system_config {
-    arn             = aws_efs_access_point.roboclimate.arn
+    arn = aws_efs_access_point.roboclimate.arn
     # Local mount path inside the lambda function's execution environment. Must start with '/mnt/'
     local_mount_path = var.lambda_mount_path
   }
 
   # Explicitly declare dependency on EFS mount target.
   # When creating or updating Lambda functions, mount target must be in 'available' lifecycle state.
-  # depends_on = [aws_efs_mount_target.roboclimate_efs_mount_target1, aws_efs_mount_target.roboclimate_efs_mount_target2]
+  depends_on = [aws_efs_mount_target.roboclimate_efs_mount_target1, aws_efs_mount_target.roboclimate_efs_mount_target2]
 }
 
 resource "aws_cloudwatch_log_group" "weather" {
@@ -112,26 +114,50 @@ resource "aws_iam_role_policy_attachment" "lambda_eni_policy" {
 resource "aws_default_vpc" "default" {
 }
 
-# Create access to the EFS through two subnets in two different AZs for redundancy
+# Create access to the EFS through two private subnets in two different AZs for redundancy
 resource "aws_subnet" "lambda_subnet1" {
-  vpc_id            = aws_default_vpc.default.id
-  cidr_block        = var.lambda_cidr_subnet1
-  availability_zone = var.lambda_az1
+  vpc_id                  = aws_default_vpc.default.id
+  cidr_block              = var.lambda_cidr_subnet1
+  availability_zone       = var.lambda_az1
+  map_public_ip_on_launch = false
 
   tags = {
-    Name = "roboclimate1"    
+    Name = "roboclimate1"
   }
 }
 
 resource "aws_subnet" "lambda_subnet2" {
-  vpc_id            = aws_default_vpc.default.id
-  cidr_block        = var.lambda_cidr_subnet2
-  availability_zone = var.lambda_az2
+  vpc_id                  = aws_default_vpc.default.id
+  cidr_block              = var.lambda_cidr_subnet2
+  availability_zone       = var.lambda_az2
+  map_public_ip_on_launch = false
 
   tags = {
-    Name = "roboclimate2"    
+    Name = "roboclimate2"
   }
 }
+
+
+# Add a route table to route traffic from private subnets to NAT instance
+resource "aws_route_table" "lambda_subnet" {
+  vpc_id = aws_default_vpc.default.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    instance_id = aws_instance.nat_instance.id
+  }
+}
+
+resource "aws_route_table_association" "lambda_subnet1" {
+  subnet_id      = aws_subnet.lambda_subnet1.id
+  route_table_id = aws_route_table.lambda_subnet.id
+}
+
+resource "aws_route_table_association" "lambda_subnet2" {
+  subnet_id      = aws_subnet.lambda_subnet2.id
+  route_table_id = aws_route_table.lambda_subnet.id
+}
+
 
 # Create a security group for the EFS mount target
 resource "aws_security_group" "efs_mount_target_sg" {
@@ -163,7 +189,7 @@ resource "aws_efs_file_system" "roboclimate" {
   creation_token = "roboclimate"
 
   tags = {
-    Name = "roboclimate"    
+    Name = "roboclimate"
   }
 
 }
@@ -171,14 +197,14 @@ resource "aws_efs_file_system" "roboclimate" {
 
 # Create a mount target for each subnet in each AZ
 resource "aws_efs_mount_target" "roboclimate_efs_mount_target1" {
-  file_system_id = aws_efs_file_system.roboclimate.id
-  subnet_id      = aws_subnet.lambda_subnet1.id
+  file_system_id  = aws_efs_file_system.roboclimate.id
+  subnet_id       = aws_subnet.lambda_subnet1.id
   security_groups = [aws_security_group.efs_mount_target_sg.id]
 }
 
 resource "aws_efs_mount_target" "roboclimate_efs_mount_target2" {
-  file_system_id = aws_efs_file_system.roboclimate.id
-  subnet_id      = aws_subnet.lambda_subnet2.id
+  file_system_id  = aws_efs_file_system.roboclimate.id
+  subnet_id       = aws_subnet.lambda_subnet2.id
   security_groups = [aws_security_group.efs_mount_target_sg.id]
 }
 
@@ -201,7 +227,66 @@ resource "aws_efs_access_point" "roboclimate" {
   }
 
   tags = {
-    Name = "roboclimate"    
+    Name = "roboclimate"
+  }
+}
+
+############## NAT instance ##########################
+# NAT instance to allow lambda function access to the Internet
+# https://docs.aws.amazon.com/vpc/latest/userguide/VPC_NAT_Instance.html
+
+# Create a public subnet to host the NAT instance
+resource "aws_subnet" "nat_subnet" {
+  vpc_id                  = aws_default_vpc.default.id
+  cidr_block              = var.nat_cidr_subnet
+  availability_zone       = var.lambda_az1
+  map_public_ip_on_launch = true
+}
+
+
+# Create a security group for the NAT instance
+resource "aws_security_group" "nat_sg" {
+  name_prefix = "nat-sg-"
+  vpc_id      = aws_default_vpc.default.id
+
+  # rule to allow access to OpenWeather API
+  egress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["147.12.250.110/32"]
+  }
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = [var.lambda_cidr_subnet1, var.lambda_cidr_subnet2]
+  }
+}
+
+# Create the NAT instance
+resource "aws_instance" "nat_instance" {
+  # Amazon Linux: amzn-ami-vpc-nat-2018.03.0.20230724.0-x86_64-ebs
+  ami           = "ami-091846419ebe1075b"
+  instance_type = "t2.nano"
+
+  key_name               = var.key_name
+  vpc_security_group_ids = [aws_security_group.nat_sg.id]
+
+  subnet_id                   = aws_subnet.nat_subnet.id
+  associate_public_ip_address = true
+  source_dest_check = false
+
+  tags = {
+    Name = "roboclimate NAT Instance"
   }
 }
 
@@ -225,10 +310,10 @@ resource "aws_security_group" "bastion_sg" {
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
-  }  
+  }
 
   tags = {
-    Name = "roboclimate bastion"    
+    Name = "roboclimate bastion"
   }
 }
 
@@ -241,7 +326,7 @@ resource "aws_instance" "bastion_host" {
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.bastion_sg.id]
 
-  subnet_id = aws_subnet.lambda_subnet1.id
+  subnet_id                   = aws_subnet.lambda_subnet1.id
   associate_public_ip_address = true
 
   # User data script to set up the bastion host
@@ -276,6 +361,6 @@ resource "aws_instance" "bastion_host" {
 
 
   tags = {
-    Name = "roboclimate bastion"    
+    Name = "roboclimate bastion"
   }
 }

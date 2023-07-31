@@ -2,34 +2,39 @@
 
 variable "aws_region" {
   description = "AWS region for all resources."
-  type    = string
-  default = "eu-west-1"
+  type        = string
+  default     = "eu-west-1"
 }
 
 variable "bucket_name" {
   description = "Name of the S3 bucket containing the csv files"
-  type    = string
-  default = "roboclimate-test"
+  type        = string
+  default     = "roboclimate-test"
 }
 
 variable "lambda_cidr_subnet1" {
   description = "CIDR block for the subnet used to connect the lambda function to the EFS"
-  default     = "172.31.48.0/20"  
+  default     = "172.31.48.0/20"
 }
 
 variable "lambda_az1" {
-  description = "Avaliability zone for the subnet used to connect the lambda function to the EFS"  
-  default = "eu-west-1a"
+  description = "Avaliability zone for the subnet used to connect the lambda function to the EFS"
+  default     = "eu-west-1a"
 }
 
 variable "lambda_cidr_subnet2" {
   description = "CIDR block for the subnet used to connect the lambda function to the EFS"
-  default     = "172.31.64.0/20"  
+  default     = "172.31.64.0/20"
 }
 
 variable "lambda_az2" {
-  description = "Avaliability zone for the subnet used to connect the lambda function to the EFS"  
-  default = "eu-west-1b"
+  description = "Avaliability zone for the subnet used to connect the lambda function to the EFS"
+  default     = "eu-west-1b"
+}
+
+variable "nat_cidr_subnet" {
+  description = "CIDR block for the subnet containing the NAT instance"
+  default     = "172.31.80.0/20"
 }
 
 variable "open_weather_api" {
@@ -41,29 +46,29 @@ variable "open_weather_api" {
 variable "key_name" {
   description = "ssh key name to connect to EC2 instances"
   type        = string
-  default = "fjab-aws"
+  default     = "fjab-aws"
 }
 
 variable "lambda_mount_path" {
   description = "local path in lambda function to mount lambda function's working folder of the EFS filesystem"
   type        = string
-  default = "/mnt/efs" 
+  default     = "/mnt/efs"
 }
 
 variable "bastion_mount_path_to_root" {
   description = "local path in bastion host to mount root of the EFS filesystem"
   type        = string
-  default = "/home/ubuntu/efs/root" 
+  default     = "/home/ubuntu/efs/root"
 }
 
 variable "bastion_mount_path_to_lwf" {
   description = "local path in bastion host to mount lambda function's working folder (lwf) of the EFS filesystem"
   type        = string
-  default = "/home/ubuntu/efs/lwf" 
+  default     = "/home/ubuntu/efs/lwf"
 }
 
 variable "lwf_path" {
   description = "path of lambda function's working folder (lwf) in the EFS filesystem"
   type        = string
-  default = "/roboclimate" 
+  default     = "/roboclimate"
 }
