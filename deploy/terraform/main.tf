@@ -257,11 +257,17 @@ resource "aws_security_group" "nat_sg" {
   name_prefix = "nat-sg-"
   vpc_id      = aws_default_vpc.default.id
 
-  # rule to allow access to OpenWeather API
+  # rules to allow internet access to Lambda functions and Bastion host
+  ingress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = [var.lambda_cidr_subnet1, var.lambda_cidr_subnet2]
+  }
   egress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -270,13 +276,6 @@ resource "aws_security_group" "nat_sg" {
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["147.12.250.110/32"]
-  }
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = [var.lambda_cidr_subnet1, var.lambda_cidr_subnet2]
   }
 }
 
@@ -306,11 +305,12 @@ resource "aws_instance" "nat_instance" {
 resource "aws_security_group" "bastion_sg" {
   name_prefix = "bastion-sg"
 
+  # ssh access allowed from NAT subnet only
   ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["147.12.250.110/32"]
+    cidr_blocks = [var.nat_cidr_subnet]
   }
 
   egress {
@@ -334,9 +334,9 @@ resource "aws_instance" "bastion_host" {
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.bastion_sg.id]
 
-  # same public subnet as the NAT
-  subnet_id                   = aws_subnet.nat_subnet.id
-  associate_public_ip_address = true
+  # same subnet as one of the efs mount targets
+  subnet_id                   = aws_subnet.lambda_subnet1.id
+  associate_public_ip_address = false
 
   # User data script to set up the bastion host
   # https://github.com/aws/efs-utils

@@ -10,8 +10,8 @@ output "function_version" {
   value       = aws_lambda_function.weather.version
 }
 
-output "bastion_public_ip" {
-  value = aws_instance.bastion_host.public_ip
+output "nat_public_ip" {
+  value = aws_instance.nat_instance.public_ip
 }
 
 output "efs_id" {
