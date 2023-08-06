@@ -122,7 +122,7 @@ resource "aws_subnet" "lambda_subnet1" {
   map_public_ip_on_launch = false
 
   tags = {
-    Name = "roboclimate_lambda1"
+    Name = "roboclimate lambda1"
   }
 }
 
@@ -133,7 +133,7 @@ resource "aws_subnet" "lambda_subnet2" {
   map_public_ip_on_launch = false
 
   tags = {
-    Name = "roboclimate_lambda2"
+    Name = "roboclimate lambda2"
   }
 }
 
@@ -143,11 +143,11 @@ resource "aws_route_table" "lambda_subnet" {
   vpc_id = aws_default_vpc.default.id
 
   route {
-    cidr_block = "0.0.0.0/0"
+    cidr_block  = "0.0.0.0/0"
     instance_id = aws_instance.nat_instance.id
   }
 
-    tags = {
+  tags = {
     Name = "roboclimate"
   }
 }
@@ -165,10 +165,11 @@ resource "aws_route_table_association" "lambda_subnet2" {
 
 # Create a security group for the EFS mount target
 resource "aws_security_group" "efs_mount_target_sg" {
-  name_prefix = "roboclimate_efs_mount_target_sg"
+  name_prefix = "roboclimate-efs-mount-target-sg-"
 
   vpc_id = aws_default_vpc.default.id
 
+  # allow access to EFS's port 2049
   ingress {
     from_port   = 2049
     to_port     = 2049
@@ -176,11 +177,13 @@ resource "aws_security_group" "efs_mount_target_sg" {
     cidr_blocks = [var.lambda_cidr_subnet1, var.lambda_cidr_subnet2]
   }
 
+  # allow all traffic from EFS back to the lambda subnets
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    # cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.lambda_cidr_subnet1, var.lambda_cidr_subnet2]
   }
 
   tags = {
@@ -239,6 +242,8 @@ resource "aws_efs_access_point" "roboclimate" {
 # NAT instance to allow lambda function access to the Internet
 # https://docs.aws.amazon.com/vpc/latest/userguide/VPC_NAT_Instance.html
 
+# It also plays role of bastion host to access private resources like the EFS
+
 # Create a public subnet to host the NAT instance
 resource "aws_subnet" "nat_subnet" {
   vpc_id                  = aws_default_vpc.default.id
@@ -246,18 +251,18 @@ resource "aws_subnet" "nat_subnet" {
   availability_zone       = var.lambda_az1
   map_public_ip_on_launch = true
 
-    tags = {
-    Name = "roboclimate_nat"
+  tags = {
+    Name = "roboclimate nat"
   }
 }
 
 
 # Create a security group for the NAT instance
 resource "aws_security_group" "nat_sg" {
-  name_prefix = "nat-sg-"
+  name_prefix = "nat-instance-sg-"
   vpc_id      = aws_default_vpc.default.id
 
-  # rules to allow internet access to Lambda functions and Bastion host
+  # rules to allow lambda functions and EFS instance access to the internet
   ingress {
     from_port   = 0
     to_port     = 0
@@ -271,11 +276,16 @@ resource "aws_security_group" "nat_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # allow ssh access from my local IP
   ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["147.12.250.110/32"]
+    cidr_blocks = [var.my_ip]
+  }
+
+  tags = {
+    Name = "roboclimate nat"
   }
 }
 
@@ -285,25 +295,25 @@ resource "aws_instance" "nat_instance" {
   ami           = "ami-091846419ebe1075b"
   instance_type = "t2.nano"
 
-  key_name               = var.key_name
+  key_name               = var.ssh_key_name
   vpc_security_group_ids = [aws_security_group.nat_sg.id]
 
   subnet_id                   = aws_subnet.nat_subnet.id
   associate_public_ip_address = true
-  source_dest_check = false
+  source_dest_check           = false
 
   tags = {
-    Name = "roboclimate NAT Instance"
+    Name = "roboclimate nat"
   }
 }
 
-############## Bastion host ##########################
-# Bastion host in the EFS's VPC to get access to the EFS from local machine
-# We need this access to be able to upload/download the csv files
+############## EFS instance ##########################
+# EC2 instance to get access to the EFS
+# It must sit in a subnet with an EFS mount target
+# We need this access to be able to upload/download the csv files used by the lambda functions
 
-# Create a security group for the bastion host with SSH access from my local IP
-resource "aws_security_group" "bastion_sg" {
-  name_prefix = "bastion-sg"
+resource "aws_security_group" "efs_instance_sg" {
+  name_prefix = "efs-instance-sg-"
 
   # ssh access allowed from NAT subnet only
   ingress {
@@ -313,6 +323,7 @@ resource "aws_security_group" "bastion_sg" {
     cidr_blocks = [var.nat_cidr_subnet]
   }
 
+  # allow all access to the internet (needed to install efs-utils) 
   egress {
     from_port   = 0
     to_port     = 0
@@ -321,25 +332,23 @@ resource "aws_security_group" "bastion_sg" {
   }
 
   tags = {
-    Name = "roboclimate bastion"
+    Name = "roboclimate efs instance"
   }
 }
 
-# Create the EC2 instance for the bastion host
-resource "aws_instance" "bastion_host" {
+resource "aws_instance" "efs_instance" {
   # Ubuntu Server 22.04 LTS (HVM), SSD Volume Type
   ami           = "ami-01dd271720c1ba44f"
   instance_type = "t2.nano"
 
-  key_name               = var.key_name
-  vpc_security_group_ids = [aws_security_group.bastion_sg.id]
+  key_name               = var.ssh_key_name
+  vpc_security_group_ids = [aws_security_group.efs_instance_sg.id]
 
   # same subnet as one of the efs mount targets
   subnet_id                   = aws_subnet.lambda_subnet1.id
   associate_public_ip_address = false
 
-  # User data script to set up the bastion host
-  # https://github.com/aws/efs-utils
+  # User data script to set up efs utils (https://github.com/aws/efs-utils)
   user_data = <<-EOT
     #!/bin/bash
     set -ex
@@ -370,6 +379,6 @@ resource "aws_instance" "bastion_host" {
 
 
   tags = {
-    Name = "roboclimate bastion"
+    Name = "roboclimate efs"
   }
 }

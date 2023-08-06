@@ -43,10 +43,16 @@ variable "open_weather_api" {
   sensitive   = true
 }
 
-variable "key_name" {
-  description = "ssh key name to connect to EC2 instances"
+variable "my_ip" {
+  description = "my computer's IP"
   type        = string
-  default     = "fjab-aws"
+  sensitive   = true
+}
+
+variable "ssh_key_name" {
+  description = "name of the ssh key to connect to EC2 instances"
+  type        = string
+  sensitive   = true
 }
 
 variable "lambda_mount_path" {
