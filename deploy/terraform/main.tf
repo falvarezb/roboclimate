@@ -1,4 +1,6 @@
 # https://docs.aws.amazon.com/lambda/latest/dg/welcome.html
+# How to force replacement of an aws instance so that user_data is executed again 
+# terraform apply -var-file secrets.tfvars -replace aws_instance.efs_instance
 
 provider "aws" {
   region = var.aws_region
@@ -177,13 +179,12 @@ resource "aws_security_group" "efs_mount_target_sg" {
     cidr_blocks = [var.lambda_cidr_subnet1, var.lambda_cidr_subnet2]
   }
 
-  # allow all traffic from EFS back to the lambda subnets
+  # allow all traffic from EFS
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    # cidr_blocks = ["0.0.0.0/0"]
-    cidr_blocks = [var.lambda_cidr_subnet1, var.lambda_cidr_subnet2]
+    cidr_blocks = ["0.0.0.0/0"]    
   }
 
   tags = {
@@ -374,7 +375,7 @@ resource "aws_instance" "efs_instance" {
     # add an entry to the /etc/fstab file
     echo "${aws_efs_file_system.roboclimate.id}:/ ${var.bastion_mount_path_to_root} efs defaults 0 0" | sudo tee -a /etc/fstab
     echo "${aws_efs_file_system.roboclimate.id}:/ ${var.bastion_mount_path_to_lwf} efs _netdev,tls,accesspoint=${aws_efs_access_point.roboclimate.id} 0 0" | sudo tee -a /etc/fstab
-    echo "Bastion host setup complete."
+    echo "EFS instance setup complete."
   EOT
 
 
