@@ -1,6 +1,6 @@
 import os
 from datetime import timezone, datetime, date
-from common import logger, write_to_s3, write_to_filesystem, utcnow_date, run_city, csv_rows, CITIES
+from common import logger, write_to_filesystem, utcnow_date, run_city, csv_rows, CITIES
 
 # constants
 WEATHER_RESOURCE = "weather"

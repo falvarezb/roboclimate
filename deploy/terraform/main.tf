@@ -20,6 +20,14 @@ locals {
     function_name = "t_roboclimate_weather"
     handler       = "weather_spider.weather_handler"
   }
+
+  forecast = {
+    pkg_folder    = "forecast_pkg"
+    artifact      = "forecast_pkg.zip"
+    function_name = "t_roboclimate_forecast"
+    handler       = "forecast_spider.forecast_handler"
+  }
+
   runtime           = "python3.8"
   lambda_iam_role   = "t_roboclimate_weather_role"
   lambda_policy     = "AWSLambdaExecute"
@@ -27,12 +35,18 @@ locals {
 
 }
 
-############## Lambda function ##########################
+############## Lambda functions ##########################
 
 data "archive_file" "weather" {
   type        = "zip"
   source_dir  = "${path.module}/${local.weather.pkg_folder}"
   output_path = "${path.module}/${local.weather.artifact}"
+}
+
+data "archive_file" "forecast" {
+  type        = "zip"
+  source_dir  = "${path.module}/${local.forecast.pkg_folder}"
+  output_path = "${path.module}/${local.forecast.artifact}"
 }
 
 resource "aws_lambda_function" "weather" {
@@ -72,8 +86,51 @@ resource "aws_lambda_function" "weather" {
   depends_on = [aws_efs_mount_target.roboclimate_efs_mount_target1, aws_efs_mount_target.roboclimate_efs_mount_target2]
 }
 
+resource "aws_lambda_function" "forecast" {
+  function_name = local.forecast.function_name
+  runtime       = local.runtime
+  handler       = local.forecast.handler
+  role          = aws_iam_role.lambda_exec.arn
+  filename      = "${path.module}/${local.forecast.artifact}"
+  timeout       = 60
+  # Update the Lambda function whenever the deployment package changes
+  source_code_hash = data.archive_file.forecast.output_base64sha256
+  publish          = true
+
+  environment {
+    variables = {
+      OPEN_WEATHER_API           = var.open_weather_api
+      S3_BUCKET_NAME             = var.bucket_name
+      ROBOCLIMATE_CSV_FILES_PATH = var.lambda_mount_path
+    }
+  }
+
+  vpc_config {
+    # Every subnet should be able to reach an EFS mount target in the same Availability Zone. Cross-AZ mounts are not permitted
+    subnet_ids         = [aws_subnet.lambda_subnet1.id, aws_subnet.lambda_subnet2.id]
+    security_group_ids = [aws_security_group.efs_mount_target_sg.id]
+  }
+
+  # Specify the file system configuration for connecting to EFS
+  file_system_config {
+    arn = aws_efs_access_point.roboclimate.arn
+    # Local mount path inside the lambda function's execution environment. Must start with '/mnt/'
+    local_mount_path = var.lambda_mount_path
+  }
+
+  # Explicitly declare dependency on EFS mount target.
+  # When creating or updating Lambda functions, mount target must be in 'available' lifecycle state.
+  depends_on = [aws_efs_mount_target.roboclimate_efs_mount_target1, aws_efs_mount_target.roboclimate_efs_mount_target2]
+}
+
 resource "aws_cloudwatch_log_group" "weather" {
   name = "/aws/lambda/${aws_lambda_function.weather.function_name}"
+
+  retention_in_days = 30
+}
+
+resource "aws_cloudwatch_log_group" "forecast" {
+  name = "/aws/lambda/${aws_lambda_function.forecast.function_name}"
 
   retention_in_days = 30
 }
@@ -184,7 +241,7 @@ resource "aws_security_group" "efs_mount_target_sg" {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]    
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags = {
