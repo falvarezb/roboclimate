@@ -18,6 +18,10 @@ output "efs_instance_private_ip" {
   value = aws_instance.efs_instance.private_ip
 }
 
+output "efs_instance_id" {
+  value = aws_instance.efs_instance.id
+}
+
 output "efs_id" {
   value = aws_efs_file_system.roboclimate.id
 }
