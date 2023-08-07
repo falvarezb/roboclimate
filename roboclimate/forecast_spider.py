@@ -19,8 +19,7 @@ def forecast_handler(event, context):
     for city_name, city_id in CITIES.items():
         run_params = {
             'utcnow_date': utcnow_date(),
-            'json_to_csv_f': transform_weather_data_to_csv,
-            'write_f': write_to_filesystem,
+            'json_to_csv_f': transform_weather_data_to_csv,            
             'csv_files_path': os.environ.get('ROBOCLIMATE_CSV_FILES_PATH')
         }
 

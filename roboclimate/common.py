@@ -90,10 +90,10 @@ def write_to_s3(file_name: str, data: str):
     s3.put_object(Body=data, Bucket=s3_bucket_name, Key=file_name)
 
 
-def write_data(city_name: str, weather_resource: str, weather_data_csv: csv_rows, write_f, csv_files_path):
+def write_data(city_name: str, weather_resource: str, weather_data_csv: csv_rows, csv_files_path):
     csv_file_name = f"{csv_files_path}/{weather_resource}_{city_name}.csv"
     csv_data_serialized = ('\n'.join([','.join(map(str, row)) for row in weather_data_csv])) + '\n'
-    write_f(csv_file_name, csv_data_serialized)
+    write_to_filesystem(csv_file_name, csv_data_serialized)
 
 
 def transform_data(weather_data: requests.Response, coversion_params: dict) -> csv_rows:
@@ -109,6 +109,6 @@ def run_city(city_name: str, city_id: int, weather_resource: str, run_params: di
     try:
         weather_data = fetch_data(city_id, weather_resource)
         weather_data_csv = transform_data(weather_data, run_params)
-        write_data(city_name, weather_resource, weather_data_csv, run_params['write_f'], run_params['csv_files_path'])
+        write_data(city_name, weather_resource, weather_data_csv, run_params['csv_files_path'])
     except Exception as ex:
         logger.error("Error '%s' while processing '%s'", ex, city_name, exc_info=True)

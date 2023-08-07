@@ -93,7 +93,7 @@ def test_transform_current_weather_data_to_csv(fixtures):
     with open("tests/json_files/weather.json", encoding='UTF-8') as f:
         data_json = json.load(f)
 
-    csv_row = rspider.transform_weather_data_to_csv(data_json, {'utcnow_date':fixtures['current_utc_date'], 'tolerance': rspider.TOLERANCE})[0]
+    csv_row = rspider.transform_weather_data_to_csv(data_json, {'utcnow_date': fixtures['current_utc_date'], 'tolerance': rspider.TOLERANCE})[0]
     assert csv_row[0] == 300.15
     assert csv_row[1] == 1007
     assert csv_row[2] == 74
@@ -106,13 +106,12 @@ def test_transform_current_weather_data_to_csv(fixtures):
 @patch('common.requests')
 @patch('common.os.environ')
 def test_collect_current_weather_data(env, req, csv_folder):
-    run_params = dict(
-        utcnow_date=date(2017, 1, 30),
-        write_f=common.write_to_filesystem,
-        tolerance={'positive_tolerance': 60, 'negative_tolerance': 5},
-        json_to_csv_f=rspider.transform_weather_data_to_csv,
-        csv_files_path=csv_folder
-    )
+    run_params = {
+        'utcnow_date': date(2017, 1, 30),
+        'tolerance': {'positive_tolerance': 60, 'negative_tolerance': 5},
+        'json_to_csv_f': rspider.transform_weather_data_to_csv,
+        'csv_files_path': csv_folder
+    }
 
     with open("tests/json_files/weather.json", encoding='UTF-8') as f:
         json_body = json.loads(f.read())
@@ -145,7 +144,7 @@ def test_log_error_when_fetching_data(compose_url, logger, read_remote_resource)
         read_remote_resource.side_effect = ConnectionError('error')
         compose_url.return_value = 'url'
         common.fetch_data(123, rspider.WEATHER_RESOURCE)
-    except Exception:        
+    except Exception:
         assert logger.error.call_args[0][0] == "Error '%s' while reading '%s'"
         assert logger.error.call_args[0][1].args[0] == 'error'
         assert logger.error.call_args[0][2] == "url"
@@ -161,7 +160,7 @@ def test_log_error_when_transforming_data(logger):
     except Exception:
         assert logger.error.call_args[0][0] == "Error '%s' while parsing '%s'"
         assert logger.error.call_args[0][1].args[0] == 'Expecting value: line 1 column 1 (char 0)'
-        assert logger.error.call_args[0][2] == 'I am not a json'       
+        assert logger.error.call_args[0][2] == 'I am not a json'
 
 
 @patch('common.fetch_data')

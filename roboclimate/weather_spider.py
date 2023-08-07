@@ -102,8 +102,7 @@ def weather_handler(event, context):
         run_params = {
             'utcnow_date': utcnow_date(),
             'tolerance': TOLERANCE,
-            'json_to_csv_f': transform_weather_data_to_csv,
-            'write_f': write_to_filesystem,
+            'json_to_csv_f': transform_weather_data_to_csv,            
             'csv_files_path': os.environ.get('ROBOCLIMATE_CSV_FILES_PATH')
         }
 
