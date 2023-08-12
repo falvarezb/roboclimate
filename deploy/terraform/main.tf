@@ -495,7 +495,7 @@ module "eventbridge" {
   schedules = {
     weather-lambda = {
       name                = "t-weather-lambda"
-      schedule_expression = "rate(3 hours)"
+      schedule_expression = "cron(0 */3 * * ? *)"
       timezone            = "UTC"
       arn                 = aws_lambda_function.weather.arn
       input               = jsonencode({})
