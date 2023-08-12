@@ -29,11 +29,11 @@ locals {
   }
 
   runtime              = "python3.8"
-  lambda_iam_role      = "t_roboclimate_weather_role"
+  lambda_iam_role      = "t_roboclimate_role"
   lambda_policy        = "AWSLambdaExecute"
   lambda_eni_policy    = "AWSLambdaVPCAccessExecutionRole"
-  eventbridge_iam_role = "t_roboclimate_eventbridge"
-  eventbridge_policy   = "t_roboclimate_eventbridge"
+  eventbridge_iam_role = "roboclimate_eventbridge"
+  eventbridge_policy   = "roboclimate_eventbridge"
 
 }
 
@@ -456,7 +456,7 @@ resource "aws_iam_role" "eventbridge_exec" {
         Action = "sts:AssumeRole",
         Effect = "Allow",
         Principal = {
-          Service = "events.amazonaws.com"
+          Service = ["scheduler.amazonaws.com", "events.amazonaws.com"]
         }
       }
     ]
@@ -465,7 +465,7 @@ resource "aws_iam_role" "eventbridge_exec" {
 
 resource "aws_iam_policy" "eventbridge" {
   name        = local.eventbridge_policy
-  description = "policy to allow EventBridge to send event to lambda function 'weather'"
+  description = "policy to allow EventBridge to invoke lambda functions"
   policy      = jsonencode({
     Version = "2012-10-17",
     Statement = [
@@ -480,7 +480,7 @@ resource "aws_iam_policy" "eventbridge" {
 
 resource "aws_iam_role_policy_attachment" "eventbridge" {  
   role      = aws_iam_role.eventbridge_exec.name
-  policy_arn = aws_iam_policy.eventbridge.arn
+  policy_arn = aws_iam_policy.eventbridge.arn  
 }
 
 module "eventbridge" {
@@ -488,7 +488,8 @@ module "eventbridge" {
 
   bus_name = "roboclimate"
 
-  attach_lambda_policy = true
+  # we create iam role manually
+  attach_lambda_policy = false
   lambda_target_arns   = [aws_lambda_function.weather.arn, aws_lambda_function.forecast.arn]
 
   schedules = {
@@ -498,16 +499,16 @@ module "eventbridge" {
       timezone            = "UTC"
       arn                 = aws_lambda_function.weather.arn
       input               = jsonencode({})
-      execution_role_arn = aws_iam_role.eventbridge_exec.arn
+      role_arn = aws_iam_role.eventbridge_exec.arn
     }
 
-    forecast-lambda = {
+    forecast-lambda = {      
       name                = "t-forecast-lambda"
       schedule_expression = "cron(0 22 * * ? *)"
       timezone            = "UTC"
       arn                 = aws_lambda_function.forecast.arn
       input               = jsonencode({})
-      execution_role_arn = aws_iam_role.eventbridge_exec.arn
+      role_arn = aws_iam_role.eventbridge_exec.arn
     }    
   }
   
