@@ -23,6 +23,6 @@ output "efs_instance_id" {
 }
 
 output "efs_id" {
-  value = aws_efs_file_system.roboclimate.id
+  value = module.efs.file_system_id
 }
 

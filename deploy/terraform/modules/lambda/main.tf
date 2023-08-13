@@ -1,3 +1,5 @@
+############## Lambda function definitions ##########################
+
 locals {
   lambda_mount_path = "/mnt/efs"
   artifact_folder = "${path.root}/${var.artifact_folder}"

@@ -13,12 +13,6 @@ provider "aws" {
 
 }
 
-locals {
-  lambda_iam_role      = "t_roboclimate_role"
-  lambda_policy        = "AWSLambdaExecute"
-  lambda_eni_policy    = "AWSLambdaVPCAccessExecutionRole"
-}
-
 ############## Lambda functions ##########################
 
 module "weather_function" {
@@ -27,15 +21,15 @@ module "weather_function" {
   function_name = "t_roboclimate_weather"
   handler_name       = "weather_spider.weather_handler"
   execution_role = aws_iam_role.lambda_exec.arn
-  subnet_ids         = [aws_subnet.lambda_subnet1.id, aws_subnet.lambda_subnet2.id]
-  security_group_ids = [aws_security_group.efs_mount_target_sg.id]
-  access_point_arn = aws_efs_access_point.roboclimate.arn
+  subnet_ids         = [module.efs.lambda_subnet1_id, module.efs.lambda_subnet2_id]
+  security_group_ids = [module.efs.efs_mount_target_sg_id]
+  access_point_arn = module.efs.access_point_arn
   artifact_folder = "weather_pkg"
   open_weather_api = var.open_weather_api
   
   # Explicitly declare dependency on EFS mount target.
   # When creating or updating Lambda functions, mount target must be in 'available' lifecycle state.
-  depends_on = [aws_efs_mount_target.roboclimate_efs_mount_target1, aws_efs_mount_target.roboclimate_efs_mount_target2]
+  depends_on = [module.efs]
 }
 
 module "forecast_function" {
@@ -44,22 +38,22 @@ module "forecast_function" {
   function_name = "t_roboclimate_forecast"
   handler_name       = "forecast_spider.forecast_handler"
   execution_role = aws_iam_role.lambda_exec.arn
-  subnet_ids         = [aws_subnet.lambda_subnet1.id, aws_subnet.lambda_subnet2.id]
-  security_group_ids = [aws_security_group.efs_mount_target_sg.id]
-  access_point_arn = aws_efs_access_point.roboclimate.arn
+  subnet_ids         = [module.efs.lambda_subnet1_id, module.efs.lambda_subnet2_id]
+  security_group_ids = [module.efs.efs_mount_target_sg_id]
+  access_point_arn = module.efs.access_point_arn
   artifact_folder = "forecast_pkg"
   open_weather_api = var.open_weather_api
 
   # Explicitly declare dependency on EFS mount target.
   # When creating or updating Lambda functions, mount target must be in 'available' lifecycle state.
-  depends_on = [aws_efs_mount_target.roboclimate_efs_mount_target1, aws_efs_mount_target.roboclimate_efs_mount_target2]
+  depends_on = [module.efs]
 }
 
 
 # Lambda execution roles
 # https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html
 resource "aws_iam_role" "lambda_exec" {
-  name = local.lambda_iam_role
+  name = "t_roboclimate_role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -77,14 +71,14 @@ resource "aws_iam_role" "lambda_exec" {
 
 resource "aws_iam_role_policy_attachment" "lambda_policy" {
   role       = aws_iam_role.lambda_exec.name
-  policy_arn = "arn:aws:iam::aws:policy/${local.lambda_policy}"
+  policy_arn = "arn:aws:iam::aws:policy/AWSLambdaExecute"
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_eni_policy" {
   # https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc.html
   # policy to create and manage ENIs (Elastic Network Interfaces)
   role       = aws_iam_role.lambda_exec.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/${local.lambda_eni_policy}"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
 
@@ -94,27 +88,14 @@ resource "aws_iam_role_policy_attachment" "lambda_eni_policy" {
 resource "aws_default_vpc" "default" {
 }
 
-# Create access to the EFS through two private subnets in two different AZs for redundancy
-resource "aws_subnet" "lambda_subnet1" {
-  vpc_id                  = aws_default_vpc.default.id
-  cidr_block              = var.lambda_cidr_subnet1
-  availability_zone       = var.lambda_az1
-  map_public_ip_on_launch = false
+module "efs" {
+  source = "./modules/efs"
 
-  tags = {
-    Name = "roboclimate lambda1"
-  }
-}
-
-resource "aws_subnet" "lambda_subnet2" {
-  vpc_id                  = aws_default_vpc.default.id
-  cidr_block              = var.lambda_cidr_subnet2
-  availability_zone       = var.lambda_az2
-  map_public_ip_on_launch = false
-
-  tags = {
-    Name = "roboclimate lambda2"
-  }
+  lambda_cidr_subnet1 = var.lambda_cidr_subnet1
+  lambda_cidr_subnet2 = var.lambda_cidr_subnet2
+  lambda_az1 = var.lambda_az1
+  lambda_az2 = var.lambda_az2
+  lwf_path = var.lwf_path
 }
 
 
@@ -133,89 +114,15 @@ resource "aws_route_table" "lambda_subnet" {
 }
 
 resource "aws_route_table_association" "lambda_subnet1" {
-  subnet_id      = aws_subnet.lambda_subnet1.id
+  subnet_id      = module.efs.lambda_subnet1_id
   route_table_id = aws_route_table.lambda_subnet.id
 }
 
 resource "aws_route_table_association" "lambda_subnet2" {
-  subnet_id      = aws_subnet.lambda_subnet2.id
+  subnet_id      = module.efs.lambda_subnet2_id
   route_table_id = aws_route_table.lambda_subnet.id
 }
 
-
-# Create a security group for the EFS mount target
-resource "aws_security_group" "efs_mount_target_sg" {
-  name_prefix = "roboclimate-efs-mount-target-sg-"
-
-  vpc_id = aws_default_vpc.default.id
-
-  # allow access to EFS's port 2049
-  ingress {
-    from_port   = 2049
-    to_port     = 2049
-    protocol    = "tcp"
-    cidr_blocks = [var.lambda_cidr_subnet1, var.lambda_cidr_subnet2]
-  }
-
-  # allow all traffic from EFS
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "roboclimate efs"
-  }
-}
-
-# Create an Elastic File System (EFS)
-resource "aws_efs_file_system" "roboclimate" {
-  creation_token = "roboclimate"
-
-  tags = {
-    Name = "roboclimate"
-  }
-
-}
-
-
-# Create a mount target for each subnet in each AZ
-resource "aws_efs_mount_target" "roboclimate_efs_mount_target1" {
-  file_system_id  = aws_efs_file_system.roboclimate.id
-  subnet_id       = aws_subnet.lambda_subnet1.id
-  security_groups = [aws_security_group.efs_mount_target_sg.id]
-}
-
-resource "aws_efs_mount_target" "roboclimate_efs_mount_target2" {
-  file_system_id  = aws_efs_file_system.roboclimate.id
-  subnet_id       = aws_subnet.lambda_subnet2.id
-  security_groups = [aws_security_group.efs_mount_target_sg.id]
-}
-
-# EFS access point used by lambda file system
-resource "aws_efs_access_point" "roboclimate" {
-  file_system_id = aws_efs_file_system.roboclimate.id
-
-  root_directory {
-    path = var.lwf_path
-    creation_info {
-      owner_gid   = 1000
-      owner_uid   = 1000
-      permissions = "777"
-    }
-  }
-
-  posix_user {
-    gid = 1000
-    uid = 1000
-  }
-
-  tags = {
-    Name = "roboclimate"
-  }
-}
 
 ############## NAT instance ##########################
 # NAT instance to allow lambda function access to the Internet
@@ -324,7 +231,7 @@ resource "aws_instance" "efs_instance" {
   vpc_security_group_ids = [aws_security_group.efs_instance_sg.id]
 
   # same subnet as one of the efs mount targets
-  subnet_id                   = aws_subnet.lambda_subnet1.id
+  subnet_id                   = module.efs.lambda_subnet1_id
   associate_public_ip_address = false
 
   # User data script to set up efs utils (https://github.com/aws/efs-utils)
@@ -347,12 +254,12 @@ resource "aws_instance" "efs_instance" {
     ./build-deb.sh
     apt-get -y install ./build/amazon-efs-utils*deb
 
-    mount -t efs ${aws_efs_file_system.roboclimate.id}:/ ${var.bastion_mount_path_to_root}
-    mount -t efs -o tls,accesspoint=${aws_efs_access_point.roboclimate.id} ${aws_efs_file_system.roboclimate.id}:/ ${var.bastion_mount_path_to_lwf}
+    mount -t efs ${module.efs.file_system_id}:/ ${var.bastion_mount_path_to_root}
+    mount -t efs -o tls,accesspoint=${module.efs.access_point_id} ${module.efs.file_system_id}:/ ${var.bastion_mount_path_to_lwf}
     # Update /etc/fstab for Automatic Mounting: To ensure the EFS file system is mounted automatically on boot, 
     # add an entry to the /etc/fstab file
-    echo "${aws_efs_file_system.roboclimate.id}:/ ${var.bastion_mount_path_to_root} efs defaults 0 0" | sudo tee -a /etc/fstab
-    echo "${aws_efs_file_system.roboclimate.id}:/ ${var.bastion_mount_path_to_lwf} efs _netdev,tls,accesspoint=${aws_efs_access_point.roboclimate.id} 0 0" | sudo tee -a /etc/fstab
+    echo "${module.efs.file_system_id}:/ ${var.bastion_mount_path_to_root} efs defaults 0 0" | sudo tee -a /etc/fstab
+    echo "${module.efs.file_system_id}:/ ${var.bastion_mount_path_to_lwf} efs _netdev,tls,accesspoint=${module.efs.access_point_id} 0 0" | sudo tee -a /etc/fstab
     echo "EFS instance setup complete."
   EOT
 
