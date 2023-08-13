@@ -61,14 +61,14 @@ variable "lambda_mount_path" {
   default     = "/mnt/efs"
 }
 
-variable "bastion_mount_path_to_root" {
-  description = "local path in bastion host to mount root of the EFS filesystem"
+variable "mount_path_to_root" {
+  description = "local path in efs instance to mount the root of the EFS filesystem"
   type        = string
   default     = "/home/ubuntu/efs/root"
 }
 
-variable "bastion_mount_path_to_lwf" {
-  description = "local path in bastion host to mount lambda function's working folder (lwf) of the EFS filesystem"
+variable "mount_path_to_lwf" {
+  description = "local path in efs instance to mount lambda function's working folder (lwf) of the EFS filesystem"
   type        = string
   default     = "/home/ubuntu/efs/lwf"
 }
