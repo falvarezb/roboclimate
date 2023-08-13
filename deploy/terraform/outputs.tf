@@ -1,13 +1,13 @@
 # Output value definitions
 
-output "function_name" {
-  description = "Name of the Lambda function."
-  value       = aws_lambda_function.weather.function_name
+output "weather_function_info" {
+  description = "Name and version of the weather function."
+  value       = module.weather_function.function_info
 }
 
-output "function_version" {
-  description = "Version of the Lambda function."
-  value       = aws_lambda_function.weather.version
+output "forecast_function_info" {
+  description = "Name and version of the forecast function."
+  value       = module.weather_function.function_info
 }
 
 output "nat_public_ip" {

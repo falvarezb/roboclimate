@@ -14,21 +14,6 @@ provider "aws" {
 }
 
 locals {
-  weather = {
-    pkg_folder    = "weather_pkg"
-    artifact      = "weather_pkg.zip"
-    function_name = "t_roboclimate_weather"
-    handler       = "weather_spider.weather_handler"
-  }
-
-  forecast = {
-    pkg_folder    = "forecast_pkg"
-    artifact      = "forecast_pkg.zip"
-    function_name = "t_roboclimate_forecast"
-    handler       = "forecast_spider.forecast_handler"
-  }
-
-  runtime              = "python3.8"
   lambda_iam_role      = "t_roboclimate_role"
   lambda_policy        = "AWSLambdaExecute"
   lambda_eni_policy    = "AWSLambdaVPCAccessExecutionRole"
@@ -36,103 +21,40 @@ locals {
 
 ############## Lambda functions ##########################
 
-data "archive_file" "weather" {
-  type        = "zip"
-  source_dir  = "${path.module}/${local.weather.pkg_folder}"
-  output_path = "${path.module}/${local.weather.artifact}"
+module "weather_function" {
+  source = "./modules/lambda"
+
+  function_name = "t_roboclimate_weather"
+  handler_name       = "weather_spider.weather_handler"
+  execution_role = aws_iam_role.lambda_exec.arn
+  subnet_ids         = [aws_subnet.lambda_subnet1.id, aws_subnet.lambda_subnet2.id]
+  security_group_ids = [aws_security_group.efs_mount_target_sg.id]
+  access_point_arn = aws_efs_access_point.roboclimate.arn
+  artifact_folder = "weather_pkg"
+  open_weather_api = var.open_weather_api
+  
+  # Explicitly declare dependency on EFS mount target.
+  # When creating or updating Lambda functions, mount target must be in 'available' lifecycle state.
+  depends_on = [aws_efs_mount_target.roboclimate_efs_mount_target1, aws_efs_mount_target.roboclimate_efs_mount_target2]
 }
 
-data "archive_file" "forecast" {
-  type        = "zip"
-  source_dir  = "${path.module}/${local.forecast.pkg_folder}"
-  output_path = "${path.module}/${local.forecast.artifact}"
-}
+module "forecast_function" {
+  source = "./modules/lambda"
 
-resource "aws_lambda_function" "weather" {
-  function_name = local.weather.function_name
-  runtime       = local.runtime
-  handler       = local.weather.handler
-  role          = aws_iam_role.lambda_exec.arn
-  filename      = "${path.module}/${local.weather.artifact}"
-  timeout       = 60
-  # Update the Lambda function whenever the deployment package changes
-  source_code_hash = data.archive_file.weather.output_base64sha256
-  publish          = true
-
-  environment {
-    variables = {
-      OPEN_WEATHER_API           = var.open_weather_api
-      S3_BUCKET_NAME             = var.bucket_name
-      ROBOCLIMATE_CSV_FILES_PATH = var.lambda_mount_path
-    }
-  }
-
-  vpc_config {
-    # Every subnet should be able to reach an EFS mount target in the same Availability Zone. Cross-AZ mounts are not permitted
-    subnet_ids         = [aws_subnet.lambda_subnet1.id, aws_subnet.lambda_subnet2.id]
-    security_group_ids = [aws_security_group.efs_mount_target_sg.id]
-  }
-
-  # Specify the file system configuration for connecting to EFS
-  file_system_config {
-    arn = aws_efs_access_point.roboclimate.arn
-    # Local mount path inside the lambda function's execution environment. Must start with '/mnt/'
-    local_mount_path = var.lambda_mount_path
-  }
+  function_name = "t_roboclimate_forecast"
+  handler_name       = "forecast_spider.forecast_handler"
+  execution_role = aws_iam_role.lambda_exec.arn
+  subnet_ids         = [aws_subnet.lambda_subnet1.id, aws_subnet.lambda_subnet2.id]
+  security_group_ids = [aws_security_group.efs_mount_target_sg.id]
+  access_point_arn = aws_efs_access_point.roboclimate.arn
+  artifact_folder = "forecast_pkg"
+  open_weather_api = var.open_weather_api
 
   # Explicitly declare dependency on EFS mount target.
   # When creating or updating Lambda functions, mount target must be in 'available' lifecycle state.
   depends_on = [aws_efs_mount_target.roboclimate_efs_mount_target1, aws_efs_mount_target.roboclimate_efs_mount_target2]
 }
 
-resource "aws_lambda_function" "forecast" {
-  function_name = local.forecast.function_name
-  runtime       = local.runtime
-  handler       = local.forecast.handler
-  role          = aws_iam_role.lambda_exec.arn
-  filename      = "${path.module}/${local.forecast.artifact}"
-  timeout       = 60
-  # Update the Lambda function whenever the deployment package changes
-  source_code_hash = data.archive_file.forecast.output_base64sha256
-  publish          = true
-
-  environment {
-    variables = {
-      OPEN_WEATHER_API           = var.open_weather_api
-      S3_BUCKET_NAME             = var.bucket_name
-      ROBOCLIMATE_CSV_FILES_PATH = var.lambda_mount_path
-    }
-  }
-
-  vpc_config {
-    # Every subnet should be able to reach an EFS mount target in the same Availability Zone. Cross-AZ mounts are not permitted
-    subnet_ids         = [aws_subnet.lambda_subnet1.id, aws_subnet.lambda_subnet2.id]
-    security_group_ids = [aws_security_group.efs_mount_target_sg.id]
-  }
-
-  # Specify the file system configuration for connecting to EFS
-  file_system_config {
-    arn = aws_efs_access_point.roboclimate.arn
-    # Local mount path inside the lambda function's execution environment. Must start with '/mnt/'
-    local_mount_path = var.lambda_mount_path
-  }
-
-  # Explicitly declare dependency on EFS mount target.
-  # When creating or updating Lambda functions, mount target must be in 'available' lifecycle state.
-  depends_on = [aws_efs_mount_target.roboclimate_efs_mount_target1, aws_efs_mount_target.roboclimate_efs_mount_target2]
-}
-
-resource "aws_cloudwatch_log_group" "weather" {
-  name = "/aws/lambda/${aws_lambda_function.weather.function_name}"
-
-  retention_in_days = 30
-}
-
-resource "aws_cloudwatch_log_group" "forecast" {
-  name = "/aws/lambda/${aws_lambda_function.forecast.function_name}"
-
-  retention_in_days = 30
-}
 
 # Lambda execution roles
 # https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html
@@ -443,6 +365,6 @@ resource "aws_instance" "efs_instance" {
 module "eventbridge_scheduler" {
   source = "./modules/eventbridge"
 
-  weather_lambda_arn = aws_lambda_function.weather.arn
-  forecast_lambda_arn = aws_lambda_function.forecast.arn
+  weather_lambda_arn = module.weather_function.function_arn
+  forecast_lambda_arn = module.forecast_function.function_arn
 }
