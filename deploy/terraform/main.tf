@@ -464,6 +464,8 @@ resource "aws_iam_role" "eventbridge_exec" {
 }
 
 resource "aws_iam_policy" "eventbridge" {
+  # a more fine-grained policy than just AWSLambdaRole which allows invoking any lambda function
+
   name        = local.eventbridge_policy
   description = "policy to allow EventBridge to invoke lambda functions"
   policy      = jsonencode({
@@ -488,7 +490,8 @@ module "eventbridge" {
 
   bus_name = "roboclimate"
 
-  # we create iam role manually
+  # if true, automatically creates iam role with permission to invoke lambda functions specified as targets
+  # we are gonna do it manually though for didactic purposes
   attach_lambda_policy = false
   lambda_target_arns   = [aws_lambda_function.weather.arn, aws_lambda_function.forecast.arn]
 
