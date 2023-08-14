@@ -1,21 +1,33 @@
-# About this project
-
-## Description and motivation
+# About Roboclimate
 
 Have you ever complained about the weatherman failing to predict the weather correctly?
-
-That's the question this project aims to answer: how reliable are the weather forecasts?
-
-To do so we'll compare the accuracy of different weather models ranging from a naive approach to  sophisticated meteorological models.
+That's what this project is about: the realiability of the weather forecasts.
+To do so we'll investigate the accuracy of the meteorological models.
 
 ## Scope
 
-For now, we consider only one weather variable, temperature, and five locations: 
+### Weather variables
+
+- temperature
+- pressure
+- humidity
+- wind intensity
+- wind direction
+
+
+### Locations
+
 - London
 - Madrid
 - Sydney
 - New York
 - Sao Paulo
+- Tokyo
+- Moscow
+- Asuncion
+- Nairobi
+- Lagos
+
 
 
 ## Models
@@ -28,14 +40,9 @@ The tricky part is to identify what the last value is. For instance, if we measu
 every 3 hours and we want to predict the temperature today at 3pm, what is the last value: today's temperature at 12pm, yesterday's temperature at 3pm or maybe last year's temperature on the same day at 3pm?
 
 
-### Average values
-
-Following with the previous example, we could use the average of the temperature over the last 20
-years on the same day at 3pm
-
 ### Meteorological models
 
-Provided by OpenWeather (https://openweathermap.org/technology)
+Provided by OpenWeather API (https://openweathermap.org/technology)
 
 
 ## Metrics
@@ -52,14 +59,6 @@ It is the mean absolute error of the forecast values, divided by the mean absolu
 Values greater than one indicate that the naive method performs better than the forecast values under consideration.
 
 https://en.wikipedia.org/wiki/Mean_absolute_scaled_error
-
-
-Currently, the following metrics are supported:
-
-- **"mase"**: based on the value of the last measurement (3 hours before)
-- **"mase1d"**: based on the value of the previous day's measurement
-- **"mase1y"**: based on the value of the previous year's measurement (currently only supported for London)
-- **"mase1y_avg"**: based on the average value of the last 20 years' measurement (currently only supported for London)
 
 ### Mean absolute error (MAE)
 
@@ -78,90 +77,61 @@ Median of the absolute value of the errors.
 It is robust to outliers
 
 
-## Applications
+## Methodology
 
-This project comprises several applications that combined constitute the data pipeline:
+1. Actual weather variables are measured (read from OpenWeather API) every 3 hours: 12am, 3am, 6am and so on.
+2. Every day, we get the forecast of those weather variables for each of the hours under consideration (12am, 3am, 6am...) over the next 5 days
+3. Metrics are calculated by comparing each actual value with the value forecasted 1 day before, 2 days before, etc.
 
-- weather spider
+## Technical information
+
+This project comprises two different applications:
+
+- data collection
 - data analysis
-- notebook publisher
 
-Assuming that this project has been downloaded into a folder called `roboclimateapp`, the following
-env variable needs to be set:
+### Data collection
 
-`export PYTHONPATH=/path/to/roboclimateapp`
+Data collection consists of two different python modules (`weather_spider.py`, `forecast_spider`) that run as two separate lambda functions on AWS. Those modules share common functionality through `common.py`
 
-The command `python -m roboclimate` schedules the above applications to run:
-
-- **weather spider -> current weather**: every 3 hours
-- **weather spider -> forecast**: every day at 10:00 UTC
-- **data analysis**: every day at 10:30 UTC
-- **notebook publisher**: every day at 11:00 UTC
-
-
-### Weather spider
-
-The weather spider collects data about the actual weather and the meteorological forecast for the following 5 days.
+The data collected is stored on an EFS (Elastic File System).
 
 This data is obtained from https://openweathermap.org through the endpoints:
-
 - current weather data
 - 5 day forecast
 
 Given that the 5 day forecast only include data every 3 hours (00:00, 03:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00), those are the data points for which we get the current weather data too.
 
-The data is recorded on 2 csv files:
+The data is recorded in 2 types of csv files:
 
-- weather.csv
-- forecast.csv
+- `weather_*.csv`
+- `forecast_*.csv`
 
-that are created inside a folder called `csv_files` that, in turn, is created in the location where the script is executed.
+where `*` represents each of the locations.
 
-Example of data contained on weather.csv:
 
-```
-temp,pressure,humidity,wind_speed,wind_deg,dt,today
-1.56,1031,93,1.5,,1575331200.0,2019-12-03
-1.38,1030,86,2.1,230,1575342000.0,2019-12-03
-```
+Dependencies corresponding to the production code of data collection must be kept separate in the file `lambda_requirements.txt`. This file is used to generate the artifact to be deployed as a lambda function.
 
-and forecast.csv:
 
-```
-temp,pressure,humidity,wind_speed,wind_deg,dt,today
-2.36,1021,89,1.41,189,1575428400,2019-12-03
-2.62,1021,88,0.99,175,1575439200,2019-12-03
-```
+On the other hand, `requirements.txt` has all the dependencies to run all modules and their corresponding tests.
 
-To run the application, execute the command:
-
-`python roboclimate/weather_spider.py`
 
 ### Data analysis
 
-This application analyse the data collected by the weather spider:
+Data analysis is carried out by the modules:
 
-- **input**: weather.csv, forecast.csv
-- **output**: temp_data.csv, metrics.csv
+- `data_analysis.py`, to calculate metrics
+- `data_explorer.py`, to explore the quality of the data collected (like missing datapoints)
+- `streamlit_app.py`, Streamlit dashboard to visualize data
+
 
 Steps:
 
-- join the records from **weather.csv** and **forecast.csv** by the field `dt`, effectively, matching the true temperature with the forecast done over the 5 previous days; the result is stored on **temp_data.csv**
-- calculate the precision of the forecast according to the different metrics; the result is stored on **metrics.csv**
-
-To run the application, execute the command:
-
-`python roboclimate/data_analysis.py`
+- join the records from `weather_*.csv` and `forecast_*.csv` by the datetime field `dt` to match the actual measurement with each of the forecasts made over the 5 previous days; the result is stored in `join_*.csv``
+- calculate the precision of the forecast according to the different metrics; the result is stored on `metrics_*.csv`
 
 
-### Notebook publisher
-
-Based on the data analysis, a Jupyter notebook is generated, `notebook.ipynb`. 
-
-The notebook is exported to html and published on an NGINX server on the path **/roboclimate**
-
-
-## Tests
+### Tests
 
 ```
 pytest --cov-branch --cov-report html --cov=roboclimate tests/
@@ -169,32 +139,5 @@ pytest --cov-branch --cov-report html --cov=roboclimate tests/
 
 Coverage report is generated in the folder `htmlcov`
 
-## Deployment
+### Deployment
 
-In order to deploy the applicaton, run terraform:
-
-```
-terraform init
-terraform plan -out roboclimate.tfplan
-terraform apply roboclimate.tfplan
-```
-
-Deployment follows blue-green approach and is controlled with the variables `enable_blue_application` and `enable_green_application` defined in `robocliamte.tf`.
-
-The blue deployment MUST NOT be deleted until after copying the csv files from blue to green and verifying that it works
-correctly.
-
-With every subsequent deployment, blue-green deployments exchange their role.
-
-After running terraform:
-
-- run the locally generated file `copy_csv_files.sh` to copy csv files from the old to the new machine
-- ssh into the new machine and start the application `python -m roboclimate &`
-- logs can be followed on the file `roboclimate.log`
-- the notebook will be published on <machine_hostname>/roboclimate
-
-Export environment settings to provision cloud instance:
-
-```
-conda env export > terraform/roboclimate.yml
-```
