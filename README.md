@@ -85,7 +85,7 @@ It is robust to outliers
 
 ## Technical information
 
-This project comprises two different applications:
+This project comprises two Python 3.8 applications:
 
 - data collection
 - data analysis
