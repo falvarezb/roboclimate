@@ -42,7 +42,7 @@ terraform login
 Then execute the script
 
 ```sh
-terraform apply -var-file secrets.tfvars
+terraform apply -var-file ../secrets.tfvars
 ```
 
 Note: before running the script, it may be necessary to update the value of the variable `my_ip` in `secrets.tfvars`
@@ -77,4 +77,13 @@ Logging into said instance can be done with:
 
 ```sh
 ./connefs.sh
+```
+
+
+### Provisioning EFS's EC2 instance 
+
+In case it is necessary to trigger the execution of the `user_data` once the EC2 instance has been created, the instance must be replaced
+
+```
+terraform apply -var-file ../secrets.tfvars -replace aws_instance.efs_instance
 ```

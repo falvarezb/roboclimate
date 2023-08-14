@@ -1,6 +1,4 @@
 # https://docs.aws.amazon.com/lambda/latest/dg/welcome.html
-# How to force replacement of an aws instance so that user_data is executed again 
-# terraform apply -var-file secrets.tfvars -replace aws_instance.efs_instance
 
 provider "aws" {
   region = var.aws_region

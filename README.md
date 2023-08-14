@@ -131,7 +131,7 @@ Steps:
 - calculate the precision of the forecast according to the different metrics; the result is stored on `metrics_*.csv`
 
 
-The files `weather_*.csv` and `forecast_*.csv` need to be [downloaded from the EFS](./deploy/terraform/readme.md#%20CSV%20files)
+The files `weather_*.csv` and `forecast_*.csv` need to be [downloaded from the EFS](./terraform/readme.md#%20CSV%20files)
 
 
 ### Tests
@@ -190,4 +190,4 @@ csv_files
 
 ### Deployment
 
-See [deploy](./deploy/terraform/readme.md)
+See [deploy](./terraform/readme.md)
