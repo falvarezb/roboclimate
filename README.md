@@ -11,7 +11,7 @@ To do so we'll investigate the accuracy of the meteorological models.
 - temperature
 - pressure
 - humidity
-- wind intensity
+- wind speed
 - wind direction
 
 
@@ -131,6 +131,9 @@ Steps:
 - calculate the precision of the forecast according to the different metrics; the result is stored on `metrics_*.csv`
 
 
+The files `weather_*.csv` and `forecast_*.csv` need to be [downloaded from the EFS](./deploy/terraform/readme.md#%20CSV%20files)
+
+
 ### Tests
 
 ```
@@ -139,5 +142,52 @@ pytest --cov-branch --cov-report html --cov=roboclimate tests/
 
 Coverage report is generated in the folder `htmlcov`
 
+### Environment variables
+
+__OPEN_WEATHER_API__
+
+Key to access OpenWeather API
+
+__ROBOCLIMATE_HOME__
+
+Path to the root folder of the project
+
+__ROBOCLIMATE_CSV_FILES_PATH__
+
+Path to the root folder containing the different csv files, e.g.
+```
+csv_files
+├── forecast_london.csv
+├── forecast_madrid.csv
+├── humidity
+│   ├── join_london.csv
+│   ├── join_madrid.csv
+│   ├── metrics_london.csv
+│   ├── metrics_madrid.csv
+├── pressure
+│   ├── join_london.csv
+│   ├── join_madrid.csv
+│   ├── metrics_london.csv
+│   ├── metrics_madrid.csv
+├── temp
+│   ├── join_london.csv
+│   ├── join_madrid.csv
+│   ├── metrics_london.csv
+│   ├── metrics_madrid.csv
+├── weather_london.csv
+├── weather_madrid.csv
+├── wind_deg
+│   ├── join_london.csv
+│   ├── join_madrid.csv
+│   ├── metrics_london.csv
+│   ├── metrics_madrid.csv
+└── wind_speed
+    ├── join_london.csv
+    ├── join_madrid.csv
+    ├── metrics_london.csv
+    ├── metrics_madrid.csv
+```
+
 ### Deployment
 
+See [deploy](./deploy/terraform/readme.md)

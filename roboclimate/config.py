@@ -1,4 +1,5 @@
 import datetime as dt
+import os
 from collections import namedtuple
 
 City = namedtuple('City', 'id name firstMeasurement')
@@ -15,7 +16,7 @@ cities = {"london": City(2643743, 'london', dt.datetime(2019, 11, 28, 3, 0, 0, t
 
 weather_resources = ['weather', 'forecast']
 weather_variables = {'temperature': 'temp', 'pressure': 'pressure', 'humidity': 'humidity', 'wind_speed': 'wind_speed', 'wind_direction': 'wind_deg'}
-csv_folder = "csv_files"
+csv_folder = os.environ.get('ROBOCLIMATE_CSV_FILES_PATH')
 csv_header = list(weather_variables.values()) + ['dt', 'today']
 tolerance = {'positive_tolerance': 1200, 'negative_tolerance': 60}  # tolerance in seconds
 day_factor = 8  # number of data points per day
