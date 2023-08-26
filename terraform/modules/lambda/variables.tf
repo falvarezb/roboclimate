@@ -19,7 +19,7 @@ variable "subnet_ids" {
 }
 
 variable "security_group_ids" {
-  description = "ids of the security groups to control access to the mounted EFS"
+  description = "ids of the security groups to control access to the EFS"
   type        = list(string)  
 }
 
@@ -30,7 +30,7 @@ variable "access_point_arn" {
 
 
 variable "artifact_folder" {
-  description = "folder containing files to be packaged"
+  description = "folder containing files to be deployed"
   type        = string  
 }
 

@@ -55,12 +55,6 @@ variable "ssh_key_name" {
   sensitive   = true
 }
 
-variable "lambda_mount_path" {
-  description = "local path in lambda function to mount lambda function's working folder of the EFS filesystem"
-  type        = string
-  default     = "/mnt/efs"
-}
-
 variable "mount_path_to_root" {
   description = "local path in efs instance to mount the root of the EFS filesystem"
   type        = string

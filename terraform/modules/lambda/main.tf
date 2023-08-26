@@ -1,4 +1,5 @@
-############## Lambda function definitions ##########################
+############## Lambda function definition ##########################
+# Create lambda function and connect it to the VPC containing the EFS
 
 locals {
   lambda_mount_path = "/mnt/efs"
@@ -34,6 +35,7 @@ resource "aws_lambda_function" "roboclimate" {
     }
   }
 
+  # Connect lambda function to the VPC containing the EFS
   vpc_config {
     # Every subnet should be able to reach an EFS mount target in the same Availability Zone. Cross-AZ mounts are not permitted
     subnet_ids         = var.subnet_ids

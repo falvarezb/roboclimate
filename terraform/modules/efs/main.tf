@@ -1,4 +1,8 @@
 ############## Elastic File System ##########################
+# 1. create EFS
+# 2. create two private subnets, each of them in a different AZ for redundancy
+# 3. create a mount target on each subnet to allow access to the EFS
+# 4. create an access point to the EFS
 
 #This uses the default VPC.  It WILL NOT delete it on destroy.
 resource "aws_default_vpc" "default" {
