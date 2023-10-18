@@ -1,25 +1,43 @@
+"""
+
+Module to implement the mean absolute scaled error (https://en.wikipedia.org/wiki/Mean_absolute_scaled_error)
+
+Mean absolute scaled error (mase) is a measure of the precision of a model compared to the naive forecast
+The naive forecast consists in assuming that the next value is the same as the one of the prior period.
+
+However, "prior period" may mean different things depending on whether the time series under consideration is
+seasonal or non-seasonal.
+For instance, for the temperature forecast, we may consider as prior value the temperature on the same day and time
+of the previous month, year, etc.
+
+This module contain functions to calculate both seasonal and non-seasonal mase.
+
+An additional problem to contend with is data quality: if there are missing values in the time series, it may not be
+possible to get the value corresponding to the prior period.
+The implementation of this module rests on the content of the 'join_*.csv' files, therefore any 'hole' in those files 
+will have an impact on the calculation of the mase. The function 'data_explorer.weather_datapoints_without_five_forecasts'
+can be used to identify the 'holes' in 'join_*.csv' files.
+
+"""
+
 from datetime import datetime, timezone
-from sklearn.metrics import mean_absolute_error as mae
+# from sklearn.metrics import mean_absolute_error as mae
 import numpy as np
 from roboclimate.util import n_years_ago, remove_29_feb
 import roboclimate.config as rconf
 
 
-def mean_absolute_scaled_error(real_data, predicted_data, period=1):
+def mean_absolute_scaled_error(real_data, predicted_data, dts, period=1) -> float:
     """
-    https://en.wikipedia.org/wiki/Mean_absolute_scaled_error
-    mean absolute scaled error is a measure of the precision of a model compared to the naive forecast
-    naive forecast consists in assuming that the next value is the same as the one of the last period.
-
-    However, "last period" may mean different things for different applications.
-    By default this function takes as last period the previous value in the time series, that is the temperature from 3 hours ago.
+    This function is the basic building block of this module.
+    By default this function takes as prior period the previous value in the time series, that is the temperature corresponding to 3 hours ago.
 
     Parameters
     ----------
 
     real_data: array
 
-        array of true temperatures recorded at 3-hour intervals
+        array of actual values recorded at 3-hour intervals
 
     predicted_data: array
 
@@ -27,7 +45,7 @@ def mean_absolute_scaled_error(real_data, predicted_data, period=1):
 
     period: int
 
-        element in the temperature series considered as last period
+        relative position in the time series corresponding to the "prior period"
 
     Returns
     -------
@@ -37,18 +55,65 @@ def mean_absolute_scaled_error(real_data, predicted_data, period=1):
         ratio between the mean absolute error of the model under evaluation and the mean absolute error of the
         naive forecast
 
+        if there is no "prior period" for any of the elements in the series (this may happen if there are no enough
+        elements in the data series), np.nan is returned
+
     """
+    step_3hours = 3 * 60 * 60  # number of seconds in between datapoints
 
     if len(real_data) <= period:
         return np.nan
-    return mae(real_data[period:], predicted_data[period:]) / mae(real_data[period:], real_data[:-period])
+
+    period_in_seconds = step_3hours * period
+    forecast_zip = zip(real_data[period:], predicted_data[period:])
+    naive_forecast_zip = zip(real_data[period:], real_data[:-period])
+    dt_zip = zip(dts[period:], dts[:-period])
+    mae1 = 0
+    mae2 = 0
+
+    for dt_current, dt_previous in dt_zip:
+        real_value, forecast_value = next(forecast_zip)
+        _, naive_forecast_value = next(naive_forecast_zip)
+        if dt_current - dt_previous == period_in_seconds:
+            mae1 += abs(real_value - forecast_value)
+            mae2 += abs(real_value - naive_forecast_value)
+
+    try:
+        return mae1 / mae2
+    except ZeroDivisionError:
+        return np.nan
+    # return mae(real_data[period:], predicted_data[period:], dts) / mae(real_data[period:], real_data[:-period], dts)
 
 
 def mean_absolute_scaled_error_1year(joined_data, weather_variable):
     """
-    This function considers as "last period" the temperature from 1 year ago, on the same date at the same time.
-    In case the historical data does not contain the data point for any of the datetimes considered, the mae is not calculated
-    and np.nan is returned
+    This function considers as "prior period" the temperature corresponding to 1 year ago, on the same day at the same time.
+
+    It calculates the mase for each of the 5 forecast predictions, namely: t1, t2, t3, t4 and t5
+
+    Parameters
+    ----------
+
+    joined_data: DataFrame
+
+       temp   dt       today   t5   t4   t3   t2   t1
+    0   0.5  100  2019-11-30  4.0  1.5  2.0  3.0  1.0
+    1   0.6  200  2019-11-30  1.0  4.0  2.0  3.0  5.0
+
+
+    weather_variable: str
+        name of the weather variable contained by joined_data; in the previous example is 'temp'
+
+
+    Returns
+    -------
+
+    list[float]
+
+        list containing the mase for each tx model: [mase(t5), mase(t4), mase(t3), mase(t2), mase(t1)]
+
+        if there is no "prior period" for any of the elements in the series (this may happen if there are no enough
+        elements in the data series), np.nan is returned
 
     TODO: instead of stopping the entire calculation, just discard the offending data point and continue calculation with rest of data
     """
@@ -80,5 +145,38 @@ def mean_absolute_scaled_error_year_avg(joined_data, historical_data, weather_va
         return np.nan
 
 
-def mean_absolute_scaled_error_tx(joined_data, weather_variable):
-    return [mean_absolute_scaled_error(joined_data[weather_variable], joined_data[f't{i}'], i * rconf.day_factor) for i in range(5, 0, -1)]
+def mean_absolute_scaled_error_tx(joined_data, weather_variable) -> 'list[float]':
+    """
+    This function considers as "prior period" the temperature corresponding to 1 year ago, on the same day at the same time.
+
+    This function calculates the mase for each of the 5 forecast models: t1, t2, t3, t4 and t5.
+    For each model, the natural "prior period" is the number of days of the forecast: 1, 2, 3, 4, 5
+
+    Data quality issues like missing values of the "prior period" are considered negligible since any effect will 
+    be very localised: 'mase(tx)' calculation will be affected only in those cases where there are missing values in the 
+    previous 'x*rconf.day_factor' elements of the time series (in such a case, the wrong datetimes will be compared)
+
+    Parameters
+    ----------
+
+    joined_data: DataFrame
+
+       temp   dt       today   t5   t4   t3   t2   t1
+    0   0.5  100  2019-11-30  4.0  1.5  2.0  3.0  1.0
+    1   0.6  200  2019-11-30  1.0  4.0  2.0  3.0  5.0
+
+
+    weather_variable: str
+        name of the weather variable contained by joined_data; in the previous example is 'temp'
+
+
+    Returns
+    -------
+
+    list[float]
+
+        list containing the mase for each tx model: [mase(tx), for x in 5...1]
+
+        if a model cannot be calculated becase there are no enough elements in the data series, np.nan is returned for said model   
+    """
+    return [mean_absolute_scaled_error(joined_data[weather_variable], joined_data[f't{i}'], joined_data['dt'], i * rconf.day_factor) for i in range(5, 0, -1)]

@@ -1,70 +1,15 @@
-from typing import Mapping
-from threading import Thread
-from datetime import timezone, datetime
 import os
-import logging
-from json.decoder import JSONDecodeError
-import requests
-from requests.exceptions import ConnectionError
-from apscheduler.schedulers.blocking import BlockingScheduler
-from tenacity import retry, retry_if_exception_type, wait_fixed, stop_after_attempt
-import roboclimate.util as util
-from roboclimate.config import weather_resources, City
-import roboclimate.config as config
+from datetime import timezone, datetime, date
+from common import logger, write_to_filesystem, utcnow_date, run_city, csv_rows, CITIES
+
+# constants
+WEATHER_RESOURCE = "weather"
+TOLERANCE = {'positive_tolerance': 1200, 'negative_tolerance': 60}  # tolerance in seconds
 
 
-logger = logging.getLogger(__name__)
-
-
-def transform_weather_data_to_csv(weather_resource_json, current_dt, rows_generator, dt_normaliser, tolerance):
-    return [[j['main']['temp'], j['main']['pressure'], j['main']['humidity'], j['wind']['speed'], j['wind'].get('deg', ""), dt_normaliser(j['dt'], current_dt, tolerance), str(current_dt)[:10]] for j in rows_generator(weather_resource_json)]
-
-
-@retry(retry=retry_if_exception_type(ConnectionError), stop=stop_after_attempt(2), wait=wait_fixed(5), reraise=True)
-def read_remote_resource(url):
-    return requests.get(url)
-
-
-def collect_weather_data(url, rows_generator, dt_normaliser, current_dt_generator, csv_file, tolerance):
+def epoch_time(date: date) -> 'dict[str,int]':
     """
-    Reads weather data from Open Weather's endpoints and store it in a CSV file
-
-    Parameters
-    ----------
-    weather_resource_info : dict
-        info about the weather resource to be fetched
-    current_dt : datetime
-        current UTC date and time
-    city: int
-        city id to get weather data for
-
-    Returns
-    -------
-    None
-        this function only produces side-effects
-
-    """
-
-    try:
-        weather_resource_raw = read_remote_resource(url)
-        weather_resource_json = weather_resource_raw.json()
-        rows = transform_weather_data_to_csv(weather_resource_json, current_dt_generator(), rows_generator, dt_normaliser, tolerance)
-        util.write_rows(csv_file, rows)
-    except ConnectionError:
-        logger.error(f"ConnectionError while reading {url}", exc_info=True)
-    except JSONDecodeError:
-        logger.error(f"JSONDecodeError while reading {url} and parsing '{weather_resource_raw.text}'", exc_info=True)
-    except Exception as ex:
-        logger.error(f"Error {ex} while reading {url}", exc_info=True)
-
-
-def generate_url(weather_resource, city: City):
-    return f"http://api.openweathermap.org/data/2.5/{weather_resource}?id={city.id}&units=metric&appid={os.environ.get('OPEN_WEATHER_API')}"
-
-
-def epoch_time(date):
-    """
-    Calculate the POSIX timestamp at the times: 0, 3, 6, 9, 12, 15, 18 and 21 of the date passed as parameter
+    Calculate the POSIX timestamp at the hours: 0, 3, 6, 9, 12, 15, 18 and 21 of the date passed as parameter
 
     According to https://docs.python.org/3.6/library/datetime.html
 
@@ -83,8 +28,8 @@ def epoch_time(date):
     -------
     dict
 
-        dict containing 8 pairs (time, POSIX timestamp) corresponding to the date passed as parameter
-        the keys of the 8 pairs are: "0", "3", "6", "9", "12", "15", "18", "21"
+        dict containing 8 pairs where the keys are the hours "0", "3", "6", "9", "12", "15", "18", "21" and the values are
+        the corresponding POSIX timestamp on the given date
 
     """
 
@@ -95,7 +40,7 @@ def epoch_time(date):
     return dict(zip(keys, values))
 
 
-def normalise_dt(dt, current_utc_date, tolerance):
+def normalise_datetime(dt: int, current_utc_date: date, tolerance: 'dict[str,int]'):
     """
     Open Weather's "five day forecast" endpoint always returns data for 8 specific timestamps: 0, 3, 6, 9, 12, 15, 18 and 21.
 
@@ -137,46 +82,33 @@ def normalise_dt(dt, current_utc_date, tolerance):
     for hour in iter(normalised_dts):
         if lower_bound <= normalised_dts[hour] < upper_bound:
             return normalised_dts[hour]
-    logger.warning(f"it was not possible to normalise this timestamp {dt} to any of the values in {normalised_dts}")
+    logger.warning("it was not possible to normalise this timestamp %s to any of the values in %s", dt, normalised_dts)
     return dt
 
 
-def collect_current_weather_data(current_utc_date_generator, cities: Mapping[str, City], csv_folder, tolerance):
-    weather_resource = weather_resources[0]
-    rows_generator = lambda json: [json]
-    dt_normaliser = normalise_dt
-
-    for city_name, city_id in cities.items():
-        url = generate_url(weather_resource, city_id)
-        csv_file = util.csv_file_path(csv_folder, weather_resource, city_name)
-        Thread(target=collect_weather_data, name=city_name, args=(url, rows_generator, dt_normaliser, current_utc_date_generator, csv_file, tolerance)).start()
-        # collect_weather_data(url, rows_generator, dt_normaliser, current_utc_date_generator, csv_file, tolerance)
+def transform_weather_data_to_csv(weather_data_json: dict, conversion_params: dict) -> csv_rows:
+    current_utc_date = conversion_params['utcnow_date']
+    tolerance = conversion_params['tolerance']
+    return [[weather_data_json['main']['temp'], weather_data_json['main']['pressure'], weather_data_json['main']['humidity'], weather_data_json['wind']['speed'], weather_data_json['wind'].get('deg', ""), normalise_datetime(weather_data_json['dt'], current_utc_date, tolerance), str(current_utc_date)]]
 
 
-def collect_five_day_weather_forecast_data(current_utc_date_generator, cities, csv_folder, tolerance):
-    weather_resource = weather_resources[1]
-    rows_generator = lambda json: json['list']
-    dt_normaliser = lambda dt, current_dt, tolerance: dt
-    for city_name, city_id in cities.items():
-        collect_weather_data(generate_url(weather_resource, city_id), rows_generator, dt_normaliser,
-                             current_utc_date_generator, util.csv_file_path(csv_folder, weather_resource, city_name), tolerance)
+def weather_handler(event, context):
+    if event is not None:
+        logger.info('running on AWS env')
+    else:
+        logger.info('running on local env')
+
+    for city_name, city_id in CITIES.items():
+        run_params = {
+            'utcnow_date': utcnow_date(),
+            'tolerance': TOLERANCE,
+            'json_to_csv_f': transform_weather_data_to_csv,            
+            'csv_files_path': os.environ.get('ROBOCLIMATE_CSV_FILES_PATH')
+        }
+
+        run_city(city_name, city_id, WEATHER_RESOURCE, run_params)
 
 
-def main():
-
-    logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level='INFO')
-
-    util.init(config.csv_folder, config.csv_header, config.cities.keys())
-
-    # collect_current_weather_data(util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance)
-    # collect_five_day_weather_forecast_data(util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance)
-
-    scheduler = BlockingScheduler()
-    scheduler.add_job(collect_current_weather_data, 'cron', [util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance], hour='*/3')
-    scheduler.add_job(collect_five_day_weather_forecast_data, 'cron', [
-                      util.current_utc_date_generator, config.cities, config.csv_folder, config.tolerance], hour=22)
-    scheduler.start()
-
-
+# when running on AWS env, __name__ = file name specified in AWS runtime's handler
 if __name__ == '__main__':
-    main()
+    weather_handler(None, None)

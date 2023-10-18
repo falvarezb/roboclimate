@@ -7,7 +7,7 @@ setuptools.setup(
     name="roboclimate",
     version="0.0.1",
     author="falvarezb",
-    author_email="falvarez.berron@gmail.com",
+    author_email="41089629+falvarezb@users.noreply.github.com",
     description="Evaluation of climate models accuracy",
     long_description=long_description,
     long_description_content_type="text/markdown",
