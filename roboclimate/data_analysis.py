@@ -23,6 +23,7 @@ CAUTION: while those limits apply to all cities and weather variables, not all o
 
 """
 
+import os
 from typing import List, Tuple, Dict
 import logging
 from math import sqrt
@@ -189,6 +190,12 @@ def analyse_city_data(city_name: str, segments: List[Tuple[int, int]] = []) -> N
 
         for _, weather_variable in config.weather_variables.items():
             try:
+                # create folders if they don't exist
+                weather_variable_folder = f"{config.csv_folder}/{weather_variable}"
+                if not os.path.exists(weather_variable_folder):
+                    os.mkdir(weather_variable_folder)
+                
+
                 # file pointers
                 join_file = util.csv_file_path(config.csv_folder, "join", city_name, weather_variable)
                 metrics_file = util.csv_file_path(config.csv_folder, "metrics", city_name, weather_variable)
@@ -217,9 +224,9 @@ def analyse_data(segments: List[Tuple[int, int]] = []):
 
 def main():
     logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level='INFO')
-    analyse_city_data('tokyo')
+    # analyse_city_data('tokyo')
     # analyse_city_data('madrid', [(2328,2840)])
-    # analyse_data()
+    analyse_data()
     logger.info('END')
 
 

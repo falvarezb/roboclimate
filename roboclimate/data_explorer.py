@@ -31,10 +31,9 @@ def load_forecast_file(city: City):
 
 
 def load_csv_files(city: City, weather_variable: str) -> dict:
-    actual_value_df = pd.read_csv(load_weather_file(city), usecols=[weather_variable, 'dt', 'today'], dtype={'dt': 'int64'})
-    forecast_value_df = pd.read_csv(load_forecast_file(city), usecols=[weather_variable, 'dt', 'today'], dtype={'dt': 'int64'})
-    join_data_df = pd.read_csv(f"{rconf.csv_folder}/{weather_variable}/join_{city.name}.csv",
-                               usecols=[weather_variable, 'dt', 'today', 't5', 't4', 't3', 't2', 't1'])
+    actual_value_df = pd.read_csv(csv_file_path(rconf.csv_folder, rconf.weather_resources[0], city.name), usecols=[weather_variable, 'dt', 'today'], dtype={'dt': 'int64'})
+    forecast_value_df = pd.read_csv(csv_file_path(rconf.csv_folder, rconf.weather_resources[1], city.name), usecols=[weather_variable, 'dt', 'today'], dtype={'dt': 'int64'})
+    join_data_df = pd.read_csv(f"{rconf.csv_folder}/{weather_variable}/join_{city.name}.csv", usecols=[weather_variable, 'dt', 'today', 't5', 't4', 't3', 't2', 't1'])
     metrics_df = pd.read_csv(f"{rconf.csv_folder}/{weather_variable}/metrics_{city.name}.csv")
     return {"true_temp_df": actual_value_df, "forecast_temp_df": forecast_value_df, "join_data_df": join_data_df, "metrics_df": metrics_df}
 
@@ -122,11 +121,11 @@ def data_point_gaps(city: City, weather_variable: str) -> List[Tuple[int, str, i
     left_index = 0
     for i in range(1, len(dts)):
         if dts[i] - dts[i - 1] != step_3hours:
-            intervals.append((left_index, dt.datetime.fromtimestamp(interval_left_side).isoformat(), i - 1, dt.datetime.fromtimestamp(dts[i - 1]).isoformat()))
+            intervals.append((left_index, dt.datetime.fromtimestamp(interval_left_side, dt.timezone.utc).isoformat(), i - 1, dt.datetime.fromtimestamp(dts[i - 1], dt.timezone.utc).isoformat()))
             interval_left_side = dts[i]
             left_index = i
 
-    intervals.append((left_index, dt.datetime.fromtimestamp(interval_left_side).isoformat(), i - 1, dt.datetime.fromtimestamp(dts[i - 1]).isoformat()))
+    intervals.append((left_index, dt.datetime.fromtimestamp(interval_left_side, dt.timezone.utc).isoformat(), i - 1, dt.datetime.fromtimestamp(dts[i - 1], dt.timezone.utc).isoformat()))
     return intervals
 
 
