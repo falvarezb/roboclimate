@@ -66,7 +66,10 @@ The default location can be overriden by providing an argument to the scripts
 ./download_csv_files.sh
 ```
 
-Note: it may be necessary to add the private key to the ssh agent (`ssh-add <key_file>`)
+__IMPORTANT__: 
+- it may be necessary to add the private key to the ssh agent (`ssh-add <key_file>`)
+
+- it may be necessary to re-run terraform with the current value of `my_ip` to update the security group that allows ssh access
 
 Since the EC2 instance in the private subnet is only needed to upload/download csv files, it can be stopped for most of the time to save costs. The instance can be stopped and started with:
 
