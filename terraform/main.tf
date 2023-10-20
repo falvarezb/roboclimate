@@ -257,8 +257,8 @@ resource "aws_instance" "efs_instance" {
     mount -t efs -o tls,accesspoint=${module.efs.access_point_id} ${module.efs.file_system_id}:/ ${var.mount_path_to_lwf}
     # Update /etc/fstab for Automatic Mounting: To ensure the EFS file system is mounted automatically on boot, 
     # add an entry to the /etc/fstab file
-    echo "${module.efs.file_system_id}:/ ${var.mount_path_to_root} efs defaults 0 0" | sudo tee -a /etc/fstab
-    echo "${module.efs.file_system_id}:/ ${var.mount_path_to_lwf} efs _netdev,tls,accesspoint=${module.efs.access_point_id} 0 0" | sudo tee -a /etc/fstab
+    echo "${module.efs.file_system_id} ${var.mount_path_to_root} efs _netdev,tls,nofail 0 0" | sudo tee -a /etc/fstab
+    echo "${module.efs.file_system_id} ${var.mount_path_to_lwf} efs _netdev,tls,accesspoint=${module.efs.access_point_id},nofail 0 0" | sudo tee -a /etc/fstab
     echo "EFS instance setup complete."
   EOT
 
