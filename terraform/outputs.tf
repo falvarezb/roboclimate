@@ -7,7 +7,7 @@ output "weather_function_info" {
 
 output "forecast_function_info" {
   description = "Name and version of the forecast function."
-  value       = module.weather_function.function_info
+  value       = module.forecast_function.function_info
 }
 
 output "nat_public_ip" {
