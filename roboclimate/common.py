@@ -23,6 +23,18 @@ CITIES = {"london": 2643743,
           "asuncion": 3439389,
           "lagos": 2332459}
 
+# https://api.openweathermap.org/geo/1.0/direct?q=London,GB&limit=5&appid=YOUR_API_KEY
+CITY_COORDINATES = {"london": (51.5073219, -0.1276474),
+                        "madrid": (40.4167047, -3.7035825),
+                        "saopaulo": (-23.5506507, -46.6333824),
+                        "sydney": (-33.8698439, 151.2082848),
+                        "newyork": (40.7127281, -74.0060152),
+                        "moscow": (55.7504461, 37.6174943),
+                        "tokyo": (35.6828387, 139.7594549),
+                        "nairobi": (-1.2832533, 36.8172449),
+                        "asuncion": (-25.2800459, -57.6343814),
+                        "lagos": (6.4550575, 3.3941795)}
+
 CSV_HEADER = "temp,pressure,humidity,wind_speed,wind_deg,dt,today"
 
 # global variables
@@ -51,16 +63,11 @@ def read_remote_resource(url):
     return requests.get(url, timeout=10)
 
 
-def compose_url(city_id: int, weather_resource: str):
-    return f"http://api.openweathermap.org/data/2.5/{weather_resource}?id={city_id}&units=metric&appid={os.environ.get('OPEN_WEATHER_API')}"
-
-
-def fetch_data(city_id: int, weather_resource: str) -> requests.Response:
+def fetch_data(weather_resource_url: str) -> requests.Response:
     try:
-        url = compose_url(city_id, weather_resource)
-        return read_remote_resource(url)
+        return read_remote_resource(weather_resource_url)
     except Exception as ex:
-        logger.error("Error '%s' while reading '%s'", ex, url, exc_info=False)
+        logger.error("Error '%s' while reading '%s'", ex, weather_resource_url, exc_info=False)
         raise ex
 
 
@@ -105,9 +112,9 @@ def transform_data(weather_data: requests.Response, coversion_params: dict) -> c
         raise ex
 
 
-def run_city(city_name: str, city_id: int, weather_resource: str, run_params: dict):
+def run_city(city_name: str, weather_resource: str, weather_resource_url: str, run_params: dict):
     try:
-        weather_data = fetch_data(city_id, weather_resource)
+        weather_data = fetch_data(weather_resource_url)
         weather_data_csv = transform_data(weather_data, run_params)
         write_data(city_name, weather_resource, weather_data_csv, run_params['csv_files_path'])
     except Exception as ex:

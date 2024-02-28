@@ -106,7 +106,8 @@ def weather_handler(event, context):
             'csv_files_path': os.environ.get('ROBOCLIMATE_CSV_FILES_PATH')
         }
 
-        run_city(city_name, city_id, WEATHER_RESOURCE, run_params)
+        weather_resource_url = f"http://api.openweathermap.org/data/2.5/{WEATHER_RESOURCE}?id={city_id}&units=metric&appid={os.environ.get('OPEN_WEATHER_API')}"
+        run_city(city_name, WEATHER_RESOURCE, weather_resource_url, run_params)
 
 
 # when running on AWS env, __name__ = file name specified in AWS runtime's handler

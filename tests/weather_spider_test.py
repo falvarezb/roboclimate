@@ -117,12 +117,11 @@ def test_collect_current_weather_data(env, req, csv_folder):
         json_body = json.loads(f.read())
 
     req.get.return_value.json.return_value = json_body
-    env.get.return_value = 'id'
 
-    rspider.run_city('london', '1', rspider.WEATHER_RESOURCE, run_params)
+    rspider.run_city('london', rspider.WEATHER_RESOURCE, 'weather_resource_url', run_params)
     time.sleep(1)
 
-    req.get.assert_any_call("http://api.openweathermap.org/data/2.5/weather?id=1&units=metric&appid=id", timeout=10)
+    req.get.assert_any_call("weather_resource_url", timeout=10)
 
     with open(f"{csv_folder}/weather_london.csv", encoding='UTF-8') as f:
         rows = list(map(lambda row: row.split(','), f.readlines()))
@@ -138,12 +137,10 @@ def test_collect_current_weather_data(env, req, csv_folder):
 
 @patch('common.read_remote_resource')
 @patch('common.logger')
-@patch('common.compose_url')
-def test_log_error_when_fetching_data(compose_url, logger, read_remote_resource):
+def test_log_error_when_fetching_data(logger, read_remote_resource):
     try:
         read_remote_resource.side_effect = ConnectionError('error')
-        compose_url.return_value = 'url'
-        common.fetch_data(123, rspider.WEATHER_RESOURCE)
+        common.fetch_data('url')
     except Exception:
         assert logger.error.call_args[0][0] == "Error '%s' while reading '%s'"
         assert logger.error.call_args[0][1].args[0] == 'error'
@@ -167,7 +164,7 @@ def test_log_error_when_transforming_data(logger):
 @patch('common.logger')
 def test_log_error_when_running_city(logger, fetch_data):
     fetch_data.side_effect = Exception('error')
-    rspider.run_city('city name', 123, rspider.WEATHER_RESOURCE, {})
+    rspider.run_city('city name', rspider.WEATHER_RESOURCE, 'weather_resource_url', {})
     assert logger.error.call_args[0][0] == "Error '%s' while processing '%s'"
     assert logger.error.call_args[0][1].args[0] == 'error'
     assert logger.error.call_args[0][2] == "city name"
