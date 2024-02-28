@@ -86,9 +86,9 @@ def normalise_datetime(dt: int, current_utc_date: date, tolerance: 'dict[str,int
     return dt
 
 
-def transform_weather_data_to_csv(weather_data_json: dict, conversion_params: dict) -> csv_rows:
-    current_utc_date = conversion_params['utcnow_date']
-    tolerance = conversion_params['tolerance']
+def transform_weather_data_to_csv(weather_data_json: dict, run_params: dict) -> csv_rows:
+    current_utc_date = run_params['utcnow_date']
+    tolerance = run_params['tolerance']
     return [[weather_data_json['main']['temp'], weather_data_json['main']['pressure'], weather_data_json['main']['humidity'], weather_data_json['wind']['speed'], weather_data_json['wind'].get('deg', ""), normalise_datetime(weather_data_json['dt'], current_utc_date, tolerance), str(current_utc_date)]]
 
 

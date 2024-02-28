@@ -103,10 +103,10 @@ def write_data(city_name: str, weather_resource: str, weather_data_csv: csv_rows
     write_to_filesystem(csv_file_name, csv_data_serialized)
 
 
-def transform_data(weather_data: requests.Response, coversion_params: dict) -> csv_rows:
+def transform_data(weather_data: requests.Response, run_params: dict) -> csv_rows:
     try:
         weather_data_json = weather_data.json()
-        return coversion_params['json_to_csv_f'](weather_data_json, coversion_params)
+        return run_params['json_to_csv_f'](weather_data_json, run_params)
     except Exception as ex:
         logger.error("Error '%s' while parsing '%s'", ex, weather_data.text, exc_info=True)
         raise ex
