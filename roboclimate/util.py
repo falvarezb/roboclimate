@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import datetime, date, timedelta, timezone
 import csv
 import os
 import logging
@@ -7,6 +7,34 @@ from roboclimate.config import weather_resources
 from roboclimate import config
 
 logger = logging.getLogger(__name__)
+
+def noon_dt_gen(tdelta: timedelta, seed: date):
+    """Returns a generator of datetime objects representing the time 12:00:00 for a sequence of dates in the time zone 
+    specified by tdelta.
+
+    To get the maximum UVI value, we need to consider the time of the day when the sun is at its highest point in the sky
+    (solar noon).
+
+    For the purpose of this application, we'll assume that solar noon occurs at 12:00:00 (civil noon). This is a simplification
+    as the actual solar noon can vary from day to day and from one location to another.
+
+    For time zones with DST, solar noon happens at 13:00:00 during the period of daylight saving time.
+
+    To avoid having to deal with DST, the current implementation is not DST-aware and therefore solar noon is always at 12:00:00.
+
+    Args:
+        tdelta (timedelta): value used to identify the time zone
+        seed (date): starting date (to be interpreted in the time zone specified by tdelta)
+
+    Yields:
+        float: POSIX timestamp of the datetime object
+    """
+    # Create a timedelta of 1 day
+    one_day = timedelta(days=1)
+    dt = datetime(seed.year, seed.month, seed.day, 12, 0, 0, tzinfo=timezone(tdelta))
+    while True:
+        yield dt.timestamp()
+        dt += one_day
 
 
 def current_utc_date_generator():
