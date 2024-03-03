@@ -40,7 +40,7 @@ def handler(event, context):
     }
     for city_name, city_params in CITY_PARAMS.items():
         # using 'offset' time zone to avoid dealing with DST
-        tz = timezone(timedelta(city_params.tz_offset))
+        tz = timezone(timedelta(hours=city_params.tz_offset))
         solar_noon_dt = int(datetime(yesterday.year, yesterday.month, yesterday.day, 12, 0, 0, tzinfo=tz).timestamp())
         weather_resource_url = f"https://api.openweathermap.org/data/3.0/onecall/timemachine?lat={city_params.lat}&lon={city_params.lon}&units=metric&dt={solar_noon_dt}&appid={os.environ.get('OPEN_WEATHER_API')}"
         run_city(city_name, WEATHER_RESOURCE, weather_resource_url, run_params)
