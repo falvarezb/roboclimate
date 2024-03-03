@@ -27,16 +27,16 @@ CITIES = {"london": 2643743,
 # openweathermap provides an endpoint to get a city's geo coordinates
 # https://api.openweathermap.org/geo/1.0/direct?q=London,GB&limit=5&appid=YOUR_API_KEY
 CityParams = namedtuple('CityParams', 'city_name lat lon tz_offset')
-CITY_PARAMS = {'london': CityParams('london', 51.5073219, -0.1276474, 0)}
-            #    'madrid': CityParams('madrid', 40.4167047, -3.7035825, 1),
-            #    'saopaulo': CityParams('saopaulo', -23.5506507, -46.6333824, -3),
-            #    'sydney': CityParams('sydney', -33.8698439, 151.2082848, 10),
-            #    'newyork': CityParams('newyork', 40.7127281, -74.0060152, -5),
-            #    'moscow': CityParams('moscow', 55.7504461, 37.6174943, 3),
-            #    'tokyo': CityParams('tokyo', 35.6828387, 139.7594549, 9),
-            #    'nairobi': CityParams('nairobi', -1.2832533, 36.8172449, 3),
-            #    'asuncion': CityParams('asuncion', -25.2800459, -57.6343814, -4),
-            #    'lagos': CityParams('lagos', 6.4550575, 3.3941795, 1)}
+CITY_PARAMS = {'london': CityParams('london', 51.5073219, -0.1276474, 0),
+               'madrid': CityParams('madrid', 40.4167047, -3.7035825, 1),
+               'saopaulo': CityParams('saopaulo', -23.5506507, -46.6333824, -3),
+               'sydney': CityParams('sydney', -33.8698439, 151.2082848, 10),
+               'newyork': CityParams('newyork', 40.7127281, -74.0060152, -5),
+               'moscow': CityParams('moscow', 55.7504461, 37.6174943, 3),
+               'tokyo': CityParams('tokyo', 35.6828387, 139.7594549, 9),
+               'nairobi': CityParams('nairobi', -1.2832533, 36.8172449, 3),
+               'asuncion': CityParams('asuncion', -25.2800459, -57.6343814, -4),
+               'lagos': CityParams('lagos', 6.4550575, 3.3941795, 1)}
 
 CSV_HEADER = "temp,pressure,humidity,wind_speed,wind_deg,dt,today"
 
