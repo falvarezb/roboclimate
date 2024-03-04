@@ -96,7 +96,7 @@ def test_collect_current_weather_data(req, csv_folder):
         'tolerance': {'positive_tolerance': 60, 'negative_tolerance': 5},
         'json_to_csv_f': rspider.transform_weather_data_to_csv,
         'csv_files_path': csv_folder,
-        'csv_header': 'temp,pressure,humidity,wind_speed,wind_deg,dt,today'
+        'csv_header': rspider.CSV_HEADER
     }
 
     with open("tests/json_files/weather.json", encoding='UTF-8') as f:
@@ -112,6 +112,13 @@ def test_collect_current_weather_data(req, csv_folder):
     with open(f"{csv_folder}/weather_london.csv", encoding='UTF-8') as f:
         rows = list(map(lambda row: row.split(','), f.readlines()))
 
+    assert rows[0][0] == 'temp'
+    assert rows[0][1] == 'pressure'
+    assert rows[0][2] == 'humidity'
+    assert rows[0][3] == 'wind_speed'
+    assert rows[0][4] == 'wind_deg'
+    assert rows[0][5] == 'dt'
+    assert rows[0][6] == 'today\n'
     assert rows[1][0] == '300.15'
     assert rows[1][1] == '1007'
     assert rows[1][2] == '74'
