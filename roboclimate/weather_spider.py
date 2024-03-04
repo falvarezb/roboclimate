@@ -1,6 +1,6 @@
 import os
 from datetime import timezone, datetime, date
-from common import logger, write_to_filesystem, utcnow_date, run_city, csv_rows, CITIES
+from common import logger, utcnow_date, run_city, csv_rows, CITIES
 
 # constants
 WEATHER_RESOURCE = "weather"
@@ -98,14 +98,14 @@ def weather_handler(event, context):
     else:
         logger.info('running on local env')
 
+    run_params = {
+    'utcnow_date': utcnow_date(),
+    'tolerance': TOLERANCE,
+    'json_to_csv_f': transform_weather_data_to_csv,            
+    'csv_files_path': os.environ.get('ROBOCLIMATE_CSV_FILES_PATH'),
+    'csv_header': 'temp,pressure,humidity,wind_speed,wind_deg,dt,today'
+    }
     for city_name, city_id in CITIES.items():
-        run_params = {
-            'utcnow_date': utcnow_date(),
-            'tolerance': TOLERANCE,
-            'json_to_csv_f': transform_weather_data_to_csv,            
-            'csv_files_path': os.environ.get('ROBOCLIMATE_CSV_FILES_PATH')
-        }
-
         weather_resource_url = f"http://api.openweathermap.org/data/2.5/{WEATHER_RESOURCE}?id={city_id}&units=metric&appid={os.environ.get('OPEN_WEATHER_API')}"
         run_city(city_name, WEATHER_RESOURCE, weather_resource_url, run_params)
 

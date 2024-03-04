@@ -74,7 +74,7 @@ def fetch_data(weather_resource_url: str) -> requests.Response:
         raise ex
 
 
-def write_to_filesystem(file_name: str, data: str):
+def write_to_filesystem(file_name: str, data: str, csv_header: str):
     logger.info('writing file %s', file_name)
     if os.path.exists(file_name):
         # append data
@@ -83,7 +83,7 @@ def write_to_filesystem(file_name: str, data: str):
     else:
         # add header when file is first created
         with open(f"{file_name}", 'w', encoding='UTF-8') as f:
-            f.write(f"{CSV_HEADER}\n{data}")
+            f.write(f"{csv_header}\n{data}")
 
 
 def write_to_s3(file_name: str, data: str):
@@ -100,10 +100,10 @@ def write_to_s3(file_name: str, data: str):
     s3.put_object(Body=data, Bucket=s3_bucket_name, Key=file_name)
 
 
-def write_data(city_name: str, weather_resource: str, weather_data_csv: csv_rows, csv_files_path):
+def write_data(city_name: str, weather_resource: str, weather_data_csv: csv_rows, csv_files_path, csv_header):
     csv_file_name = f"{csv_files_path}/{weather_resource}_{city_name}.csv"
     csv_data_serialized = ('\n'.join([','.join(map(str, row)) for row in weather_data_csv])) + '\n'
-    write_to_filesystem(csv_file_name, csv_data_serialized)
+    write_to_filesystem(csv_file_name, csv_data_serialized, csv_header)
 
 
 def transform_data(weather_data: requests.Response, run_params: dict) -> csv_rows:
@@ -119,6 +119,6 @@ def run_city(city_name: str, weather_resource: str, weather_resource_url: str, r
     try:
         weather_data = fetch_data(weather_resource_url)
         weather_data_csv = transform_data(weather_data, run_params)
-        write_data(city_name, weather_resource, weather_data_csv, run_params['csv_files_path'])
+        write_data(city_name, weather_resource, weather_data_csv, run_params['csv_files_path'], run_params['csv_header'])
     except Exception as ex:
         logger.error("Error '%s' while processing '%s'", ex, city_name, exc_info=True)

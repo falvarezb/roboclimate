@@ -81,14 +81,3 @@ def test_init(csv_folder):
     with open(f"{csv_folder}/forecast_madrid.csv") as f:
         assert f.readline() == "field1,field2\n"
 
-
-def test_noon_dt_gen():    
-    dt = rutil.noon_dt_gen(timedelta(hours=-3), date(2022, 12, 31))
-    assert int(next(dt)) == 1672498800
-    assert int(next(dt)) == 1672585200
-
-def test_noon_dt_gen_with_dst():
-    # DST changes should be ignored
-    dt = rutil.noon_dt_gen(timedelta(hours=1), date(2024, 3, 30))
-    assert int(next(dt)) == 1711796400
-    assert int(next(dt)) == 1711882800

@@ -110,7 +110,8 @@ def test_collect_current_weather_data(env, req, csv_folder):
         'utcnow_date': date(2017, 1, 30),
         'tolerance': {'positive_tolerance': 60, 'negative_tolerance': 5},
         'json_to_csv_f': rspider.transform_weather_data_to_csv,
-        'csv_files_path': csv_folder
+        'csv_files_path': csv_folder,
+        'csv_header': 'temp,pressure,humidity,wind_speed,wind_deg,dt,today'
     }
 
     with open("tests/json_files/weather.json", encoding='UTF-8') as f:

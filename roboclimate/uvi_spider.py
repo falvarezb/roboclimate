@@ -22,8 +22,13 @@ from common import CITY_PARAMS, logger, run_city, csv_rows
 WEATHER_RESOURCE = "uvi"
 
 
+def epoch_time_to_iso(epoch_time, tz):
+    return datetime.fromtimestamp(epoch_time, tz=timezone.utc).astimezone(tz).isoformat()
+
+
 def transform_weather_data_to_csv(weather_data_json: dict, run_params: dict) -> csv_rows:
-    return [[weather_data_json['data'][0]['dt'], weather_data_json['data'][0]['uvi']]]
+    dt = weather_data_json['data'][0]['dt']
+    return [[weather_data_json['data'][0]['uvi'], dt, epoch_time_to_iso(dt, run_params['timezone'])]]
 
 
 def handler(event, context):
@@ -34,13 +39,15 @@ def handler(event, context):
 
     # Please pay attention that historical UV index data available only for 5 days back
     yesterday = date.today() + timedelta(days=-1)
-    run_params = {
-        'json_to_csv_f': transform_weather_data_to_csv,
-        'csv_files_path': os.environ.get('ROBOCLIMATE_CSV_FILES_PATH')
-    }
     for city_name, city_params in CITY_PARAMS.items():
         # using 'offset' time zone to avoid dealing with DST
         tz = timezone(timedelta(hours=city_params.tz_offset))
+        run_params = {
+            'json_to_csv_f': transform_weather_data_to_csv,
+            'csv_files_path': os.environ.get('ROBOCLIMATE_CSV_FILES_PATH'),
+            'csv_header': 'uvi,epochdt,isodt',
+            'timezone': tz
+        }
         solar_noon_dt = int(datetime(yesterday.year, yesterday.month, yesterday.day, 12, 0, 0, tzinfo=tz).timestamp())
         weather_resource_url = f"https://api.openweathermap.org/data/3.0/onecall/timemachine?lat={city_params.lat}&lon={city_params.lon}&units=metric&dt={solar_noon_dt}&appid={os.environ.get('OPEN_WEATHER_API')}"
         run_city(city_name, WEATHER_RESOURCE, weather_resource_url, run_params)
