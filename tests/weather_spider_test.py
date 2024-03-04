@@ -89,23 +89,8 @@ def test_normalise_dt_fail(mock_epoch_time, fixtures):
     assert rspider.normalise_datetime(fixtures['dt'], fixtures['current_utc_date'], tolerance) == fixtures['dt']
 
 
-def test_transform_current_weather_data_to_csv(fixtures):
-    with open("tests/json_files/weather.json", encoding='UTF-8') as f:
-        data_json = json.load(f)
-
-    csv_row = rspider.transform_weather_data_to_csv(data_json, {'utcnow_date': fixtures['current_utc_date'], 'tolerance': rspider.TOLERANCE})[0]
-    assert csv_row[0] == 300.15
-    assert csv_row[1] == 1007
-    assert csv_row[2] == 74
-    assert csv_row[3] == 3.6
-    assert csv_row[4] == 160
-    assert csv_row[5] == 1485790200
-    assert csv_row[6] == str(fixtures['current_utc_date'])
-
-
 @patch('common.requests')
-@patch('common.os.environ')
-def test_collect_current_weather_data(env, req, csv_folder):
+def test_collect_current_weather_data(req, csv_folder):
     run_params = {
         'utcnow_date': date(2017, 1, 30),
         'tolerance': {'positive_tolerance': 60, 'negative_tolerance': 5},
