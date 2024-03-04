@@ -17,9 +17,11 @@ Technical details
 import os
 from datetime import timedelta, timezone, datetime, date
 from common import CITY_PARAMS, logger, run_city, csv_rows
+from terraform.weather_pkg.common import CSV_HEADER
 
 # constants
 WEATHER_RESOURCE = "uvi"
+CSV_HEADER = "uvi,epochdt,isodt"
 
 
 def epoch_time_to_iso(epoch_time, tz):
@@ -45,7 +47,7 @@ def handler(event, context):
         run_params = {
             'json_to_csv_f': transform_weather_data_to_csv,
             'csv_files_path': os.environ.get('ROBOCLIMATE_CSV_FILES_PATH'),
-            'csv_header': 'uvi,epochdt,isodt',
+            'csv_header': CSV_HEADER,
             'timezone': tz
         }
         solar_noon_dt = int(datetime(yesterday.year, yesterday.month, yesterday.day, 12, 0, 0, tzinfo=tz).timestamp())
@@ -55,4 +57,5 @@ def handler(event, context):
 
 # when running on AWS env, __name__ = file name specified in AWS runtime's handler
 if __name__ == '__main__':
-    handler(None, None)
+    # handler(None, None)
+    print(epoch_time_to_iso(1709294400, timezone(timedelta(hours=-3))))
