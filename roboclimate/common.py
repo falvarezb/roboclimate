@@ -38,10 +38,7 @@ CITY_PARAMS = {'london': CityParams('london', 51.5073219, -0.1276474, 0),
                'asuncion': CityParams('asuncion', -25.2800459, -57.6343814, -4),
                'lagos': CityParams('lagos', 6.4550575, 3.3941795, 1)}
 
-CSV_HEADER = "temp,pressure,humidity,wind_speed,wind_deg,dt,today"
-
 # global variables
-s3 = boto3.client('s3')
 logger = logging.getLogger()
 if len(logger.handlers) > 0:
     # The Lambda environment pre-configures a handler logging to stderr. If a handler is already configured,
@@ -84,20 +81,6 @@ def write_to_filesystem(file_name: str, data: str, csv_header: str):
         # add header when file is first created
         with open(f"{file_name}", 'w', encoding='UTF-8') as f:
             f.write(f"{csv_header}\n{data}")
-
-
-def write_to_s3(file_name: str, data: str):
-    s3_bucket_name = os.environ.get('S3_BUCKET_NAME')
-    try:
-        existing_data = s3.get_object(Bucket=s3_bucket_name, Key=file_name)['Body'].read().decode('UTF-8')
-    except botocore.exceptions.ClientError:
-        # add header when file is first created
-        data = f"{CSV_HEADER}\n{data}"
-    else:
-        # append data
-        data = f"{existing_data}{data}"
-    logger.info('writing object %s in bucket %s', file_name, s3_bucket_name)
-    s3.put_object(Body=data, Bucket=s3_bucket_name, Key=file_name)
 
 
 def write_data(city_name: str, weather_resource: str, weather_data_csv: csv_rows, csv_files_path, csv_header):

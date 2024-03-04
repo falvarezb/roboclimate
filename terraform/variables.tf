@@ -6,12 +6,6 @@ variable "aws_region" {
   default     = "eu-west-1"
 }
 
-variable "bucket_name" {
-  description = "Name of the S3 bucket containing the csv files"
-  type        = string
-  default     = "roboclimate-test"
-}
-
 variable "lambda_cidr_subnet1" {
   description = "CIDR block for the subnet used to connect the lambda function to the EFS"
   default     = "172.31.48.0/20"
