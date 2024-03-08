@@ -25,7 +25,9 @@ def test_collect_uvi_data(req, csv_folder):
         'json_to_csv_f': rspider.transform_weather_data_to_csv,
         'csv_files_path': csv_folder,
         'csv_header': rspider.CSV_HEADER,
-        'timezone': timezone(timedelta(hours=-3))
+        'timezone': timezone(timedelta(hours=-3)),
+        'weather_resource': rspider.WEATHER_RESOURCE,
+        'weather_resource_url': 'weather_resource_url'
     }
 
     with open("tests/json_files/uvi.json", encoding='UTF-8') as f:
@@ -33,7 +35,7 @@ def test_collect_uvi_data(req, csv_folder):
 
     req.get.return_value.json.return_value = json_body
 
-    run_city('london', rspider.WEATHER_RESOURCE, 'weather_resource_url', run_params)
+    run_city('london', run_params)
     time.sleep(1)
 
     req.get.assert_any_call("weather_resource_url", timeout=10)

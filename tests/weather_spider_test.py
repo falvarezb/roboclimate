@@ -96,7 +96,9 @@ def test_collect_current_weather_data(req, csv_folder):
         'tolerance': {'positive_tolerance': 60, 'negative_tolerance': 5},
         'json_to_csv_f': rspider.transform_weather_data_to_csv,
         'csv_files_path': csv_folder,
-        'csv_header': rspider.CSV_HEADER
+        'csv_header': rspider.CSV_HEADER,
+        'weather_resource': rspider.WEATHER_RESOURCE,
+        'weather_resource_url': 'weather_resource_url'
     }
 
     with open("tests/json_files/weather.json", encoding='UTF-8') as f:
@@ -104,7 +106,7 @@ def test_collect_current_weather_data(req, csv_folder):
 
     req.get.return_value.json.return_value = json_body
 
-    rspider.run_city('london', rspider.WEATHER_RESOURCE, 'weather_resource_url', run_params)
+    rspider.run_city('london', run_params)
     time.sleep(1)
 
     req.get.assert_any_call("weather_resource_url", timeout=10)
@@ -146,7 +148,7 @@ def test_log_error_when_transforming_data(logger):
         response = Response()
         response.status_code = 200
         response._content = b'I am not a json'
-        common.transform_data(response, None)
+        common.transform_data(response, {})
     except Exception:
         assert logger.error.call_args[0][0] == "Error '%s' while parsing '%s'"
         assert logger.error.call_args[0][1].args[0] == 'Expecting value: line 1 column 1 (char 0)'
@@ -156,8 +158,12 @@ def test_log_error_when_transforming_data(logger):
 @patch('common.fetch_data')
 @patch('common.logger')
 def test_log_error_when_running_city(logger, fetch_data):
+    run_params = {
+        'weather_resource': rspider.WEATHER_RESOURCE,
+        'weather_resource_url': 'weather_resource_url'
+    }
     fetch_data.side_effect = Exception('error')
-    rspider.run_city('city name', rspider.WEATHER_RESOURCE, 'weather_resource_url', {})
+    rspider.run_city('city name', run_params)
     assert logger.error.call_args[0][0] == "Error '%s' while processing '%s'"
     assert logger.error.call_args[0][1].args[0] == 'error'
     assert logger.error.call_args[0][2] == "city name"

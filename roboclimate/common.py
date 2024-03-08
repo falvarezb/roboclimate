@@ -4,9 +4,10 @@ import os
 import logging
 import requests
 from requests.exceptions import ConnectionError as RequestsConnectionError, Timeout
-from tenacity import retry, retry_if_exception_type, wait_fixed, stop_after_attempt
-import boto3
-import botocore
+from tenacity import retry
+from tenacity.retry import retry_if_exception_type
+from tenacity.wait import wait_fixed
+from tenacity.stop import stop_after_attempt
 
 # type alias
 csv_row = "list[str]"
@@ -98,10 +99,10 @@ def transform_data(weather_data: requests.Response, run_params: dict) -> csv_row
         raise ex
 
 
-def run_city(city_name: str, weather_resource: str, weather_resource_url: str, run_params: dict):
+def run_city(city_name: str, run_params: dict):
     try:
-        weather_data = fetch_data(weather_resource_url)
+        weather_data = fetch_data(run_params['weather_resource_url'])
         weather_data_csv = transform_data(weather_data, run_params)
-        write_data(city_name, weather_resource, weather_data_csv, run_params['csv_files_path'], run_params['csv_header'])
+        write_data(city_name, run_params['weather_resource'], weather_data_csv, run_params['csv_files_path'], run_params['csv_header'])
     except Exception as ex:
         logger.error("Error '%s' while processing '%s'", ex, city_name, exc_info=True)
