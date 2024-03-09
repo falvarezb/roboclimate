@@ -29,8 +29,12 @@ def epoch_time_to_iso(epoch_time, tz):
 
 
 def transform_weather_data_to_csv(weather_data_json: dict, run_params: dict) -> csv_rows:
-    dt = weather_data_json['data'][0]['dt']
+    dt = run_params['solar_noon_dt']
     return [[weather_data_json['data'][0]['uvi'], dt, epoch_time_to_iso(dt, run_params['timezone'])]]
+
+
+def get_yesterday() -> date:
+    return date.today() + timedelta(days=-1)
 
 
 def handler(event, context):
@@ -40,7 +44,7 @@ def handler(event, context):
         logger.info('running on local env')
 
     # Please pay attention that historical UV index data available only for 5 days back
-    yesterday = date.today() + timedelta(days=-1)
+    yesterday = get_yesterday()
 
     run_params = {
         'json_to_csv_f': transform_weather_data_to_csv,
@@ -54,11 +58,11 @@ def handler(event, context):
         run_params['timezone'] = tz
 
         solar_noon_dt = int(datetime(yesterday.year, yesterday.month, yesterday.day, 12, 0, 0, tzinfo=tz).timestamp())
+        run_params['solar_noon_dt'] = solar_noon_dt
         run_params['weather_resource_url'] = f"https://api.openweathermap.org/data/3.0/onecall/timemachine?lat={city_params.lat}&lon={city_params.lon}&units=metric&dt={solar_noon_dt}&appid={os.environ.get('OPEN_WEATHER_API')}"
         run_city(city_name, run_params)
 
 
 # when running on AWS env, __name__ = file name specified in AWS runtime's handler
 if __name__ == '__main__':
-    # handler(None, None)
-    print(epoch_time_to_iso(1709294400, timezone(timedelta(hours=-3))))
+    handler(None, None)
