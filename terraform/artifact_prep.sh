@@ -4,14 +4,14 @@
 set -exuvo pipefail
 
 if [ $# -lt 1 ]; then
-    echo "USAGE ./artifact_prep.sh <weather|forecast>"
+    echo "USAGE ./artifact_prep.sh <weather|forecast|uvi>"
     exit 1
 fi
 
 
 lambda_function="$1"    
-if [ "$lambda_function" != "weather" ] && [ "$lambda_function" != "forecast" ]; then
-    echo "USAGE ./artifact_prep.sh <weather|forecast>"
+if [ "$lambda_function" != "weather" ] && [ "$lambda_function" != "forecast" ] && [ "$lambda_function" != "uvi" ]; then
+    echo "USAGE ./artifact_prep.sh <weather|forecast|uvi>"
     exit 1
 fi
 
