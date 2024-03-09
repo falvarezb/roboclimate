@@ -5,11 +5,8 @@ import time
 from datetime import date
 from unittest.mock import patch, call
 import pytest
-from requests.models import Response
-from requests.exceptions import ConnectionError
 import uvi_spider as rspider
-from common import run_city, CityParams
-from datetime import timedelta, timezone, datetime, date
+from datetime import date
 
 
 tmp_folder = "tests/temp"
