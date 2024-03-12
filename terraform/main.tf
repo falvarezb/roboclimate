@@ -271,6 +271,6 @@ resource "aws_instance" "efs_instance" {
 module "eventbridge_scheduler" {
   source = "./modules/eventbridge"
 
-  weather_lambda_arn = module.weather_function.function_arn
-  forecast_lambda_arn = module.forecast_function.function_arn
+  weather_lambda_arn = "${module.weather_function.function_arn}:18"
+  forecast_lambda_arn = "${module.forecast_function.function_arn}:5"
 }
