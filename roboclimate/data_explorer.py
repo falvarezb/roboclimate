@@ -136,7 +136,7 @@ def print_intervals(intervals: List[Tuple[int, str, int, str]]):
     896:2255 || 2020-10-11T01:00:00 -- 2021-03-29T22:00:00
     2256:2319 || 2021-04-04T01:00:00 -- 2021-04-11T22:00:00
     """
-    print("\n".join(map(lambda x: f"{x[0]}:{x[2]} || {x[1]} -- {x[3]}", intervals)))
+    print("\n".join(map(lambda x: f"{x[0]}:{x[2]} || {x[2]-x[0]} || {x[1]} -- {x[3]}", intervals)))
 
 
 if __name__ == "__main__":
