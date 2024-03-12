@@ -17,7 +17,6 @@ Technical details
 import os
 from datetime import timedelta, timezone, datetime, date
 from common import CITY_PARAMS, logger, run_city, csv_rows
-from terraform.weather_pkg.common import CSV_HEADER
 
 # constants
 WEATHER_RESOURCE = "uvi"
