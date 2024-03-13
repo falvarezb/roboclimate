@@ -1,12 +1,13 @@
 import os
-from common import logger, run_city, write_to_filesystem, utcnow_date, CITIES
+from common import logger, run_city, utcnow_date, CITIES
 
 # constants
 WEATHER_RESOURCE = "forecast"
+CSV_HEADER = 'temp,pressure,humidity,wind_speed,wind_deg,dt,today'
 
 
-def transform_weather_data_to_csv(weather_resource_json, conversion_params):
-    current_utc_date = conversion_params['utcnow_date']
+def transform_weather_data_to_csv(weather_resource_json, run_params):
+    current_utc_date = run_params['utcnow_date']
     return [[j['main']['temp'], j['main']['pressure'], j['main']['humidity'], j['wind']['speed'], j['wind'].get('deg', ""), j['dt'], str(current_utc_date)] for j in weather_resource_json['list']]
 
 
@@ -16,14 +17,16 @@ def forecast_handler(event, context):
     else:
         logger.info('running on local env')
 
+    run_params = {
+        'utcnow_date': utcnow_date(),
+        'json_to_csv_f': transform_weather_data_to_csv,
+        'csv_files_path': os.environ.get('ROBOCLIMATE_CSV_FILES_PATH'),
+        'csv_header': CSV_HEADER,
+        'weather_resource': WEATHER_RESOURCE
+    }
     for city_name, city_id in CITIES.items():
-        run_params = {
-            'utcnow_date': utcnow_date(),
-            'json_to_csv_f': transform_weather_data_to_csv,            
-            'csv_files_path': os.environ.get('ROBOCLIMATE_CSV_FILES_PATH')
-        }
-
-        run_city(city_name, city_id, WEATHER_RESOURCE, run_params)
+        run_params['weather_resource_url'] = f"http://api.openweathermap.org/data/2.5/{WEATHER_RESOURCE}?id={city_id}&units=metric&appid={os.environ.get('OPEN_WEATHER_API')}"
+        run_city(city_name, run_params)
 
 
 # when running on AWS env, __name__ = file name specified in AWS runtime's handler

@@ -10,6 +10,11 @@ output "forecast_function_info" {
   value       = module.forecast_function.function_info
 }
 
+output "uvi_function_info" {
+  description = "Name and version of the uvi function."
+  value       = module.uvi_function.function_info
+}
+
 output "nat_public_ip" {
   value = aws_instance.nat_instance.public_ip
 }

@@ -72,6 +72,15 @@ module "eventbridge" {
       arn                 = var.forecast_lambda_arn
       input               = jsonencode({})
       role_arn = aws_iam_role.eventbridge_exec.arn
+    }
+
+    uvi-lambda = {      
+      name                = "t-uvi-lambda"
+      schedule_expression = "cron(0 2 * * ? *)"
+      timezone            = "UTC"
+      arn                 = var.uvi_lambda_arn
+      input               = jsonencode({})
+      role_arn = aws_iam_role.eventbridge_exec.arn
     }    
   }
   

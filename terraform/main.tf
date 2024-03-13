@@ -47,6 +47,23 @@ module "forecast_function" {
   depends_on = [module.efs]
 }
 
+module "uvi_function" {
+  source = "./modules/lambda"
+
+  function_name = "t_roboclimate_uvi"
+  handler_name       = "uvi_spider.handler"
+  execution_role = aws_iam_role.lambda_exec.arn
+  subnet_ids         = [module.efs.lambda_subnet1_id, module.efs.lambda_subnet2_id]
+  security_group_ids = [module.efs.efs_mount_target_sg_id]
+  access_point_arn = module.efs.access_point_arn
+  artifact_folder = "uvi_pkg"
+  open_weather_api = var.open_weather_api
+
+  # Explicitly declare dependency on EFS mount target.
+  # When creating or updating Lambda functions, mount target must be in 'available' lifecycle state.
+  depends_on = [module.efs]
+}
+
 
 # Lambda execution roles
 # https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html
@@ -273,4 +290,5 @@ module "eventbridge_scheduler" {
 
   weather_lambda_arn = "${module.weather_function.function_arn}:18"
   forecast_lambda_arn = "${module.forecast_function.function_arn}:5"
+  uvi_lambda_arn = "${module.uvi_function.function_arn}:1"
 }

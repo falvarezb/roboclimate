@@ -89,44 +89,38 @@ def test_normalise_dt_fail(mock_epoch_time, fixtures):
     assert rspider.normalise_datetime(fixtures['dt'], fixtures['current_utc_date'], tolerance) == fixtures['dt']
 
 
-def test_transform_current_weather_data_to_csv(fixtures):
-    with open("tests/json_files/weather.json", encoding='UTF-8') as f:
-        data_json = json.load(f)
-
-    csv_row = rspider.transform_weather_data_to_csv(data_json, {'utcnow_date': fixtures['current_utc_date'], 'tolerance': rspider.TOLERANCE})[0]
-    assert csv_row[0] == 300.15
-    assert csv_row[1] == 1007
-    assert csv_row[2] == 74
-    assert csv_row[3] == 3.6
-    assert csv_row[4] == 160
-    assert csv_row[5] == 1485790200
-    assert csv_row[6] == str(fixtures['current_utc_date'])
-
-
 @patch('common.requests')
-@patch('common.os.environ')
-def test_collect_current_weather_data(env, req, csv_folder):
+def test_collect_current_weather_data(req, csv_folder):
     run_params = {
         'utcnow_date': date(2017, 1, 30),
         'tolerance': {'positive_tolerance': 60, 'negative_tolerance': 5},
         'json_to_csv_f': rspider.transform_weather_data_to_csv,
-        'csv_files_path': csv_folder
+        'csv_files_path': csv_folder,
+        'csv_header': rspider.CSV_HEADER,
+        'weather_resource': rspider.WEATHER_RESOURCE,
+        'weather_resource_url': 'weather_resource_url'
     }
 
     with open("tests/json_files/weather.json", encoding='UTF-8') as f:
         json_body = json.loads(f.read())
 
     req.get.return_value.json.return_value = json_body
-    env.get.return_value = 'id'
 
-    rspider.run_city('london', '1', rspider.WEATHER_RESOURCE, run_params)
+    rspider.run_city('london', run_params)
     time.sleep(1)
 
-    req.get.assert_any_call("http://api.openweathermap.org/data/2.5/weather?id=1&units=metric&appid=id", timeout=10)
+    req.get.assert_any_call("weather_resource_url", timeout=10)
 
     with open(f"{csv_folder}/weather_london.csv", encoding='UTF-8') as f:
         rows = list(map(lambda row: row.split(','), f.readlines()))
 
+    assert rows[0][0] == 'temp'
+    assert rows[0][1] == 'pressure'
+    assert rows[0][2] == 'humidity'
+    assert rows[0][3] == 'wind_speed'
+    assert rows[0][4] == 'wind_deg'
+    assert rows[0][5] == 'dt'
+    assert rows[0][6] == 'today\n'
     assert rows[1][0] == '300.15'
     assert rows[1][1] == '1007'
     assert rows[1][2] == '74'
@@ -138,12 +132,10 @@ def test_collect_current_weather_data(env, req, csv_folder):
 
 @patch('common.read_remote_resource')
 @patch('common.logger')
-@patch('common.compose_url')
-def test_log_error_when_fetching_data(compose_url, logger, read_remote_resource):
+def test_log_error_when_fetching_data(logger, read_remote_resource):
     try:
         read_remote_resource.side_effect = ConnectionError('error')
-        compose_url.return_value = 'url'
-        common.fetch_data(123, rspider.WEATHER_RESOURCE)
+        common.fetch_data('url')
     except Exception:
         assert logger.error.call_args[0][0] == "Error '%s' while reading '%s'"
         assert logger.error.call_args[0][1].args[0] == 'error'
@@ -156,7 +148,7 @@ def test_log_error_when_transforming_data(logger):
         response = Response()
         response.status_code = 200
         response._content = b'I am not a json'
-        common.transform_data(response, None)
+        common.transform_data(response, {})
     except Exception:
         assert logger.error.call_args[0][0] == "Error '%s' while parsing '%s'"
         assert logger.error.call_args[0][1].args[0] == 'Expecting value: line 1 column 1 (char 0)'
@@ -166,8 +158,12 @@ def test_log_error_when_transforming_data(logger):
 @patch('common.fetch_data')
 @patch('common.logger')
 def test_log_error_when_running_city(logger, fetch_data):
+    run_params = {
+        'weather_resource': rspider.WEATHER_RESOURCE,
+        'weather_resource_url': 'weather_resource_url'
+    }
     fetch_data.side_effect = Exception('error')
-    rspider.run_city('city name', 123, rspider.WEATHER_RESOURCE, {})
+    rspider.run_city('city name', run_params)
     assert logger.error.call_args[0][0] == "Error '%s' while processing '%s'"
     assert logger.error.call_args[0][1].args[0] == 'error'
     assert logger.error.call_args[0][2] == "city name"

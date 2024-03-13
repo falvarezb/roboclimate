@@ -80,3 +80,4 @@ def test_init(csv_folder):
 
     with open(f"{csv_folder}/forecast_madrid.csv") as f:
         assert f.readline() == "field1,field2\n"
+

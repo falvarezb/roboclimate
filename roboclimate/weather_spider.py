@@ -1,13 +1,15 @@
 import os
 from datetime import timezone, datetime, date
-from common import logger, write_to_filesystem, utcnow_date, run_city, csv_rows, CITIES
+from common import logger, utcnow_date, run_city, csv_rows, CITIES
+from terraform.weather_pkg.common import CSV_HEADER
 
 # constants
 WEATHER_RESOURCE = "weather"
+CSV_HEADER = 'temp,pressure,humidity,wind_speed,wind_deg,dt,today'
 TOLERANCE = {'positive_tolerance': 1200, 'negative_tolerance': 60}  # tolerance in seconds
 
 
-def epoch_time(date: date) -> 'dict[str,int]':
+def epoch_time(date: date) -> 'dict[str,float]':
     """
     Calculate the POSIX timestamp at the hours: 0, 3, 6, 9, 12, 15, 18 and 21 of the date passed as parameter
 
@@ -86,9 +88,9 @@ def normalise_datetime(dt: int, current_utc_date: date, tolerance: 'dict[str,int
     return dt
 
 
-def transform_weather_data_to_csv(weather_data_json: dict, conversion_params: dict) -> csv_rows:
-    current_utc_date = conversion_params['utcnow_date']
-    tolerance = conversion_params['tolerance']
+def transform_weather_data_to_csv(weather_data_json: dict, run_params: dict) -> csv_rows:
+    current_utc_date = run_params['utcnow_date']
+    tolerance = run_params['tolerance']
     return [[weather_data_json['main']['temp'], weather_data_json['main']['pressure'], weather_data_json['main']['humidity'], weather_data_json['wind']['speed'], weather_data_json['wind'].get('deg', ""), normalise_datetime(weather_data_json['dt'], current_utc_date, tolerance), str(current_utc_date)]]
 
 
@@ -98,15 +100,17 @@ def weather_handler(event, context):
     else:
         logger.info('running on local env')
 
+    run_params = {
+        'utcnow_date': utcnow_date(),
+        'tolerance': TOLERANCE,
+        'json_to_csv_f': transform_weather_data_to_csv,
+        'csv_files_path': os.environ.get('ROBOCLIMATE_CSV_FILES_PATH'),
+        'csv_header': CSV_HEADER,
+        'weather_resource': WEATHER_RESOURCE
+    }
     for city_name, city_id in CITIES.items():
-        run_params = {
-            'utcnow_date': utcnow_date(),
-            'tolerance': TOLERANCE,
-            'json_to_csv_f': transform_weather_data_to_csv,            
-            'csv_files_path': os.environ.get('ROBOCLIMATE_CSV_FILES_PATH')
-        }
-
-        run_city(city_name, city_id, WEATHER_RESOURCE, run_params)
+        run_params['weather_resource_url'] = f"http://api.openweathermap.org/data/2.5/{WEATHER_RESOURCE}?id={city_id}&units=metric&appid={os.environ.get('OPEN_WEATHER_API')}"
+        run_city(city_name, run_params)
 
 
 # when running on AWS env, __name__ = file name specified in AWS runtime's handler
