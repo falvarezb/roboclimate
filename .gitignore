@@ -34,5 +34,6 @@ commands.txt
 **/terraform/*.zip
 **/terraform/weather_pkg/
 **/terraform/forecast_pkg/
+**/terraform/uvi_pkg/
 csv_files_backup/
 test_csv_files/
