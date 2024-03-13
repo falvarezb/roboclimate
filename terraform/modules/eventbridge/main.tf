@@ -76,7 +76,7 @@ module "eventbridge" {
 
     uvi-lambda = {      
       name                = "t-uvi-lambda"
-      schedule_expression = "cron(0 10 * * ? *)"
+      schedule_expression = "cron(0 2 * * ? *)"
       timezone            = "UTC"
       arn                 = var.uvi_lambda_arn
       input               = jsonencode({})
