@@ -27,8 +27,8 @@ def plot_actual_vs_forecast(days):
     plt.ylim(min_y, max_y)
     # [l.remove() for l in ax.lines]
     # [l.remove() for l in ax.lines]
-    plt.plot(x, join_data_df[weather_var_option][min_x:max_x], label=f'actual {weather_var_option}', color='green', marker="o")
-    plt.plot(x, join_data_df[tn][min_x:max_x], label=tn, color='red', marker='*')
+    plt.plot(x, join_data_df[weather_var_option][min_x:max_x].values, label=f'actual {weather_var_option}', color='green', marker="o")
+    plt.plot(x, join_data_df[tn][min_x:max_x].values, label=tn, color='red', marker='*')
     plt.title(f"{city_name_option}: t vs {tn} (last {days} days)")
     plt.legend()
     st.pyplot(fig)
@@ -51,9 +51,9 @@ def plot_metrics():
     # [l.remove() for l in ax.lines]
     # [l.remove() for l in ax.lines]
     # [l.remove() for l in ax.lines]
-    plt.plot(x, metrics_df['mae'], label='mae', color='blue', marker='o')
-    plt.plot(x, metrics_df['rmse'], label='rmse', color='grey', marker='^')
-    plt.plot(x, metrics_df['medae'], label='medae', color='red', marker='*')
+    plt.plot(x, metrics_df['mae'].values, label='mae', color='blue', marker='o')
+    plt.plot(x, metrics_df['rmse'].values, label='rmse', color='grey', marker='^')
+    plt.plot(x, metrics_df['medae'].values, label='medae', color='red', marker='*')
     plt.title(f"metrics - {city_name_option}")
     plt.legend()
     st.pyplot(fig)
@@ -69,7 +69,7 @@ def plot_scaled_error():
     ax.set_xticklabels(['t5', 't4', 't3', 't2', 't1'])
     # [l.remove() for l in ax.lines]
     # [l.remove() for l in ax.lines]
-    plt.plot(x, metrics_df['mase'], label='mase', color='blue', marker='o')
+    plt.plot(x, metrics_df['mase'].values, label='mase', color='blue', marker='o')
     # plt.plot(x, metrics_df['mase1y'], label='mase1y', color='black', marker='*')
 #     plt.plot(x, df["metrics_df"]['mase1y_avg'], label='mase1y_avg', color='black', marker='o')
     plt.plot(x, np.ones(5), label='1', color='red')
@@ -92,7 +92,7 @@ def plot_cities():
         # [l.remove() for l in ax.lines]
     for city in rconf.cities.values():
         files = rdq.load_csv_files(city, weather_var_option)
-        plt.plot(x, files["metrics_df"][metric_option], label=city.name, marker='o')
+        plt.plot(x, files["metrics_df"][metric_option].values, label=city.name, marker='o')
         idx += 1
     plt.title(metric_option)
     plt.legend()
