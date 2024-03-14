@@ -34,7 +34,7 @@ resource "aws_iam_policy" "eventbridge" {
       {
         Effect   = "Allow",
         Action   = ["lambda:InvokeFunction"],
-        Resource = [var.weather_lambda_arn, var.forecast_lambda_arn]
+        Resource = [var.weather_lambda_arn, var.forecast_lambda_arn, var.uvi_lambda_arn]
       }
     ]
   })
