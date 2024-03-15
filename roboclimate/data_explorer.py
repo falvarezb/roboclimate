@@ -29,6 +29,9 @@ def load_forecast_file(city: City):
     forecast_file = csv_file_path(rconf.csv_folder, rconf.weather_resources[1], city.name)
     return pd.read_csv(forecast_file, dtype={'dt': 'int64'})
 
+def load_metrics_file(city: City, weather_variable: str):    
+    return pd.read_csv(f"{rconf.csv_folder}/{weather_variable}/metrics_{city.name}.csv")
+
 
 def load_csv_files(city: City, weather_variable: str) -> dict:
     actual_value_df = pd.read_csv(csv_file_path(rconf.csv_folder, rconf.weather_resources[0], city.name), usecols=[weather_variable, 'dt', 'today'], dtype={'dt': 'int64'})
