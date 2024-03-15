@@ -38,7 +38,7 @@ def plot_metrics():
     fig, ax = plt.subplots()
     plt.grid(True)
     city = rconf.cities[city_name_option2]
-    metrics_df = rdq.load_metrics_file(city, weather_var_option2)
+    metrics_df = load_metrics_file(city, weather_var_option2)
     # plt.rcParams['figure.figsize'] = (7,3)
     x = np.linspace(0, 1, 5)
     ax.set_xticks(x)
@@ -63,7 +63,7 @@ def plot_scaled_error():
     fig, ax = plt.subplots()
     plt.grid(True)
     city = rconf.cities[city_name_option2]
-    metrics_df = rdq.load_metrics_file(city, weather_var_option2)
+    metrics_df = load_metrics_file(city, weather_var_option2)
     x = np.linspace(0, 1, 5)
     ax.set_xticks(x)
     ax.set_xticklabels(['t5', 't4', 't3', 't2', 't1'])
@@ -77,6 +77,9 @@ def plot_scaled_error():
     plt.legend()
     st.pyplot(fig)
 
+@st.cache_data
+def load_metrics_file(city, weather_var):
+    return rdq.load_metrics_file(city, weather_var)
 
 def plot_cities():
     fig, ax = plt.subplots()
@@ -91,7 +94,7 @@ def plot_cities():
     # for city in rconf.cities.values():
         # [l.remove() for l in ax.lines]
     for city in rconf.cities.values():
-        metrics_df = rdq.load_metrics_file(city, weather_var_option3)
+        metrics_df = load_metrics_file(city, weather_var_option3)
         plt.plot(x, metrics_df[metric_option].values, label=city.name, marker='o')
         idx += 1
     plt.title(metric_option)
