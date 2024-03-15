@@ -11,15 +11,15 @@ st.set_page_config(page_title="Roboclimate", layout="wide")
 def plot_actual_vs_forecast(days):
     fig, ax = plt.subplots()
     plt.grid(True)
-    city = rconf.cities[city_name_option]
-    join_data_df = rdq.load_csv_files(city, weather_var_option)["join_data_df"]
+    city = rconf.cities[city_name_option1]
+    join_data_df = rdq.load_csv_files(city, weather_var_option1)["join_data_df"]
     N = join_data_df.shape[0]
     max_x = N
     min_x = max_x - (rconf.day_factor * days)
     print(f"min_x={min_x}")
     print(f"max_x={max_x}")
-    max_y = max(max(join_data_df[weather_var_option][min_x:max_x]), max(join_data_df[tn][min_x:max_x]))
-    min_y = min(min(join_data_df[weather_var_option][min_x:max_x]), min(join_data_df[tn][min_x:max_x]))
+    max_y = max(max(join_data_df[weather_var_option1][min_x:max_x]), max(join_data_df[tn][min_x:max_x]))
+    min_y = min(min(join_data_df[weather_var_option1][min_x:max_x]), min(join_data_df[tn][min_x:max_x]))
     print(f"min_y={min_y}")
     print(f"max_y={max_y}")
     x = np.linspace(0, max_x - min_x, max_x - min_x)
@@ -27,9 +27,9 @@ def plot_actual_vs_forecast(days):
     plt.ylim(min_y, max_y)
     # [l.remove() for l in ax.lines]
     # [l.remove() for l in ax.lines]
-    plt.plot(x, join_data_df[weather_var_option][min_x:max_x].values, label=f'actual {weather_var_option}', color='green', marker="o")
+    plt.plot(x, join_data_df[weather_var_option1][min_x:max_x].values, label=f'actual {weather_var_option1}', color='green', marker="o")
     plt.plot(x, join_data_df[tn][min_x:max_x].values, label=tn, color='red', marker='*')
-    plt.title(f"{city_name_option}: t vs {tn} (last {days} days)")
+    plt.title(f"{city_name_option1}: t vs {tn} (last {days} days)")
     plt.legend()
     st.pyplot(fig)
 
@@ -37,8 +37,8 @@ def plot_actual_vs_forecast(days):
 def plot_metrics():
     fig, ax = plt.subplots()
     plt.grid(True)
-    city = rconf.cities[city_name_option]
-    metrics_df = rdq.load_csv_files(city, weather_var_option)["metrics_df"]
+    city = rconf.cities[city_name_option2]
+    metrics_df = rdq.load_csv_files(city, weather_var_option2)["metrics_df"]
     # plt.rcParams['figure.figsize'] = (7,3)
     x = np.linspace(0, 1, 5)
     ax.set_xticks(x)
@@ -54,7 +54,7 @@ def plot_metrics():
     plt.plot(x, metrics_df['mae'].values, label='mae', color='blue', marker='o')
     plt.plot(x, metrics_df['rmse'].values, label='rmse', color='grey', marker='^')
     plt.plot(x, metrics_df['medae'].values, label='medae', color='red', marker='*')
-    plt.title(f"metrics - {city_name_option}")
+    plt.title(f"metrics - {city_name_option2}")
     plt.legend()
     st.pyplot(fig)
 
@@ -62,8 +62,8 @@ def plot_metrics():
 def plot_scaled_error():
     fig, ax = plt.subplots()
     plt.grid(True)
-    city = rconf.cities[city_name_option]
-    metrics_df = rdq.load_csv_files(city, weather_var_option)["metrics_df"]
+    city = rconf.cities[city_name_option2]
+    metrics_df = rdq.load_csv_files(city, weather_var_option2)["metrics_df"]
     x = np.linspace(0, 1, 5)
     ax.set_xticks(x)
     ax.set_xticklabels(['t5', 't4', 't3', 't2', 't1'])
@@ -73,7 +73,7 @@ def plot_scaled_error():
     # plt.plot(x, metrics_df['mase1y'], label='mase1y', color='black', marker='*')
 #     plt.plot(x, df["metrics_df"]['mase1y_avg'], label='mase1y_avg', color='black', marker='o')
     plt.plot(x, np.ones(5), label='1', color='red')
-    plt.title(f"Mean Absolute Scaled Error - {city_name_option}")
+    plt.title(f"Mean Absolute Scaled Error - {city_name_option2}")
     plt.legend()
     st.pyplot(fig)
 
@@ -91,7 +91,7 @@ def plot_cities():
     # for city in rconf.cities.values():
         # [l.remove() for l in ax.lines]
     for city in rconf.cities.values():
-        files = rdq.load_csv_files(city, weather_var_option)
+        files = rdq.load_csv_files(city, weather_var_option3)
         plt.plot(x, files["metrics_df"][metric_option].values, label=city.name, marker='o')
         idx += 1
     plt.title(metric_option)
@@ -99,23 +99,50 @@ def plot_cities():
     st.pyplot(fig)
 
 
+#################################################
+################## LAYOUT #######################
+#################################################
+
 with st.sidebar:
+    st.markdown('## Forecast vs actual')
     tn = st.selectbox(
         'select tx forecast',
         ['t1', 't2', 't3', 't4', 't5'])
 
-    weather_var_option = st.selectbox(
+    weather_var_option1 = st.selectbox(
         'choose a weather variable',
-        list(rconf.weather_variables.values()))
+        list(rconf.weather_variables.values()),
+        key='weather_var_option1')
 
-    city_name_option = st.sidebar.selectbox(
+    city_name_option1 = st.sidebar.selectbox(
         'select a city',
-        [city.name for city in rconf.cities.values()])
+        [city.name for city in rconf.cities.values()],
+        key='city_name_option1')
+    
+    st.markdown('---')  # Horizontal line for visual separation
+    st.markdown('## Forecast metrics')
 
+    weather_var_option2 = st.selectbox(
+        'choose a weather variable',
+        list(rconf.weather_variables.values()),
+        key='weather_var_option2')
 
-metric_option = st.sidebar.selectbox(
-    'select metric to compare among all cities',
-    ['mae','rmse','medae','mase'])
+    city_name_option2 = st.sidebar.selectbox(
+        'select a city',
+        [city.name for city in rconf.cities.values()],
+        key='city_name_option2')
+
+    st.markdown('---')  # Horizontal line for visual separation
+    st.markdown('## Forecast comparison among cities')
+
+    weather_var_option3 = st.selectbox(
+        'choose a weather variable',
+        list(rconf.weather_variables.values()),
+        key='weather_var_option3')
+
+    metric_option = st.sidebar.selectbox(
+        'select metric to compare among all cities',
+        ['mae','rmse','medae','mase'])
 
 
 st.title('Roboclimate')
@@ -190,13 +217,15 @@ with col1:
         """
     )
 
-st.header('Forecast analysis by city')
+st.header('Forecast vs actual')
 
 
 col1, col2 = st.columns([1,1.2])
 with col1:
     plot_actual_vs_forecast(20)
 
+
+st.header('Forecast metrics')
 
 col1, col2, col3 = st.columns(3)
 with col1:
