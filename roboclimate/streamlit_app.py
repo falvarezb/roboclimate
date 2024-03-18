@@ -114,7 +114,7 @@ def plot_cities():
 
 with st.sidebar:
     selected = option_menu('Roboclimate', ["Intro", 'Forecast vs Actual', 'Forecast Metrics', 'City Comparison'], 
-        icons=['play-btn','search','search','info-circle'],menu_icon='intersect', default_index=0)    
+        icons=['play-btn','cloud-rain','thermometer-sun','building'],menu_icon='tropical-storm', default_index=0)    
 
     if selected == 'Forecast vs Actual':   
         st.markdown('---')  # Horizontal line for visual separation             
@@ -233,9 +233,12 @@ if selected == 'Intro':
         )
 
 if selected == 'Forecast vs Actual':        
-    # col1, col2 = st.columns([1,1.2])
-    # with col1:
-    plot_actual_vs_forecast(20)
+    col1, col2 = st.columns([0.7,0.3])
+    with col1:
+        plot_actual_vs_forecast(20)
+    with col2:
+        with st.expander("Show data"):
+            st.markdown("hello world")
 
 if selected == 'Forecast Metrics':    
 
