@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import streamlit as st
+from streamlit_option_menu import option_menu
 import roboclimate.data_explorer as rdq
 import roboclimate.config as rconf
 
@@ -107,142 +108,147 @@ def plot_cities():
 #################################################
 
 with st.sidebar:
-    st.markdown('## Forecast vs actual')
-    tn = st.selectbox(
-        'select tx forecast',
-        ['t1', 't2', 't3', 't4', 't5'])
+    selected = option_menu('Roboclimate', ["Intro", 'Forecast vs Actual', 'Forecast Metrics', 'City Comparison'], 
+        icons=['play-btn','search','search','info-circle'],menu_icon='intersect', default_index=0)    
 
-    weather_var_option1 = st.selectbox(
-        'choose a weather variable',
-        list(rconf.weather_variables.values()),
-        key='weather_var_option1')
+    if selected == 'Forecast vs Actual':   
+        st.markdown('---')  # Horizontal line for visual separation             
+        tn = st.selectbox(
+            'select tx forecast',
+            ['t1', 't2', 't3', 't4', 't5'])
 
-    city_name_option1 = st.sidebar.selectbox(
-        'select a city',
-        [city.name for city in rconf.cities.values()],
-        key='city_name_option1')
+        weather_var_option1 = st.selectbox(
+            'choose a weather variable',
+            list(rconf.weather_variables.values()),
+            key='weather_var_option1')
+
+        city_name_option1 = st.sidebar.selectbox(
+            'select a city',
+            [city.name for city in rconf.cities.values()],
+            key='city_name_option1')
     
-    st.markdown('---')  # Horizontal line for visual separation
-    st.markdown('## Forecast metrics')
+    if selected == 'Forecast Metrics':
+        st.markdown('---')  # Horizontal line for visual separation        
 
-    weather_var_option2 = st.selectbox(
-        'choose a weather variable',
-        list(rconf.weather_variables.values()),
-        key='weather_var_option2')
+        weather_var_option2 = st.selectbox(
+            'choose a weather variable',
+            list(rconf.weather_variables.values()),
+            key='weather_var_option2')
 
-    city_name_option2 = st.sidebar.selectbox(
-        'select a city',
-        [city.name for city in rconf.cities.values()],
-        key='city_name_option2')
+        city_name_option2 = st.sidebar.selectbox(
+            'select a city',
+            [city.name for city in rconf.cities.values()],
+            key='city_name_option2')
 
-    st.markdown('---')  # Horizontal line for visual separation
-    st.markdown('## Forecast comparison among cities')
+    if selected == 'City Comparison':
+        st.markdown('---')  # Horizontal line for visual separation        
 
-    weather_var_option3 = st.selectbox(
-        'choose a weather variable',
-        list(rconf.weather_variables.values()),
-        key='weather_var_option3')
+        weather_var_option3 = st.selectbox(
+            'choose a weather variable',
+            list(rconf.weather_variables.values()),
+            key='weather_var_option3')
 
-    metric_option = st.sidebar.selectbox(
-        'select metric to compare among all cities',
-        ['mae','rmse','medae','mase'])
-
-
-st.title('Roboclimate')
-
-col1, col2 = st.columns([3,1])
-with col1:
-    st.markdown(
-        """
-        Have you ever complained about the inaccuracy of the weather forecast? If so, this page is for you. 
-        
-        Here we analyse the precision of a forecast model based on the values of multiple weather variables 
-        - temperature
-        - pressure
-        - humidity
-        - wind speed 
-        - wind direction
-        
-        measured in 10 different cities across the world:
-        - London
-        - Madrid
-        - Sydney
-        - New York
-        - Sao Paulo
-        - Moscow
-        - Tokyo
-        - Nairobi
-        - Lagos
-        - Asuncion        
-        """
-    )
-
-
-    st.header('Methodology')
-    st.markdown(
-        """
-        Weather measurements are taken at 3-hour intervals from midnight until 9pm every day, totalling 8 datapoints per day.
-        Also every day, we obtain the forecast for the next 5 days (resulting in new 5*8 datapoints per day)
-
-        This way it is possible to build a dataset where each actual weather measurement can be compared to its values
-        forecasted during the previous 5 days. Those values will be denoted as`t1` (forecast made 1 day ago), 
-        `t2` (forecast made 2 days ago) and so on up to `t5`.
-
-        Weather measurements and forecasts are provided by [OpenWeather's API](https://openweathermap.org)
-        """
-    )
-    st.subheader('Metrics')
-    st.markdown(
-        """
-        In order to evaluate the accuracy of the forecasts, we'll consider the following metrics.
-
-        ##### Mean Absolute Error (MAE)
-        Average of the absolute value of the errors ('errors' are the difference between real and forecasted values)
-
-        ##### Root Mean Squared Error (RMSE)
-
-        Square root of the average of the square of the errors. It weighs outliers more heavily than MAE as a result of the squaring of each term.
-
-        ##### Mean Absolute Scaled Error (MASE)
-
-        MASE is a measure of the precision of a model compared to the naive forecast.
-        It is calculated as the MAE of the forecast divided by the MAE of the naive forecast.
-
-        Therefore, `MASE > 1` indicates that the naive method performs better than the model it is compared to. 
-
-        The naive forecast consists in assuming that the next value is the same as the one of the prior period.
-
-        However, "prior period" may mean different things depending on whether the time series under consideration is
-        seasonal or non-seasonal.
-        For instance, for the temperature forecast, we may consider as prior value the temperature on the same day and time
-        of the previous month, year, etc. In our case, the most natural choice is to take the actual value of the corresponding 
-        weather variable when the forecast was made, e.g. for mase(t5) we'd take the value measured 5 days ago.
-        """
-    )
-
-st.header('Forecast vs actual')
-
-
-col1, col2 = st.columns([1,1.2])
-with col1:
-    plot_actual_vs_forecast(20)
-
-
-st.header('Forecast metrics')
-
-col1, col2, col3 = st.columns(3)
-with col1:
-    plot_metrics()
-
-with col2:
-    plot_scaled_error()
+        metric_option = st.sidebar.selectbox(
+            'select metric to compare among all cities',
+            ['mae','rmse','medae','mase'])
 
 
 
-st.header('Forecast comparison among cities')
-col1, col2 = st.columns(2)
-with col1:
-    plot_cities()
+
+if selected == 'Intro':    
+    st.title('Welcome to Roboclimate')
+    col1, col2 = st.columns([3,1])
+    with col1:
+        st.markdown(
+            """
+            Have you ever complained about the inaccuracy of the weather forecast? If so, this page is for you. 
+            
+            Here we analyse the precision of a forecast model based on the values of multiple weather variables 
+            - temperature
+            - pressure
+            - humidity
+            - wind speed 
+            - wind direction
+            
+            measured in 10 different cities across the world:
+            - London
+            - Madrid
+            - Sydney
+            - New York
+            - Sao Paulo
+            - Moscow
+            - Tokyo
+            - Nairobi
+            - Lagos
+            - Asuncion        
+            """
+        )
+
+
+        st.header('Methodology')
+        st.markdown(
+            """
+            Weather measurements are taken at 3-hour intervals from midnight until 9pm every day, totalling 8 datapoints per day.
+            Also every day, we obtain the forecast for the next 5 days (resulting in new 5*8 datapoints per day)
+
+            This way it is possible to build a dataset where each actual weather measurement can be compared to its values
+            forecasted during the previous 5 days. Those values will be denoted as`t1` (forecast made 1 day ago), 
+            `t2` (forecast made 2 days ago) and so on up to `t5`.
+
+            Weather measurements and forecasts are provided by [OpenWeather's API](https://openweathermap.org)
+            """
+        )
+        st.subheader('Metrics')
+        st.markdown(
+            """
+            In order to evaluate the accuracy of the forecasts, we'll consider the following metrics.
+
+            ##### Mean Absolute Error (MAE)
+            Average of the absolute value of the errors ('errors' are the difference between real and forecasted values)
+
+            ##### Root Mean Squared Error (RMSE)
+
+            Square root of the average of the square of the errors. It weighs outliers more heavily than MAE as a result of the squaring of each term.
+
+            ##### Mean Absolute Scaled Error (MASE)
+
+            MASE is a measure of the precision of a model compared to the naive forecast.
+            It is calculated as the MAE of the forecast divided by the MAE of the naive forecast.
+
+            Therefore, `MASE > 1` indicates that the naive method performs better than the model it is compared to. 
+
+            The naive forecast consists in assuming that the next value is the same as the one of the prior period.
+
+            However, "prior period" may mean different things depending on whether the time series under consideration is
+            seasonal or non-seasonal.
+            For instance, for the temperature forecast, we may consider as prior value the temperature on the same day and time
+            of the previous month, year, etc. In our case, the most natural choice is to take the actual value of the corresponding 
+            weather variable when the forecast was made, e.g. for mase(t5) we'd take the value measured 5 days ago.
+            """
+        )
+
+if selected == 'Forecast vs Actual':    
+    st.header('Forecast vs actual')
+    col1, col2 = st.columns([1,1.2])
+    with col1:
+        plot_actual_vs_forecast(20)
+
+if selected == 'Forecast Metrics':
+    st.header('Forecast metrics')
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        plot_metrics()
+
+    with col2:
+        plot_scaled_error()
+
+
+if selected == 'City Comparison':
+    st.header('Forecast comparison among cities')
+    col1, col2 = st.columns(2)
+    with col1:
+        plot_cities()
 
 # with st.sidebar:
 #     with st.echo():
@@ -257,7 +263,7 @@ with col1:
 #    plot_scaled_error()
 #    plot_actual_vs_forecast(20)
 
-st.write("This is outside the container")
+# st.write("This is outside the container")
 
 # with st.empty():
 #     for seconds in range(3):
