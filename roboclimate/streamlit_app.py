@@ -19,8 +19,12 @@ def plot_actual_vs_forecast(days):
     min_x = max_x - (rconf.day_factor * days)
     print(f"min_x={min_x}")
     print(f"max_x={max_x}")
-    max_y = max(max(join_data_df[weather_var_option1][min_x:max_x]), max(join_data_df[tn][min_x:max_x]))
-    min_y = min(min(join_data_df[weather_var_option1][min_x:max_x]), min(join_data_df[tn][min_x:max_x]))
+    if tn != 'None':
+        max_y = max(max(join_data_df[weather_var_option1][min_x:max_x]), max(join_data_df[tn][min_x:max_x]))
+        min_y = min(min(join_data_df[weather_var_option1][min_x:max_x]), min(join_data_df[tn][min_x:max_x]))
+    else:
+        max_y = max(join_data_df[weather_var_option1][min_x:max_x])
+        min_y = min(join_data_df[weather_var_option1][min_x:max_x])
     print(f"min_y={min_y}")
     print(f"max_y={max_y}")
     x = np.linspace(0, max_x - min_x, max_x - min_x)
@@ -29,7 +33,8 @@ def plot_actual_vs_forecast(days):
     # [l.remove() for l in ax.lines]
     # [l.remove() for l in ax.lines]
     plt.plot(x, join_data_df[weather_var_option1][min_x:max_x].values, label=f'actual {weather_var_option1}', color='green', marker="o")
-    plt.plot(x, join_data_df[tn][min_x:max_x].values, label=tn, color='red', marker='*')
+    if tn != 'None':
+        plt.plot(x, join_data_df[tn][min_x:max_x].values, label=tn, color='red', marker='*')
     plt.title(f"{city_name_option1}: t vs {tn} (last {days} days)")
     plt.legend()
     st.pyplot(fig)
@@ -115,7 +120,7 @@ with st.sidebar:
         st.markdown('---')  # Horizontal line for visual separation             
         tn = st.selectbox(
             'select tx forecast',
-            ['t1', 't2', 't3', 't4', 't5'])
+            ['t1', 't2', 't3', 't4', 't5', 'None'])
 
         weather_var_option1 = st.selectbox(
             'choose a weather variable',
@@ -227,28 +232,27 @@ if selected == 'Intro':
             """
         )
 
-if selected == 'Forecast vs Actual':    
-    st.header('Forecast vs actual')
-    col1, col2 = st.columns([1,1.2])
-    with col1:
-        plot_actual_vs_forecast(20)
+if selected == 'Forecast vs Actual':        
+    # col1, col2 = st.columns([1,1.2])
+    # with col1:
+    plot_actual_vs_forecast(20)
 
-if selected == 'Forecast Metrics':
-    st.header('Forecast metrics')
+if selected == 'Forecast Metrics':    
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
     with col1:
         plot_metrics()
 
     with col2:
         plot_scaled_error()
 
+    # plot_metrics()
+    # plot_scaled_error()
 
-if selected == 'City Comparison':
-    st.header('Forecast comparison among cities')
-    col1, col2 = st.columns(2)
-    with col1:
-        plot_cities()
+if selected == 'City Comparison':    
+    # col1, col2 = st.columns(2)
+    # with col1:
+    plot_cities()
 
 # with st.sidebar:
 #     with st.echo():
