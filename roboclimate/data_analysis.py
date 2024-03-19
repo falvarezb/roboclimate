@@ -138,7 +138,7 @@ def join_actual_values_and_forecast(actual_values_df, forecast_df) -> Dict[str, 
                     joined_df = weather_variable_df.join(tees_df)
                     # discarding row if there is any empty value
                     joined_df.dropna(inplace=True)
-                    dfs_dict[weather_variable] = df.append(joined_df)
+                    dfs_dict[weather_variable] = pd.concat([df, joined_df], ignore_index=True)
             # else:
             #     logger.warning(f"number of {weather_variable} {len(temps)} != 5 for timestamp {row[1]['dt']}")
         except Exception:

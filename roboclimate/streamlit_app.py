@@ -32,9 +32,9 @@ def plot_actual_vs_forecast(days):
     plt.ylim(min_y, max_y)
     # [l.remove() for l in ax.lines]
     # [l.remove() for l in ax.lines]
-    plt.plot(x, join_data_df[weather_var_option1][min_x:max_x].values, label=f'actual {weather_var_option1}', color='green', marker="o")
+    plt.plot(x, join_data_df[weather_var_option1][min_x:max_x].to_numpy(), label=f'actual {weather_var_option1}', color='green', marker="o")
     if tn != 'None':
-        plt.plot(x, join_data_df[tn][min_x:max_x].values, label=tn, color='red', marker='*')
+        plt.plot(x, join_data_df[tn][min_x:max_x].to_numpy(), label=tn, color='red', marker='*')
     plt.title(f"{city_name_option1}: t vs {tn} (last {days} days)")
     plt.legend()
     st.pyplot(fig)
@@ -57,9 +57,9 @@ def plot_metrics():
     # [l.remove() for l in ax.lines]
     # [l.remove() for l in ax.lines]
     # [l.remove() for l in ax.lines]
-    plt.plot(x, metrics_df['mae'].values, label='mae', color='blue', marker='o')
-    plt.plot(x, metrics_df['rmse'].values, label='rmse', color='grey', marker='^')
-    plt.plot(x, metrics_df['medae'].values, label='medae', color='red', marker='*')
+    plt.plot(x, metrics_df['mae'].to_numpy(), label='mae', color='blue', marker='o')
+    plt.plot(x, metrics_df['rmse'].to_numpy(), label='rmse', color='grey', marker='^')
+    plt.plot(x, metrics_df['medae'].to_numpy(), label='medae', color='red', marker='*')
     plt.title(f"metrics - {city_name_option2}")
     plt.legend()
     st.pyplot(fig)
@@ -75,7 +75,7 @@ def plot_scaled_error():
     ax.set_xticklabels(['t5', 't4', 't3', 't2', 't1'])
     # [l.remove() for l in ax.lines]
     # [l.remove() for l in ax.lines]
-    plt.plot(x, metrics_df['mase'].values, label='mase', color='blue', marker='o')
+    plt.plot(x, metrics_df['mase'].to_numpy(), label='mase', color='blue', marker='o')
     # plt.plot(x, metrics_df['mase1y'], label='mase1y', color='black', marker='*')
 #     plt.plot(x, df["metrics_df"]['mase1y_avg'], label='mase1y_avg', color='black', marker='o')
     plt.plot(x, np.ones(5), label='1', color='red')
@@ -101,7 +101,7 @@ def plot_cities():
         # [l.remove() for l in ax.lines]
     for city in rconf.cities.values():
         metrics_df = load_metrics_file(city, weather_var_option3)
-        plt.plot(x, metrics_df[metric_option].values, label=city.name, marker='o')
+        plt.plot(x, metrics_df[metric_option].to_numpy(), label=city.name, marker='o')
         idx += 1
     plt.title(metric_option)
     plt.legend()
