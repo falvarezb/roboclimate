@@ -11,8 +11,8 @@ st.set_page_config(page_title="Roboclimate", layout="wide")
 
 
 @st.cache_data
-def fetch_data(city_name_option, weather_variable, tn, last_n_days):
-    city = rconf.cities[city_name_option]
+def fetch_data(city_name, weather_variable, tn, last_n_days):
+    city = rconf.cities[city_name]
     join_data_df = rdq.load_csv_files(city, weather_variable)["join_data_df"]
     N = join_data_df.shape[0]
     max_x = N
@@ -35,9 +35,9 @@ def fetch_data(city_name_option, weather_variable, tn, last_n_days):
     return (x, y1, y2, (min_x, max_x), (min_y, max_y))
 
 
-def plot_actual_vs_forecast(days):
+def plot_actual_vs_forecast(city_name_option1, weather_var_option1, tn, last_n_days):
     (x, y1, y2, (min_x, max_x), (min_y, max_y)) = \
-        fetch_data(city_name_option1, weather_var_option1, tn, days)
+        fetch_data(city_name_option1, weather_var_option1, tn, last_n_days)
 
     fig, ax = plt.subplots()
     plt.grid(True)
@@ -48,7 +48,7 @@ def plot_actual_vs_forecast(days):
     plt.plot(x, y1.to_numpy(), label=f'actual {weather_var_option1}', color='green', marker="o")
     if tn != 'None':
         plt.plot(x, y2.to_numpy(), label=tn, color='red', marker='*')
-    plt.title(f"{city_name_option1}: t vs {tn} (last {days} days)")
+    plt.title(f"{city_name_option1}: t vs {tn} (last {last_n_days} days)")
     plt.legend()
     st.pyplot(fig)
 
@@ -248,13 +248,13 @@ if selected == 'Forecast vs Actual':
     last_n_days = 20
     col1, col2 = st.columns([0.7, 0.3])
     with col1:
-        plot_actual_vs_forecast(last_n_days)
+        plot_actual_vs_forecast(city_name_option1, weather_var_option1, tn, last_n_days)
     with col2:
-        with st.expander("Show data"):            
+        with st.expander("Show data"):
             (x, y1, y2, (min_x, max_x), (min_y, max_y)) = \
                 fetch_data(city_name_option1, weather_var_option1, tn, last_n_days)
-            
-            st.dataframe(pd.concat([y1,y2], axis=1))
+
+            st.dataframe(pd.concat([y1, y2], axis=1))
 
 if selected == 'Forecast Metrics':
 
