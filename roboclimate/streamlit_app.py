@@ -4,19 +4,19 @@ import streamlit as st
 from streamlit_option_menu import option_menu
 import roboclimate.data_explorer as rdq
 import roboclimate.config as rconf
+import pandas as pd
 
 PADDING = 0
 st.set_page_config(page_title="Roboclimate", layout="wide")
 
 
-def plot_actual_vs_forecast(days):
-    fig, ax = plt.subplots()
-    plt.grid(True)
-    city = rconf.cities[city_name_option1]
-    join_data_df = rdq.load_csv_files(city, weather_var_option1)["join_data_df"]
+@st.cache_data
+def fetch_data(city_name_option, weather_variable, tn, last_n_days):
+    city = rconf.cities[city_name_option]
+    join_data_df = rdq.load_csv_files(city, weather_variable)["join_data_df"]
     N = join_data_df.shape[0]
     max_x = N
-    min_x = max_x - (rconf.day_factor * days)
+    min_x = max_x - (rconf.day_factor * last_n_days)
     print(f"min_x={min_x}")
     print(f"max_x={max_x}")
     if tn != 'None':
@@ -28,13 +28,26 @@ def plot_actual_vs_forecast(days):
     print(f"min_y={min_y}")
     print(f"max_y={max_y}")
     x = np.linspace(0, max_x - min_x, max_x - min_x)
+    y1 = join_data_df[weather_var_option1][min_x:max_x]
+    y2 = None
+    if tn != 'None':
+        y2 = join_data_df[tn][min_x:max_x]
+    return (x, y1, y2, (min_x, max_x), (min_y, max_y))
+
+
+def plot_actual_vs_forecast(days):
+    (x, y1, y2, (min_x, max_x), (min_y, max_y)) = \
+        fetch_data(city_name_option1, weather_var_option1, tn, days)
+
+    fig, ax = plt.subplots()
+    plt.grid(True)
     plt.xlim(0, max_x - min_x)
     plt.ylim(min_y, max_y)
     # [l.remove() for l in ax.lines]
     # [l.remove() for l in ax.lines]
-    plt.plot(x, join_data_df[weather_var_option1][min_x:max_x].to_numpy(), label=f'actual {weather_var_option1}', color='green', marker="o")
+    plt.plot(x, y1.to_numpy(), label=f'actual {weather_var_option1}', color='green', marker="o")
     if tn != 'None':
-        plt.plot(x, join_data_df[tn][min_x:max_x].to_numpy(), label=tn, color='red', marker='*')
+        plt.plot(x, y2.to_numpy(), label=tn, color='red', marker='*')
     plt.title(f"{city_name_option1}: t vs {tn} (last {days} days)")
     plt.legend()
     st.pyplot(fig)
@@ -83,9 +96,11 @@ def plot_scaled_error():
     plt.legend()
     st.pyplot(fig)
 
+
 @st.cache_data
 def load_metrics_file(city, weather_var):
     return rdq.load_metrics_file(city, weather_var)
+
 
 def plot_cities():
     fig, ax = plt.subplots()
@@ -98,7 +113,7 @@ def plot_cities():
     idx = 0
 #     plt.plot(x, np.ones(5), label='1', color='red')
     # for city in rconf.cities.values():
-        # [l.remove() for l in ax.lines]
+    # [l.remove() for l in ax.lines]
     for city in rconf.cities.values():
         metrics_df = load_metrics_file(city, weather_var_option3)
         plt.plot(x, metrics_df[metric_option].to_numpy(), label=city.name, marker='o')
@@ -113,11 +128,11 @@ def plot_cities():
 #################################################
 
 with st.sidebar:
-    selected = option_menu('Roboclimate', ["Intro", 'Forecast vs Actual', 'Forecast Metrics', 'City Comparison'], 
-        icons=['play-btn','cloud-rain','thermometer-sun','building'],menu_icon='tropical-storm', default_index=0)    
+    selected = option_menu('Roboclimate', ["Intro", 'Forecast vs Actual', 'Forecast Metrics', 'City Comparison'],
+                           icons=['play-btn', 'cloud-rain', 'thermometer-sun', 'building'], menu_icon='tropical-storm', default_index=0)
 
-    if selected == 'Forecast vs Actual':   
-        st.markdown('---')  # Horizontal line for visual separation             
+    if selected == 'Forecast vs Actual':
+        st.markdown('---')  # Horizontal line for visual separation
         tn = st.selectbox(
             'select tx forecast',
             ['t1', 't2', 't3', 't4', 't5', 'None'])
@@ -131,9 +146,9 @@ with st.sidebar:
             'select a city',
             [city.name for city in rconf.cities.values()],
             key='city_name_option1')
-    
+
     if selected == 'Forecast Metrics':
-        st.markdown('---')  # Horizontal line for visual separation        
+        st.markdown('---')  # Horizontal line for visual separation
 
         weather_var_option2 = st.selectbox(
             'choose a weather variable',
@@ -146,7 +161,7 @@ with st.sidebar:
             key='city_name_option2')
 
     if selected == 'City Comparison':
-        st.markdown('---')  # Horizontal line for visual separation        
+        st.markdown('---')  # Horizontal line for visual separation
 
         weather_var_option3 = st.selectbox(
             'choose a weather variable',
@@ -155,14 +170,12 @@ with st.sidebar:
 
         metric_option = st.sidebar.selectbox(
             'select metric to compare among all cities',
-            ['mae','rmse','medae','mase'])
+            ['mae', 'rmse', 'medae', 'mase'])
 
 
-
-
-if selected == 'Intro':    
+if selected == 'Intro':
     st.title('Welcome to Roboclimate')
-    col1, col2 = st.columns([3,1])
+    col1, col2 = st.columns([3, 1])
     with col1:
         st.markdown(
             """
@@ -188,7 +201,6 @@ if selected == 'Intro':
             - Asuncion        
             """
         )
-
 
         st.header('Methodology')
         st.markdown(
@@ -232,15 +244,19 @@ if selected == 'Intro':
             """
         )
 
-if selected == 'Forecast vs Actual':        
-    col1, col2 = st.columns([0.7,0.3])
+if selected == 'Forecast vs Actual':
+    last_n_days = 20
+    col1, col2 = st.columns([0.7, 0.3])
     with col1:
-        plot_actual_vs_forecast(20)
+        plot_actual_vs_forecast(last_n_days)
     with col2:
-        with st.expander("Show data"):
-            st.markdown("hello world")
+        with st.expander("Show data"):            
+            (x, y1, y2, (min_x, max_x), (min_y, max_y)) = \
+                fetch_data(city_name_option1, weather_var_option1, tn, last_n_days)
+            
+            st.dataframe(pd.concat([y1,y2], axis=1))
 
-if selected == 'Forecast Metrics':    
+if selected == 'Forecast Metrics':
 
     col1, col2 = st.columns(2)
     with col1:
@@ -252,7 +268,7 @@ if selected == 'Forecast Metrics':
     # plot_metrics()
     # plot_scaled_error()
 
-if selected == 'City Comparison':    
+if selected == 'City Comparison':
     # col1, col2 = st.columns(2)
     # with col1:
     plot_cities()
