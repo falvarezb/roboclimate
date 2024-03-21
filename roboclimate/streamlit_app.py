@@ -11,7 +11,7 @@ st.set_page_config(page_title="Roboclimate", layout="wide")
 
 
 @st.cache_data
-def fetch_data(city_name, weather_variable, tn, last_n_days):
+def fetch_actual_vs_forecast_data(city_name, weather_variable, tn, last_n_days):
     city = rconf.cities[city_name]
     join_data_df = rdq.load_csv_files(city, weather_variable)["join_data_df"]
     N = join_data_df.shape[0]
@@ -36,8 +36,8 @@ def fetch_data(city_name, weather_variable, tn, last_n_days):
 
 
 def plot_actual_vs_forecast(city_name_option1, weather_var_option1, tn, last_n_days):
-    (x, y1, y2, (min_x, max_x), (min_y, max_y)) = \
-        fetch_data(city_name_option1, weather_var_option1, tn, last_n_days)
+    x, y1, y2, (min_x, max_x), (min_y, max_y) = \
+        fetch_actual_vs_forecast_data(city_name_option1, weather_var_option1, tn, last_n_days)
 
     fig, ax = plt.subplots()
     plt.grid(True)
@@ -52,28 +52,30 @@ def plot_actual_vs_forecast(city_name_option1, weather_var_option1, tn, last_n_d
     plt.legend()
     st.pyplot(fig)
 
-
-def plot_metrics():
-    fig, ax = plt.subplots()
-    plt.grid(True)
-    city = rconf.cities[city_name_option2]
-    metrics_df = load_metrics_file(city, weather_var_option2)
-    # plt.rcParams['figure.figsize'] = (7,3)
+@st.cache_data
+def fetch_metrics_data(city_name, weather_variable):
+    city = rconf.cities[city_name]
+    metrics_df = load_metrics_file(city, weather_variable)
     x = np.linspace(0, 1, 5)
-    ax.set_xticks(x)
-    ax.set_xticklabels(['t5', 't4', 't3', 't2', 't1'])
     max_y = max(max(metrics_df['mae']), max(metrics_df['rmse']), max(metrics_df['medae']))
     min_y = min(min(metrics_df['mae']), min(metrics_df['rmse']), min(metrics_df['medae']))
-    # print(f"min_y={min_y}")
-    # print(f"max_y={max_y}")
+    return (x, metrics_df['mae'], metrics_df['rmse'], metrics_df['medae'], (min_y, max_y))
+
+def plot_metrics(city_name, weather_variable):
+    x, y_mae, y_rmse, y_medae, (min_y, max_y) = fetch_metrics_data(city_name, weather_variable)
+    
+    fig, ax = plt.subplots()
+    plt.grid(True)
+    ax.set_xticks(x)
+    ax.set_xticklabels(['t5', 't4', 't3', 't2', 't1'])
     plt.ylim(min_y - .5, max_y + .5)
     # [l.remove() for l in ax.lines]
     # [l.remove() for l in ax.lines]
     # [l.remove() for l in ax.lines]
-    plt.plot(x, metrics_df['mae'].to_numpy(), label='mae', color='blue', marker='o')
-    plt.plot(x, metrics_df['rmse'].to_numpy(), label='rmse', color='grey', marker='^')
-    plt.plot(x, metrics_df['medae'].to_numpy(), label='medae', color='red', marker='*')
-    plt.title(f"metrics - {city_name_option2}")
+    plt.plot(x, y_mae.to_numpy(), label='mae', color='blue', marker='o')
+    plt.plot(x, y_rmse.to_numpy(), label='rmse', color='grey', marker='^')
+    plt.plot(x, y_medae.to_numpy(), label='medae', color='red', marker='*')
+    plt.title(f"metrics - {city_name}")
     plt.legend()
     st.pyplot(fig)
 
@@ -251,8 +253,8 @@ if selected == 'Forecast vs Actual':
         plot_actual_vs_forecast(city_name_option1, weather_var_option1, tn, last_n_days)
     with col2:
         with st.expander("Show data"):
-            (x, y1, y2, (min_x, max_x), (min_y, max_y)) = \
-                fetch_data(city_name_option1, weather_var_option1, tn, last_n_days)
+            x, y1, y2, (min_x, max_x), (min_y, max_y) = \
+                fetch_actual_vs_forecast_data(city_name_option1, weather_var_option1, tn, last_n_days)
 
             st.dataframe(pd.concat([y1, y2], axis=1))
 
@@ -260,10 +262,15 @@ if selected == 'Forecast Metrics':
 
     col1, col2 = st.columns(2)
     with col1:
-        plot_metrics()
+        plot_metrics(city_name_option2, weather_var_option2)
+        with st.expander("Show data"):
+            x, y_mae, y_rmse, y_medae, (min_y, max_y) = fetch_metrics_data(city_name_option2, weather_var_option2)
+            st.dataframe(pd.concat([y_mae, y_rmse, y_medae], axis=1))
 
     with col2:
         plot_scaled_error()
+        with st.expander("Show data"):
+            st.write("hello")
 
     # plot_metrics()
     # plot_scaled_error()
