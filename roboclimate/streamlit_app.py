@@ -118,9 +118,9 @@ def plot_cities():
 #     plt.plot(x, np.ones(5), label='1', color='red')
     # for city in rconf.cities.values():
     # [l.remove() for l in ax.lines]
-    for city in rconf.cities.values():
-        metrics_df = load_metrics_file(city, weather_var_option3)
-        plt.plot(x, metrics_df[metric_option].to_numpy(), label=city.name, marker='o')
+    for city in cities_option:
+        metrics_df = load_metrics_file(rconf.cities[city], weather_var_option3)
+        plt.plot(x, metrics_df[metric_option].to_numpy(), label=city, marker='o')
         idx += 1
     plt.title(metric_option)
     plt.legend()
@@ -175,6 +175,11 @@ with st.sidebar:
         metric_option = st.sidebar.selectbox(
             'select metric to compare among all cities',
             ['mae', 'rmse', 'medae', 'mase'])
+
+        cities_option = st.multiselect(
+            'select cities to compare',
+            [city.name for city in rconf.cities.values()],
+            ['london'])
 
 
 if selected == 'Intro':
