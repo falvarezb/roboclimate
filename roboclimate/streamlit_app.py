@@ -52,6 +52,7 @@ def plot_actual_vs_forecast(city_name_option1, weather_var_option1, tn, last_n_d
     plt.legend()
     st.pyplot(fig)
 
+
 @st.cache_data
 def fetch_metrics_data(city_name, weather_variable):
     city = rconf.cities[city_name]
@@ -59,11 +60,12 @@ def fetch_metrics_data(city_name, weather_variable):
     x = np.linspace(0, 1, 5)
     max_y = max(max(metrics_df['mae']), max(metrics_df['rmse']), max(metrics_df['medae']))
     min_y = min(min(metrics_df['mae']), min(metrics_df['rmse']), min(metrics_df['medae']))
-    return (x, metrics_df['mae'], metrics_df['rmse'], metrics_df['medae'], (min_y, max_y))
+    return (x, metrics_df['mae'], metrics_df['rmse'], metrics_df['medae'], metrics_df['mase'], (min_y, max_y))
+
 
 def plot_metrics(city_name, weather_variable):
-    x, y_mae, y_rmse, y_medae, (min_y, max_y) = fetch_metrics_data(city_name, weather_variable)
-    
+    x, y_mae, y_rmse, y_medae, y_mase, (min_y, max_y) = fetch_metrics_data(city_name, weather_variable)
+
     fig, ax = plt.subplots()
     plt.grid(True)
     ax.set_xticks(x)
@@ -259,18 +261,17 @@ if selected == 'Forecast vs Actual':
             st.dataframe(pd.concat([y1, y2], axis=1))
 
 if selected == 'Forecast Metrics':
-
+    x, y_mae, y_rmse, y_medae, y_mase, (min_y, max_y) = fetch_metrics_data(city_name_option2, weather_var_option2)
     col1, col2 = st.columns(2)
     with col1:
         plot_metrics(city_name_option2, weather_var_option2)
         with st.expander("Show data"):
-            x, y_mae, y_rmse, y_medae, (min_y, max_y) = fetch_metrics_data(city_name_option2, weather_var_option2)
             st.dataframe(pd.concat([y_mae, y_rmse, y_medae], axis=1))
 
     with col2:
         plot_scaled_error()
         with st.expander("Show data"):
-            st.write("hello")
+            st.dataframe(y_mase)
 
     # plot_metrics()
     # plot_scaled_error()
