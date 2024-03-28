@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -x
-
 if [ $# -gt 0 ]; then
     CSV_FOLDER="$1"
 else

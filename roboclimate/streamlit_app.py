@@ -1,27 +1,29 @@
+"""Streamlit dashboard
+"""
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import streamlit as st
 from streamlit_option_menu import option_menu
-import roboclimate.data_explorer as rdq
+import roboclimate.data_explorer as rde
 import roboclimate.config as rconf
-import pandas as pd
 
 PADDING = 0
 st.set_page_config(page_title="Roboclimate", layout="wide")
 
 
 @st.cache_data
-def fetch_actual_vs_forecast_data(city_name, weather_variable, tn, last_n_days):
-    city = rconf.cities[city_name]
-    join_data_df = rdq.load_csv_files(city, weather_variable)["join_data_df"]
+def fetch_actual_vs_forecast_data(city_name, weather_variable, tn, last_n_days: int):
+    city: rconf.City = rconf.cities[city_name]
+    join_data_df: pd.DataFrame = rde.load_csv_files(city, weather_variable)["join_data_df"]
     N = join_data_df.shape[0]
     max_x = N
     min_x = max_x - (rconf.day_factor * last_n_days)
     print(f"min_x={min_x}")
     print(f"max_x={max_x}")
     if tn != 'None':
-        max_y = max(max(join_data_df[weather_var_option1][min_x:max_x]), max(join_data_df[tn][min_x:max_x]))
-        min_y = min(min(join_data_df[weather_var_option1][min_x:max_x]), min(join_data_df[tn][min_x:max_x]))
+        max_y = max(pd.concat([join_data_df[weather_var_option1][min_x:max_x], join_data_df[tn][min_x:max_x]]))
+        min_y = min(pd.concat([join_data_df[weather_var_option1][min_x:max_x], join_data_df[tn][min_x:max_x]]))
     else:
         max_y = max(join_data_df[weather_var_option1][min_x:max_x])
         min_y = min(join_data_df[weather_var_option1][min_x:max_x])
@@ -58,8 +60,8 @@ def fetch_metrics_data(city_name, weather_variable):
     city = rconf.cities[city_name]
     metrics_df = load_metrics_file(city, weather_variable)
     x = np.linspace(0, 1, 5)
-    max_y = max(max(metrics_df['mae']), max(metrics_df['rmse']), max(metrics_df['medae']))
-    min_y = min(min(metrics_df['mae']), min(metrics_df['rmse']), min(metrics_df['medae']))
+    max_y = max(pd.concat([metrics_df['mae'], metrics_df['rmse'], metrics_df['medae']]))
+    min_y = min(pd.concat([metrics_df['mae'], metrics_df['rmse'], metrics_df['medae']]))
     return (x, metrics_df['mae'], metrics_df['rmse'], metrics_df['medae'], metrics_df['mase'], (min_y, max_y))
 
 
@@ -85,8 +87,8 @@ def plot_metrics(city_name, weather_variable):
 def plot_scaled_error():
     fig, ax = plt.subplots()
     plt.grid(True)
-    city = rconf.cities[city_name_option2]
-    metrics_df = load_metrics_file(city, weather_var_option2)
+    city: rconf.City = rconf.cities[city_name_option2]
+    metrics_df: pd.DataFrame = load_metrics_file(city, weather_var_option2)
     x = np.linspace(0, 1, 5)
     ax.set_xticks(x)
     ax.set_xticklabels(['t5', 't4', 't3', 't2', 't1'])
@@ -103,7 +105,7 @@ def plot_scaled_error():
 
 @st.cache_data
 def load_metrics_file(city, weather_var):
-    return rdq.load_metrics_file(city, weather_var)
+    return rde.load_metrics_file(city, weather_var)
 
 
 def plot_cities():
