@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Script to start/stop the EC2 instance on which the EFS is mounted
+
 set -ex
 
 if [ $# -lt 1 ]; then
