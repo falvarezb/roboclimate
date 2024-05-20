@@ -18,7 +18,7 @@ module "weather_function" {
 
   function_name = "t_roboclimate_weather"
   handler_name       = "weather_spider.weather_handler"
-  execution_role = aws_iam_role.lambda_exec.arn
+  execution_role = aws_iam_role.basic_lambda_exec.arn
   subnet_ids         = [module.efs.lambda_subnet1_id, module.efs.lambda_subnet2_id]
   security_group_ids = [module.efs.efs_mount_target_sg_id]
   access_point_arn = module.efs.access_point_arn
@@ -35,7 +35,7 @@ module "forecast_function" {
 
   function_name = "t_roboclimate_forecast"
   handler_name       = "forecast_spider.forecast_handler"
-  execution_role = aws_iam_role.lambda_exec.arn
+  execution_role = aws_iam_role.basic_lambda_exec.arn
   subnet_ids         = [module.efs.lambda_subnet1_id, module.efs.lambda_subnet2_id]
   security_group_ids = [module.efs.efs_mount_target_sg_id]
   access_point_arn = module.efs.access_point_arn
@@ -52,7 +52,7 @@ module "uvi_function" {
 
   function_name = "t_roboclimate_uvi"
   handler_name       = "uvi_spider.handler"
-  execution_role = aws_iam_role.lambda_exec.arn
+  execution_role = aws_iam_role.basic_lambda_exec.arn
   subnet_ids         = [module.efs.lambda_subnet1_id, module.efs.lambda_subnet2_id]
   security_group_ids = [module.efs.efs_mount_target_sg_id]
   access_point_arn = module.efs.access_point_arn
@@ -67,7 +67,8 @@ module "uvi_function" {
 
 # Lambda execution roles
 # https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html
-resource "aws_iam_role" "lambda_exec" {
+resource "aws_iam_role" "basic_lambda_exec" {
+  # Basic role used by lambda functions to execute
   name = "t_roboclimate_role"
 
   assume_role_policy = jsonencode({
@@ -84,15 +85,46 @@ resource "aws_iam_role" "lambda_exec" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "lambda_policy" {
-  role       = aws_iam_role.lambda_exec.name
+resource "aws_iam_role" "bucket_authorised_lambda_exec" {
+  # Like the basic role but authorised to access S3 bucket 'roboclimate'
+  # Authorisation is managed by a resource-based policy attached to the bucket
+  name = "t_s3_bucket_roboclimate_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Sid    = ""
+      Principal = {
+        Service = "lambda.amazonaws.com"
+      }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_policy1" {
+  role       = aws_iam_role.basic_lambda_exec.name
   policy_arn = "arn:aws:iam::aws:policy/AWSLambdaExecute"
 }
 
-resource "aws_iam_role_policy_attachment" "lambda_eni_policy" {
+resource "aws_iam_role_policy_attachment" "lambda_eni_policy1" {
   # https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc.html
   # policy to create and manage ENIs (Elastic Network Interfaces)
-  role       = aws_iam_role.lambda_exec.name
+  role       = aws_iam_role.basic_lambda_exec.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_policy2" {
+  role       = aws_iam_role.bucket_authorised_lambda_exec.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSLambdaExecute"
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_eni_policy2" {
+  # https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc.html
+  # policy to create and manage ENIs (Elastic Network Interfaces)
+  role       = aws_iam_role.bucket_authorised_lambda_exec.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
@@ -285,10 +317,39 @@ resource "aws_instance" "efs_instance" {
   }
 }
 
+############## Lambda execution scheduler ##########################
 module "eventbridge_scheduler" {
   source = "./modules/eventbridge"
 
   weather_lambda_arn = "${module.weather_function.function_arn}:18"
   forecast_lambda_arn = "${module.forecast_function.function_arn}:5"
   uvi_lambda_arn = "${module.uvi_function.function_arn}:1"
+}
+
+
+############## S3 bucket ##########################
+resource "aws_s3_bucket" "roboclimate" {
+  bucket = "roboclimate"
+  
+}
+
+resource "aws_s3_bucket_policy" "bucket_policy" {
+  bucket = aws_s3_bucket.roboclimate.id
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Principal = {
+          AWS = "arn:aws:iam::${var.aws_account}:role/${aws_iam_role.bucket_authorised_lambda_exec.arn}"  # replace with your Lambda role ARN
+        },
+        Action = [          
+          "s3:PutObject",
+          "s3:DeleteObject"
+        ],
+        Resource = "${aws_s3_bucket.roboclimate.arn}/*"
+      }
+    ]
+  })
 }

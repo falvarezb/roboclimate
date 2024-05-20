@@ -66,3 +66,9 @@ variable "lwf_path" {
   type        = string
   default     = "/roboclimate"
 }
+
+variable "aws_account" {
+  description = "AWS account number"
+  type        = string
+  sensitive   = true
+}
