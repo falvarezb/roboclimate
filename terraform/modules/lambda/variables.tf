@@ -40,3 +40,9 @@ variable "open_weather_api" {
   sensitive   = true
 }
 
+variable "s3_bucket_name" {
+  description = "S3 bucket used to store backup copies of the CSV files gathered by the spiders"
+  type        = string
+  sensitive   = true
+}
+
