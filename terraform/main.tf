@@ -90,7 +90,7 @@ module "backup_function" {
 # https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html
 resource "aws_iam_role" "main_lambda_exec" {
   # Main role used by lambda functions to execute
-  name = "t_roboclimate_role"
+  name = "t_main_roboclimate_role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -364,7 +364,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
       {
         Effect = "Allow",
         Principal = {
-          AWS = "arn:aws:iam::${var.aws_account}:role/${aws_iam_role.backup_lambda_exec.arn}"
+          AWS = "arn:aws:iam::${var.aws_account}:role/${aws_iam_role.backup_lambda_exec.name}"
         },
         Action = [          
           "s3:PutObject"          
