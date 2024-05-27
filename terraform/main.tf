@@ -78,7 +78,7 @@ module "backup_function" {
   access_point_arn = module.efs.access_point_arn
   artifact_folder = "backup_pkg"
   open_weather_api = ""
-  s3_bucket_name = "roboclimate"
+  s3_bucket_name = var.s3_bucket
 
   # Explicitly declare dependency on EFS mount target.
   # When creating or updating Lambda functions, mount target must be in 'available' lifecycle state.
@@ -351,7 +351,7 @@ module "eventbridge_scheduler" {
 
 ############## S3 bucket ##########################
 resource "aws_s3_bucket" "roboclimate" {
-  bucket = "roboclimate"
+  bucket = var.s3_bucket
   
 }
 
