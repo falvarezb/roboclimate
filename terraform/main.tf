@@ -345,6 +345,7 @@ module "eventbridge_scheduler" {
   weather_lambda_arn = "${module.weather_function.function_arn}:18"
   forecast_lambda_arn = "${module.forecast_function.function_arn}:5"
   uvi_lambda_arn = "${module.uvi_function.function_arn}:1"
+  backup_lambda_arn = "${module.backup_function.function_arn}:1"
 }
 
 
