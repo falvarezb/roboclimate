@@ -22,7 +22,7 @@ module "weather_function" {
   subnet_ids         = [module.efs.lambda_subnet1_id, module.efs.lambda_subnet2_id]
   security_group_ids = [module.efs.efs_mount_target_sg_id]
   access_point_arn = module.efs.access_point_arn
-  artifact_folder = "weather_pkg"
+  artifact_folder = "weather_spider_pkg"
   open_weather_api = var.open_weather_api
   s3_bucket_name = ""
   
@@ -40,7 +40,7 @@ module "forecast_function" {
   subnet_ids         = [module.efs.lambda_subnet1_id, module.efs.lambda_subnet2_id]
   security_group_ids = [module.efs.efs_mount_target_sg_id]
   access_point_arn = module.efs.access_point_arn
-  artifact_folder = "forecast_pkg"
+  artifact_folder = "forecast_spider_pkg"
   open_weather_api = var.open_weather_api
   s3_bucket_name = ""
 
@@ -58,7 +58,7 @@ module "uvi_function" {
   subnet_ids         = [module.efs.lambda_subnet1_id, module.efs.lambda_subnet2_id]
   security_group_ids = [module.efs.efs_mount_target_sg_id]
   access_point_arn = module.efs.access_point_arn
-  artifact_folder = "uvi_pkg"
+  artifact_folder = "uvi_spider_pkg"
   open_weather_api = var.open_weather_api
   s3_bucket_name = ""
 
