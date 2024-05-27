@@ -5,7 +5,7 @@ import time
 from datetime import date
 from unittest.mock import patch, call
 import pytest
-import uvi_spider as rspider
+import uvi_spider_lambda as rspider
 from datetime import date
 
 
@@ -21,7 +21,7 @@ def csv_folder():
 
 
 @patch('common.requests')
-@patch('uvi_spider.get_yesterday')
+@patch('uvi_spider_lambda.get_yesterday')
 @patch.dict('os.environ', {'OPEN_WEATHER_API': 'api_key', 'ROBOCLIMATE_CSV_FILES_PATH': tmp_folder})
 def test_collect_uvi_data(get_yesterday, req, csv_folder):
     get_yesterday.return_value = date(2024, 3, 1)

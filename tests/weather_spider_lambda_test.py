@@ -7,7 +7,7 @@ from unittest.mock import patch
 import pytest
 from requests.models import Response
 from requests.exceptions import ConnectionError
-import weather_spider as rspider
+import weather_spider_lambda as rspider
 import common
 
 
@@ -61,28 +61,28 @@ def epoch_time_side_effect_gen(current_utc_date):
     return epoch_time_side_effect
 
 
-@patch('weather_spider.epoch_time')
+@patch('weather_spider_lambda.epoch_time')
 def test_normalise_dt_success(mock_epoch_time, fixtures):
     mock_epoch_time.side_effect = epoch_time_side_effect_gen(fixtures['current_utc_date'])
     tolerance = {'positive_tolerance': 10, 'negative_tolerance': 5}
     assert rspider.normalise_datetime(fixtures['dt'], fixtures['current_utc_date'], tolerance) == 1575061200.0
 
 
-@patch('weather_spider.epoch_time')
+@patch('weather_spider_lambda.epoch_time')
 def test_normalise_dt_success_when_dt_on_the_dot(mock_epoch_time, fixtures):
     mock_epoch_time.side_effect = epoch_time_side_effect_gen(fixtures['current_utc_date'])
     tolerance = {'positive_tolerance': 10, 'negative_tolerance': 5}
     assert rspider.normalise_datetime(fixtures['dt_on_the_dot'], fixtures['current_utc_date'], tolerance) == 1575061200.0
 
 
-@patch('weather_spider.epoch_time')
+@patch('weather_spider_lambda.epoch_time')
 def test_normalise_dt_success_when_dt_higher_than_reference(mock_epoch_time, fixtures):
     mock_epoch_time.side_effect = epoch_time_side_effect_gen(fixtures['current_utc_date'])
     tolerance = {'positive_tolerance': 10, 'negative_tolerance': 5}
     assert rspider.normalise_datetime(fixtures['dt_higher_than_reference'], fixtures['current_utc_date'], tolerance) == 1575061200.0
 
 
-@patch('weather_spider.epoch_time')
+@patch('weather_spider_lambda.epoch_time')
 def test_normalise_dt_fail(mock_epoch_time, fixtures):
     mock_epoch_time.side_effect = epoch_time_side_effect_gen(fixtures['current_utc_date'])
     tolerance = {'positive_tolerance': 1, 'negative_tolerance': 5}
