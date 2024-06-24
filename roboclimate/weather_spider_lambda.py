@@ -1,7 +1,6 @@
 import os
 from datetime import timezone, datetime, date
 from common import logger, utcnow_date, run_city, csv_rows, CITIES
-from terraform.weather_pkg.common import CSV_HEADER
 
 # constants
 WEATHER_RESOURCE = "weather"
