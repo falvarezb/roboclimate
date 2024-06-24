@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class Main {
@@ -40,10 +41,34 @@ public class Main {
             add(t2MeanAbsoluteError);
             add(t1MeanAbsoluteError);
         }};
-        writeMetricsCsvFile(maes, "../csv_files/temp/java_metrics_madrid.csv");
+        //writeMetricsCsvFile(maes, "../csv_files/temp/java_metrics_madrid.csv");
+
+        var t1RootMeanSquaredError = computeRootMeanSquaredError(joinWeatherRecords, JoinedRecord::t1);
+        var t2RootMeanSquaredError = computeRootMeanSquaredError(joinWeatherRecords, JoinedRecord::t2);
+        var t3RootMeanSquaredError = computeRootMeanSquaredError(joinWeatherRecords, JoinedRecord::t3);
+        var t4RootMeanSquaredError = computeRootMeanSquaredError(joinWeatherRecords, JoinedRecord::t4);
+        var t5RootMeanSquaredError = computeRootMeanSquaredError(joinWeatherRecords, JoinedRecord::t5);
+        var rmses = new ArrayList<Double>() {{
+            add(t5RootMeanSquaredError);
+            add(t4RootMeanSquaredError);
+            add(t3RootMeanSquaredError);
+            add(t2RootMeanSquaredError);
+            add(t1RootMeanSquaredError);
+        }};
+        writeMetricsCsvFile(maes, rmses, "../csv_files/temp/java_metrics_madrid.csv");
+
+        //calculate Root mean squared error
+
     }
 
-    private static double computeMeanAbsoluteError(List<JoinedRecord> joinWeatherRecords, Function<JoinedRecord, Double> tExtractor) throws IOException {
+    private static double computeRootMeanSquaredError(List<JoinedRecord> joinWeatherRecords, Function<JoinedRecord, Double> tExtractor) {
+        return Math.sqrt(joinWeatherRecords
+                .stream()
+                .map(record -> Math.pow(record.weatherVariableValue() - tExtractor.apply(record), 2))
+                .reduce(0.0, Double::sum) / joinWeatherRecords.size());
+    }
+
+    private static double computeMeanAbsoluteError(List<JoinedRecord> joinWeatherRecords, Function<JoinedRecord, Double> tExtractor) {
         return joinWeatherRecords
                 .stream()
                 .map(record -> Math.abs(record.weatherVariableValue() - tExtractor.apply(record)))
@@ -114,11 +139,14 @@ public class Main {
         Files.writeString(Paths.get(path), csvHeader + "\n" + csvData);
     }
 
-    private static void writeMetricsCsvFile(List<Double> maes, String path) throws IOException {
-        var csvHeader = "mae";
-        var csvData = maes.stream()
-                .map(String::valueOf)
+    private static void writeMetricsCsvFile(List<Double> maes, List<Double> rmses, String path) throws IOException {
+        var csvHeader = "mae,rmse";
+        var csvData = IntStream.range(0, maes.size())
+                .mapToObj(i -> maes.get(i) + "," + rmses.get(i))
                 .collect(Collectors.joining("\n"));
+//        var csvData = maes.stream()
+//                .map(String::valueOf)
+//                .collect(Collectors.joining("\n"));
         Files.writeString(Paths.get(path), csvHeader + "\n" + csvData);
     }
 }
