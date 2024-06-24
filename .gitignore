@@ -32,9 +32,15 @@ commands.txt
 
 *deploy/*.zip
 **/terraform/*.zip
-**/terraform/weather_pkg/
-**/terraform/forecast_pkg/
-**/terraform/uvi_pkg/
+**/terraform/weather_spider_pkg/
+**/terraform/forecast_spider_pkg/
+**/terraform/uvi_spider_pkg/
 **/terraform/backup_pkg/
 csv_files_backup/
 test_csv_files/
+
+.idea/
+*.iml
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/

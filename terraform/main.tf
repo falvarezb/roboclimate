@@ -17,7 +17,7 @@ module "weather_function" {
   source = "./modules/lambda"
 
   function_name = "t_roboclimate_weather"
-  handler_name       = "weather_spider.weather_handler"
+  handler_name       = "weather_spider_lambda.weather_handler"
   execution_role = aws_iam_role.main_lambda_exec.arn
   subnet_ids         = [module.efs.lambda_subnet1_id, module.efs.lambda_subnet2_id]
   security_group_ids = [module.efs.efs_mount_target_sg_id]
@@ -35,7 +35,7 @@ module "forecast_function" {
   source = "./modules/lambda"
 
   function_name = "t_roboclimate_forecast"
-  handler_name       = "forecast_spider.forecast_handler"
+  handler_name       = "forecast_spider_lambda.forecast_handler"
   execution_role = aws_iam_role.main_lambda_exec.arn
   subnet_ids         = [module.efs.lambda_subnet1_id, module.efs.lambda_subnet2_id]
   security_group_ids = [module.efs.efs_mount_target_sg_id]
@@ -53,7 +53,7 @@ module "uvi_function" {
   source = "./modules/lambda"
 
   function_name = "t_roboclimate_uvi"
-  handler_name       = "uvi_spider.handler"
+  handler_name       = "uvi_spider_lambda.handler"
   execution_role = aws_iam_role.main_lambda_exec.arn
   subnet_ids         = [module.efs.lambda_subnet1_id, module.efs.lambda_subnet2_id]
   security_group_ids = [module.efs.efs_mount_target_sg_id]
