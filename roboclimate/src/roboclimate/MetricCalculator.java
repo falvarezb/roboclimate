@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class MetricCalculator {
     static double computeRootMeanSquaredError(List<JoinedRecord> joinWeatherRecords, Function<JoinedRecord, Double> tExtractor) {
@@ -26,7 +25,7 @@ public class MetricCalculator {
                 .stream()
                 .map(record -> Math.abs(record.weatherVariableValue() - tExtractor.apply(record)))
                 .sorted()
-                .collect(Collectors.toList());
+                .toList();
 
         if (absoluteErrors.size() % 2 == 0) {
             return (absoluteErrors.get(absoluteErrors.size() / 2) + absoluteErrors.get(absoluteErrors.size() / 2 - 1)) / 2;

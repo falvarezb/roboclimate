@@ -13,12 +13,14 @@ public class Main {
 
         System.out.println("Hello world!");
         try {
+            //todo: loop over cities
             List<WeatherRecord> actualWeatherList = readWeatherFile("../csv_files/weather_madrid.csv");
             List<WeatherRecord> forecastWeatherList = readWeatherFile("../csv_files/forecast_madrid.csv");
             System.out.println(actualWeatherList.getFirst());
             System.out.println(forecastWeatherList.getFirst());
             Map<Long, List<WeatherRecord>> forecastMap = groupByDt(forecastWeatherList);
             System.out.println(forecastMap.entrySet().stream().findFirst());
+            //todo: loop over weather variables
             processWeatherVariable(actualWeatherList, forecastMap, WeatherRecord::temperature);
         } catch (IOException e) {
             e.printStackTrace();
@@ -34,11 +36,11 @@ public class Main {
         writeJoinCsvFile(joinWeatherRecords, "../csv_files/temp/java_join_madrid.csv");
 
         //calculate mean absolute error
-        var maes = calculateMetricsByTx(MetricCalculator::computeMeanAbsoluteError, joinWeatherRecords);
+        var mae = calculateMetricsByTx(MetricCalculator::computeMeanAbsoluteError, joinWeatherRecords);
         //calculate Root mean squared error
-        var rmses = calculateMetricsByTx(MetricCalculator::computeRootMeanSquaredError, joinWeatherRecords);
-        var medaes = calculateMetricsByTx(MetricCalculator::computeMedianAbsoluteError, joinWeatherRecords);
-        writeMetricsCsvFile(maes, rmses, medaes, "../csv_files/temp/java_metrics_madrid.csv");
+        var rmse = calculateMetricsByTx(MetricCalculator::computeRootMeanSquaredError, joinWeatherRecords);
+        var medae = calculateMetricsByTx(MetricCalculator::computeMedianAbsoluteError, joinWeatherRecords);
+        writeMetricsCsvFile(mae, rmse, medae, "../csv_files/temp/java_metrics_madrid.csv");
 
 
 
