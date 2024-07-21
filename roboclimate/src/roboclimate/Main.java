@@ -3,7 +3,6 @@ package roboclimate;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import static roboclimate.MetricCalculator.*;
 import static roboclimate.WeatherIO.*;
@@ -26,21 +25,6 @@ public class Main {
         }
     }
 
-    private static ArrayList<Double> calculateMetricsByTx(BiFunction<List<JoinedRecord>, Function<JoinedRecord, Double>, Double> metricF, List<JoinedRecord> joinWeatherRecords) {
-        var t1MeanAbsoluteError = metricF.apply(joinWeatherRecords, JoinedRecord::t1);
-        var t2MeanAbsoluteError = metricF.apply(joinWeatherRecords, JoinedRecord::t2);
-        var t3MeanAbsoluteError = metricF.apply(joinWeatherRecords, JoinedRecord::t3);
-        var t4MeanAbsoluteError = metricF.apply(joinWeatherRecords, JoinedRecord::t4);
-        var t5MeanAbsoluteError = metricF.apply(joinWeatherRecords, JoinedRecord::t5);
-        return new ArrayList<>() {{
-            add(t5MeanAbsoluteError);
-            add(t4MeanAbsoluteError);
-            add(t3MeanAbsoluteError);
-            add(t2MeanAbsoluteError);
-            add(t1MeanAbsoluteError);
-        }};
-    }
-
     private static void processWeatherVariable(
             List<WeatherRecord> actualWeatherList, 
             Map<Long, List<WeatherRecord>> forecastMap, 
@@ -53,7 +37,8 @@ public class Main {
         var maes = calculateMetricsByTx(MetricCalculator::computeMeanAbsoluteError, joinWeatherRecords);
         //calculate Root mean squared error
         var rmses = calculateMetricsByTx(MetricCalculator::computeRootMeanSquaredError, joinWeatherRecords);
-        writeMetricsCsvFile(maes, rmses, "../csv_files/temp/java_metrics_madrid.csv");
+        var medaes = calculateMetricsByTx(MetricCalculator::computeMedianAbsoluteError, joinWeatherRecords);
+        writeMetricsCsvFile(maes, rmses, medaes, "../csv_files/temp/java_metrics_madrid.csv");
 
 
 

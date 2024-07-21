@@ -36,10 +36,10 @@ public class WeatherIO {
         Files.writeString(Paths.get(path), csvHeader + "\n" + csvData);
     }
 
-    static void writeMetricsCsvFile(List<Double> maes, List<Double> rmses, String path) throws IOException {
+    static void writeMetricsCsvFile(List<Double> maes, List<Double> rmses, List<Double> medaes, String path) throws IOException {
         var csvHeader = "mae,rmse";
         var csvData = IntStream.range(0, maes.size())
-                .mapToObj(i -> maes.get(i) + "," + rmses.get(i))
+                .mapToObj(i -> maes.get(i) + "," + rmses.get(i) + "," + medaes.get(i))
                 .collect(Collectors.joining("\n"));
 //        var csvData = maes.stream()
 //                .map(String::valueOf)
