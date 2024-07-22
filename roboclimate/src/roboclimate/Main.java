@@ -36,11 +36,12 @@ public class Main {
         writeJoinCsvFile(joinWeatherRecords, "../csv_files/temp/java_join_madrid.csv");
 
         //calculate mean absolute error
-        var mae = calculateMetricsByTx(MetricCalculator::computeMeanAbsoluteError, joinWeatherRecords);
+        var mae = computeMetric(MetricCalculator::computeMeanAbsoluteError, joinWeatherRecords);
         //calculate Root mean squared error
-        var rmse = calculateMetricsByTx(MetricCalculator::computeRootMeanSquaredError, joinWeatherRecords);
-        var medae = calculateMetricsByTx(MetricCalculator::computeMedianAbsoluteError, joinWeatherRecords);
-        writeMetricsCsvFile(mae, rmse, medae, "../csv_files/temp/java_metrics_madrid.csv");
+        var rmse = computeMetric(MetricCalculator::computeRootMeanSquaredError, joinWeatherRecords);
+        var medae = computeMetric(MetricCalculator::computeMedianAbsoluteError, joinWeatherRecords);
+        var mase = computeMeanAbsoluteScaledError(joinWeatherRecords);
+        writeMetricsCsvFile(mae, rmse, medae, mase, "../csv_files/temp/java_metrics_madrid.csv");
 
 
 

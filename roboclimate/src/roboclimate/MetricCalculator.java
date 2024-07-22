@@ -34,18 +34,42 @@ public class MetricCalculator {
         }
     }
 
-    static ArrayList<Double> calculateMetricsByTx(BiFunction<List<JoinedRecord>, Function<JoinedRecord, Double>, Double> metricF, List<JoinedRecord> joinWeatherRecords) {
-        var t1MeanAbsoluteError = metricF.apply(joinWeatherRecords, JoinedRecord::t1);
-        var t2MeanAbsoluteError = metricF.apply(joinWeatherRecords, JoinedRecord::t2);
-        var t3MeanAbsoluteError = metricF.apply(joinWeatherRecords, JoinedRecord::t3);
-        var t4MeanAbsoluteError = metricF.apply(joinWeatherRecords, JoinedRecord::t4);
-        var t5MeanAbsoluteError = metricF.apply(joinWeatherRecords, JoinedRecord::t5);
+    static double computeMeanAbsoluteScaledErrorByTx(List<JoinedRecord> joinWeatherRecords, Function<JoinedRecord, Double> tExtractor, int tPeriod) {
+        double mae = 0, naive_mae = 0;
+        for(int i = tPeriod, j = 0; i < joinWeatherRecords.size(); i++, j++) {
+            mae += Math.abs(joinWeatherRecords.get(i).weatherVariableValue() - tExtractor.apply(joinWeatherRecords.get(i)));
+            naive_mae += Math.abs(joinWeatherRecords.get(i).weatherVariableValue() - joinWeatherRecords.get(j).weatherVariableValue());
+        }
+        return mae / naive_mae;
+    }
+
+    static ArrayList<Double> computeMeanAbsoluteScaledError(List<JoinedRecord> joinWeatherRecords) {
+        var t1Error = computeMeanAbsoluteScaledErrorByTx(joinWeatherRecords, JoinedRecord::t1, 1*8);
+        var t2Error = computeMeanAbsoluteScaledErrorByTx(joinWeatherRecords, JoinedRecord::t2, 2*8);
+        var t3Error = computeMeanAbsoluteScaledErrorByTx(joinWeatherRecords, JoinedRecord::t3, 3*8);
+        var t4Error = computeMeanAbsoluteScaledErrorByTx(joinWeatherRecords, JoinedRecord::t4, 4*8);
+        var t5Error = computeMeanAbsoluteScaledErrorByTx(joinWeatherRecords, JoinedRecord::t5, 5*8);
         return new ArrayList<>() {{
-            add(t5MeanAbsoluteError);
-            add(t4MeanAbsoluteError);
-            add(t3MeanAbsoluteError);
-            add(t2MeanAbsoluteError);
-            add(t1MeanAbsoluteError);
+            add(t5Error);
+            add(t4Error);
+            add(t3Error);
+            add(t2Error);
+            add(t1Error);
+        }};
+    }
+
+    static ArrayList<Double> computeMetric(BiFunction<List<JoinedRecord>, Function<JoinedRecord, Double>, Double> metricF, List<JoinedRecord> joinWeatherRecords) {
+        var t1Error = metricF.apply(joinWeatherRecords, JoinedRecord::t1);
+        var t2Error = metricF.apply(joinWeatherRecords, JoinedRecord::t2);
+        var t3Error = metricF.apply(joinWeatherRecords, JoinedRecord::t3);
+        var t4Error = metricF.apply(joinWeatherRecords, JoinedRecord::t4);
+        var t5Error = metricF.apply(joinWeatherRecords, JoinedRecord::t5);
+        return new ArrayList<>() {{
+            add(t5Error);
+            add(t4Error);
+            add(t3Error);
+            add(t2Error);
+            add(t1Error);
         }};
     }
 }

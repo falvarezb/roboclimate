@@ -40,7 +40,7 @@ public class DataTransformer {
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         entry -> entry.getValue().stream()
-                                .sorted(Comparator.comparing(WeatherRecord::dt))
+                                .sorted(Comparator.comparing(WeatherRecord::today))
                                 .collect(Collectors.toList())
                 ));
     }
