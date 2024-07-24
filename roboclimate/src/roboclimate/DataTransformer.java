@@ -16,7 +16,7 @@ public class DataTransformer {
                         return null;
                     }
                     return new JoinedRecord(
-                            actualWeatherRecord.temperature(),
+                            weatherVariableExtractor.apply(actualWeatherRecord),
                             actualWeatherRecord.dt(),
                             actualWeatherRecord.today(),
                             weatherVariableExtractor.apply(forecasts.get(0)),
@@ -28,7 +28,7 @@ public class DataTransformer {
                     );
                 })
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     static Map<Long, List<WeatherRecord>> groupByDt(List<WeatherRecord> weatherList) {
