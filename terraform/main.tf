@@ -17,13 +17,14 @@ module "weather_function" {
   source = "./modules/lambda"
 
   function_name = "t_roboclimate_weather"
-  handler_name       = "weather_spider.weather_handler"
-  execution_role = aws_iam_role.lambda_exec.arn
+  handler_name       = "weather_spider_lambda.weather_handler"
+  execution_role = aws_iam_role.main_lambda_exec.arn
   subnet_ids         = [module.efs.lambda_subnet1_id, module.efs.lambda_subnet2_id]
   security_group_ids = [module.efs.efs_mount_target_sg_id]
   access_point_arn = module.efs.access_point_arn
-  artifact_folder = "weather_pkg"
+  artifact_folder = "weather_spider_pkg"
   open_weather_api = var.open_weather_api
+  s3_bucket_name = ""
   
   # Explicitly declare dependency on EFS mount target.
   # When creating or updating Lambda functions, mount target must be in 'available' lifecycle state.
@@ -34,13 +35,14 @@ module "forecast_function" {
   source = "./modules/lambda"
 
   function_name = "t_roboclimate_forecast"
-  handler_name       = "forecast_spider.forecast_handler"
-  execution_role = aws_iam_role.lambda_exec.arn
+  handler_name       = "forecast_spider_lambda.forecast_handler"
+  execution_role = aws_iam_role.main_lambda_exec.arn
   subnet_ids         = [module.efs.lambda_subnet1_id, module.efs.lambda_subnet2_id]
   security_group_ids = [module.efs.efs_mount_target_sg_id]
   access_point_arn = module.efs.access_point_arn
-  artifact_folder = "forecast_pkg"
+  artifact_folder = "forecast_spider_pkg"
   open_weather_api = var.open_weather_api
+  s3_bucket_name = ""
 
   # Explicitly declare dependency on EFS mount target.
   # When creating or updating Lambda functions, mount target must be in 'available' lifecycle state.
@@ -51,13 +53,32 @@ module "uvi_function" {
   source = "./modules/lambda"
 
   function_name = "t_roboclimate_uvi"
-  handler_name       = "uvi_spider.handler"
-  execution_role = aws_iam_role.lambda_exec.arn
+  handler_name       = "uvi_spider_lambda.handler"
+  execution_role = aws_iam_role.main_lambda_exec.arn
   subnet_ids         = [module.efs.lambda_subnet1_id, module.efs.lambda_subnet2_id]
   security_group_ids = [module.efs.efs_mount_target_sg_id]
   access_point_arn = module.efs.access_point_arn
-  artifact_folder = "uvi_pkg"
+  artifact_folder = "uvi_spider_pkg"
   open_weather_api = var.open_weather_api
+  s3_bucket_name = ""
+
+  # Explicitly declare dependency on EFS mount target.
+  # When creating or updating Lambda functions, mount target must be in 'available' lifecycle state.
+  depends_on = [module.efs]
+}
+
+module "backup_function" {
+  source = "./modules/lambda"
+
+  function_name = "t_roboclimate_backup"
+  handler_name       = "backup_lambda.handler"
+  execution_role = aws_iam_role.backup_lambda_exec.arn
+  subnet_ids         = [module.efs.lambda_subnet1_id, module.efs.lambda_subnet2_id]
+  security_group_ids = [module.efs.efs_mount_target_sg_id]
+  access_point_arn = module.efs.access_point_arn
+  artifact_folder = "backup_pkg"
+  open_weather_api = ""
+  s3_bucket_name = var.s3_bucket
 
   # Explicitly declare dependency on EFS mount target.
   # When creating or updating Lambda functions, mount target must be in 'available' lifecycle state.
@@ -67,8 +88,9 @@ module "uvi_function" {
 
 # Lambda execution roles
 # https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html
-resource "aws_iam_role" "lambda_exec" {
-  name = "t_roboclimate_role"
+resource "aws_iam_role" "main_lambda_exec" {
+  # Main role used by lambda functions to execute
+  name = "t_main_roboclimate_role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -84,15 +106,46 @@ resource "aws_iam_role" "lambda_exec" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "lambda_policy" {
-  role       = aws_iam_role.lambda_exec.name
+resource "aws_iam_role" "backup_lambda_exec" {
+  # Like the main role but authorised to access S3 bucket 'roboclimate' to back up EFS's csv files
+  # Authorisation is managed by a resource-based policy attached to the bucket
+  name = "t_s3_bucket_roboclimate_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Sid    = ""
+      Principal = {
+        Service = "lambda.amazonaws.com"
+      }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_policy1" {
+  role       = aws_iam_role.main_lambda_exec.name
   policy_arn = "arn:aws:iam::aws:policy/AWSLambdaExecute"
 }
 
-resource "aws_iam_role_policy_attachment" "lambda_eni_policy" {
+resource "aws_iam_role_policy_attachment" "lambda_eni_policy1" {
   # https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc.html
   # policy to create and manage ENIs (Elastic Network Interfaces)
-  role       = aws_iam_role.lambda_exec.name
+  role       = aws_iam_role.main_lambda_exec.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_policy2" {
+  role       = aws_iam_role.backup_lambda_exec.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSLambdaExecute"
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_eni_policy2" {
+  # https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc.html
+  # policy to create and manage ENIs (Elastic Network Interfaces)
+  role       = aws_iam_role.backup_lambda_exec.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
@@ -285,10 +338,40 @@ resource "aws_instance" "efs_instance" {
   }
 }
 
+############## Lambda execution scheduler ##########################
 module "eventbridge_scheduler" {
   source = "./modules/eventbridge"
 
-  weather_lambda_arn = "${module.weather_function.function_arn}:18"
-  forecast_lambda_arn = "${module.forecast_function.function_arn}:5"
-  uvi_lambda_arn = "${module.uvi_function.function_arn}:1"
+  weather_lambda_arn = "${module.weather_function.function_arn}:23"
+  forecast_lambda_arn = "${module.forecast_function.function_arn}:8"
+  uvi_lambda_arn = "${module.uvi_function.function_arn}:4"
+  backup_lambda_arn = "${module.backup_function.function_arn}:1"
+}
+
+
+############## S3 bucket ##########################
+resource "aws_s3_bucket" "roboclimate" {
+  bucket = var.s3_bucket
+  
+}
+
+# Policy to allow the backup lambda function to access the S3 bucket
+resource "aws_s3_bucket_policy" "bucket_policy" {
+  bucket = aws_s3_bucket.roboclimate.id
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Principal = {
+          AWS = "arn:aws:iam::${var.aws_account}:role/${aws_iam_role.backup_lambda_exec.name}"
+        },
+        Action = [          
+          "s3:PutObject"          
+        ],
+        Resource = "${aws_s3_bucket.roboclimate.arn}/*"
+      }
+    ]
+  })
 }

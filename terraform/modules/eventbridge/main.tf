@@ -34,7 +34,7 @@ resource "aws_iam_policy" "eventbridge" {
       {
         Effect   = "Allow",
         Action   = ["lambda:InvokeFunction"],
-        Resource = [var.weather_lambda_arn, var.forecast_lambda_arn, var.uvi_lambda_arn]
+        Resource = [var.weather_lambda_arn, var.forecast_lambda_arn, var.uvi_lambda_arn, var.backup_lambda_arn]
       }
     ]
   })
@@ -79,6 +79,15 @@ module "eventbridge" {
       schedule_expression = "cron(0 2 * * ? *)"
       timezone            = "UTC"
       arn                 = var.uvi_lambda_arn
+      input               = jsonencode({})
+      role_arn = aws_iam_role.eventbridge_exec.arn
+    }
+
+    backup-lambda = {      
+      name                = "t-backup-lambda"
+      schedule_expression = "cron(0 23 * * ? *)"
+      timezone            = "UTC"
+      arn                 = var.backup_lambda_arn
       input               = jsonencode({})
       role_arn = aws_iam_role.eventbridge_exec.arn
     }    

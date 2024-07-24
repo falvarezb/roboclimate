@@ -27,7 +27,8 @@ resource "aws_lambda_function" "roboclimate" {
 
   environment {
     variables = {
-      OPEN_WEATHER_API           = var.open_weather_api      
+      OPEN_WEATHER_API           = var.open_weather_api 
+      S3_BUCKET_NAME             = var.s3_bucket_name     
       
       # EFS mount path inside lambda function's execution environment
       # Must start with '/mnt/'
