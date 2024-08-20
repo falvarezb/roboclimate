@@ -2,6 +2,7 @@ package roboclimate;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -31,22 +32,28 @@ public class WeatherIO {
         }
     }
 
-    static void writeJoinCsvFile(List<JoinedRecord> joinedRecords, String path, String weatherVariable) throws IOException {
+    static void writeJoinCsvFile(List<JoinedRecord> joinedRecords, Path path, String weatherVariable) throws IOException {
         var csvHeader = STR."\{weatherVariable},dt,today,t5,t4,t3,t2,t1";
         var csvData = joinedRecords.stream()
                 .map(record -> STR."\{record.weatherVariableValue()},\{record.dt()},\{record.today()},\{record.t5()},\{record.t4()},\{record.t3()},\{record.t2()},\{record.t1()}")
                 .collect(Collectors.joining("\n"));
-        Files.writeString(Paths.get(path), STR."""
+        if(!Files.exists(path.getParent())) {
+            Files.createDirectories(path.getParent());
+        }
+        Files.writeString(path, STR."""
 \{csvHeader}
 \{csvData}""");
     }
 
-    static void writeMetricsCsvFile(List<Double> mae, List<Double> rmse, List<Double> medae, List<Double> mase, String path) throws IOException {
+    static void writeMetricsCsvFile(List<Double> mae, List<Double> rmse, List<Double> medae, List<Double> mase, Path path) throws IOException {
         var csvHeader = "mae,rmse,medae,mase";
         var csvData = IntStream.range(0, mae.size())
                 .mapToObj(i -> STR."\{mae.get(i)},\{rmse.get(i)},\{medae.get(i)},\{mase.get(i)}")
                 .collect(Collectors.joining("\n"));
-        Files.writeString(Paths.get(path), STR."""
+        if(!Files.exists(path.getParent())) {
+            Files.createDirectories(path.getParent());
+        }
+        Files.writeString(path, STR."""
 \{csvHeader}
 \{csvData}""");
     }
