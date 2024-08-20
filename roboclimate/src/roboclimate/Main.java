@@ -1,6 +1,7 @@
 package roboclimate;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +15,8 @@ import static roboclimate.MetricCalculator.computeMetric;
 import static roboclimate.WeatherIO.*;
 
 public class Main {
+
+    private static final String CSV_FILES_PATH = System.getenv("ROBOCLIMATE_CSV_FILES_PATH");
 
     public static void main(String[] args) {
         List<String> cities = new ArrayList<>() {{
@@ -35,8 +38,8 @@ public class Main {
 
         try {
             System.out.println(STR."processing city: \{cityName}");
-            List<WeatherRecord> actualWeatherList = readWeatherFile(STR."../csv_files/weather_\{cityName}.csv");
-            List<WeatherRecord> forecastWeatherList = readWeatherFile(STR."../csv_files/forecast_\{cityName}.csv");
+            List<WeatherRecord> actualWeatherList = readWeatherFile(STR."\{CSV_FILES_PATH}/weather_\{cityName}.csv");
+            List<WeatherRecord> forecastWeatherList = readWeatherFile(STR."\{CSV_FILES_PATH}/forecast_\{cityName}.csv");
             Map<Long, List<WeatherRecord>> forecastMap = groupByDt(forecastWeatherList);
             processWeatherVariable(actualWeatherList, forecastMap, WeatherRecord::temperature, cityName, "temp");
             processWeatherVariable(actualWeatherList, forecastMap, WeatherRecord::pressure, cityName, "pressure");
@@ -49,22 +52,20 @@ public class Main {
     }
 
     private static void processWeatherVariable(
-            List<WeatherRecord> actualWeatherList,
-            Map<Long, List<WeatherRecord>> forecastMap,
+            List<WeatherRecord> actualWeather,
+            Map<Long, List<WeatherRecord>> weatherForecast,
             Function<WeatherRecord, Double> weatherVariableExtractor,
             String cityName,
             String weatherVariable) throws IOException {
 
-        List<JoinedRecord> joinWeatherRecords = joinWeatherRecords(actualWeatherList, forecastMap, weatherVariableExtractor);
-        writeJoinCsvFile(joinWeatherRecords, STR."../csv_files/\{weatherVariable}/java_join_\{cityName}.csv", weatherVariable);
+        List<JoinedRecord> joinWeatherRecords = joinWeatherRecords(actualWeather, weatherForecast, weatherVariableExtractor);
+        writeJoinCsvFile(joinWeatherRecords, Paths.get(STR."\{CSV_FILES_PATH}/\{weatherVariable}/java_join_\{cityName}.csv"), weatherVariable);
 
-        //calculate mean absolute error
         var mae = computeMetric(MetricCalculator::computeMeanAbsoluteError, joinWeatherRecords);
-        //calculate Root mean squared error
         var rmse = computeMetric(MetricCalculator::computeRootMeanSquaredError, joinWeatherRecords);
         var medae = computeMetric(MetricCalculator::computeMedianAbsoluteError, joinWeatherRecords);
         var mase = computeMeanAbsoluteScaledError(joinWeatherRecords);
-        writeMetricsCsvFile(mae, rmse, medae, mase, STR."../csv_files/\{weatherVariable}/java_metrics_\{cityName}.csv");
+        writeMetricsCsvFile(mae, rmse, medae, mase, Paths.get(STR."\{CSV_FILES_PATH}/\{weatherVariable}/java_metrics_\{cityName}.csv"));
     }
 
 
