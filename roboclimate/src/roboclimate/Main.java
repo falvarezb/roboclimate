@@ -1,6 +1,7 @@
 package roboclimate;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -54,27 +55,27 @@ public class Main {
     private static void processWeatherVariable(
             List<WeatherRecord> actualWeather,
             Map<Long, List<WeatherRecord>> weatherForecast,
-            Function<WeatherRecord, Double> weatherVariableExtractor,
+            Function<WeatherRecord, BigDecimal> weatherVariableExtractor,
             String cityName,
             String weatherVariable) throws IOException {
 
         List<JoinedRecord> joinWeatherRecords = joinWeatherRecords(actualWeather, weatherForecast, weatherVariableExtractor);
-        writeJoinCsvFile(joinWeatherRecords, Paths.get(STR."\{CSV_FILES_PATH}/\{weatherVariable}/java_join_\{cityName}.csv"), weatherVariable);
+        writeJoinCsvFile(joinWeatherRecords, Paths.get(STR."\{CSV_FILES_PATH}/\{weatherVariable}/java_join_bigdecimal_\{cityName}.csv"), weatherVariable);
 
         var mae = computeMetric(MetricCalculator::computeMeanAbsoluteError, joinWeatherRecords);
         var rmse = computeMetric(MetricCalculator::computeRootMeanSquaredError, joinWeatherRecords);
         var medae = computeMetric(MetricCalculator::computeMedianAbsoluteError, joinWeatherRecords);
         var mase = computeMeanAbsoluteScaledError(joinWeatherRecords);
-        writeMetricsCsvFile(mae, rmse, medae, mase, Paths.get(STR."\{CSV_FILES_PATH}/\{weatherVariable}/java_metrics_\{cityName}.csv"));
+        writeMetricsCsvFile(mae, rmse, medae, mase, Paths.get(STR."\{CSV_FILES_PATH}/\{weatherVariable}/java_metrics_bigdecimal_\{cityName}.csv"));
     }
 
 
 }
 
-record WeatherRecord(double temperature, double pressure, double humidity, double wind_speed, double wind_deg, long dt,
+record WeatherRecord(BigDecimal temperature, BigDecimal pressure, BigDecimal humidity, BigDecimal wind_speed, BigDecimal wind_deg, long dt,
                      LocalDate today) {
 }
 
-record JoinedRecord(double weatherVariableValue, long dt, LocalDate today, double t5, double t4, double t3, double t2,
-                    double t1) {
+record JoinedRecord(BigDecimal weatherVariableValue, long dt, LocalDate today, BigDecimal t5, BigDecimal t4, BigDecimal t3, BigDecimal t2,
+                    BigDecimal t1) {
 }
