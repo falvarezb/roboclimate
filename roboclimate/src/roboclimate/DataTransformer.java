@@ -1,5 +1,6 @@
 package roboclimate;
 
+import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -8,7 +9,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class DataTransformer {
-    static List<JoinedRecord> joinWeatherRecords(List<WeatherRecord> actualWeatherList, Map<Long, List<WeatherRecord>> forecastMap, Function<WeatherRecord, Double> weatherVariableExtractor) {
+    static List<JoinedRecord> joinWeatherRecords(List<WeatherRecord> actualWeatherList, Map<Long, List<WeatherRecord>> forecastMap, Function<WeatherRecord, BigDecimal> weatherVariableExtractor) {
         return actualWeatherList.stream()
                 .map(actualWeatherRecord -> {
                     var forecasts = forecastMap.getOrDefault(actualWeatherRecord.dt(), List.of());
