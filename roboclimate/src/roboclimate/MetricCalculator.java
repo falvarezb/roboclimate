@@ -2,24 +2,27 @@ package roboclimate;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class MetricCalculator {
+    public static final MathContext MATH_CONTEXT = new MathContext(30, RoundingMode.HALF_EVEN);
+    
     static BigDecimal computeRootMeanSquaredError(List<JoinedRecord> joinWeatherRecords, Function<JoinedRecord, BigDecimal> tExtractor) {
         return joinWeatherRecords
                 .stream()
                 .map(record -> record.weatherVariableValue().subtract(tExtractor.apply(record)).pow(2))
-                .reduce(BigDecimal.ZERO, BigDecimal::add).divide(BigDecimal.valueOf(joinWeatherRecords.size()), MathContext.DECIMAL64).sqrt(MathContext.DECIMAL64);
+                .reduce(BigDecimal.ZERO, BigDecimal::add).divide(BigDecimal.valueOf(joinWeatherRecords.size()), MATH_CONTEXT).sqrt(MATH_CONTEXT);
     }
 
     static BigDecimal computeMeanAbsoluteError(List<JoinedRecord> joinWeatherRecords, Function<JoinedRecord, BigDecimal> tExtractor) {
         return joinWeatherRecords
                 .stream()
                 .map(record -> record.weatherVariableValue().subtract(tExtractor.apply(record)).abs())
-                .reduce(BigDecimal.ZERO, BigDecimal::add).divide(BigDecimal.valueOf(joinWeatherRecords.size()), MathContext.DECIMAL64);
+                .reduce(BigDecimal.ZERO, BigDecimal::add).divide(BigDecimal.valueOf(joinWeatherRecords.size()), MATH_CONTEXT);
     }
 
     static BigDecimal computeMedianAbsoluteError(List<JoinedRecord> joinWeatherRecords, Function<JoinedRecord, BigDecimal> tExtractor) {
@@ -30,7 +33,7 @@ public class MetricCalculator {
                 .toList();
 
         if (absoluteErrors.size() % 2 == 0) {
-            return absoluteErrors.get(absoluteErrors.size() / 2).add(absoluteErrors.get(absoluteErrors.size() / 2 - 1)).divide(BigDecimal.valueOf(2), MathContext.DECIMAL64);
+            return absoluteErrors.get(absoluteErrors.size() / 2).add(absoluteErrors.get(absoluteErrors.size() / 2 - 1)).divide(BigDecimal.valueOf(2), MATH_CONTEXT);
         } else {
             return absoluteErrors.get(absoluteErrors.size() / 2);
         }
@@ -46,7 +49,7 @@ public class MetricCalculator {
             BigDecimal naivePrediction = joinWeatherRecords.get(j).weatherVariableValue();
             naive_mae = naive_mae.add(actualValue.subtract(naivePrediction).abs());
         }
-        return mae.divide(naive_mae, MathContext.DECIMAL64);
+        return mae.divide(naive_mae, MATH_CONTEXT);
     }
 
     static ArrayList<BigDecimal> computeMeanAbsoluteScaledError(List<JoinedRecord> joinWeatherRecords) {
