@@ -45,8 +45,8 @@ def plot_actual_vs_forecast(city_name_option1, weather_var_option1, tn, last_n_d
     plt.grid(True)
     plt.xlim(0, max_x - min_x)
     plt.ylim(min_y, max_y)
-    # [l.remove() for l in ax.lines]
-    # [l.remove() for l in ax.lines]
+    plt.xlabel('# points')
+    plt.ylabel(weather_var_option1)
     plt.plot(x, y1.to_numpy(), label=f'actual {weather_var_option1}', color='green', marker="o", markersize=3)
     if tn != 'None':
         plt.plot(x, y2.to_numpy(), label=tn, color='red', marker='*', markersize=3)
@@ -73,13 +73,10 @@ def plot_metrics(city_name, weather_variable):
     ax.set_xticks(x)
     ax.set_xticklabels(['t5', 't4', 't3', 't2', 't1'])
     plt.ylim(min_y - .5, max_y + .5)
-    # [l.remove() for l in ax.lines]
-    # [l.remove() for l in ax.lines]
-    # [l.remove() for l in ax.lines]
     plt.plot(x, y_mae.to_numpy(), label='mae', color='blue', marker='o')
     plt.plot(x, y_rmse.to_numpy(), label='rmse', color='grey', marker='^')
     plt.plot(x, y_medae.to_numpy(), label='medae', color='red', marker='*')
-    plt.title(f"metrics - {city_name}")
+    plt.title(f"forecast errors - {city_name}")
     plt.legend()
     st.pyplot(fig)
 
@@ -91,12 +88,8 @@ def plot_scaled_error():
     metrics_df: pd.DataFrame = load_metrics_file(city, weather_var_option2)
     x = np.linspace(0, 1, 5)
     ax.set_xticks(x)
-    ax.set_xticklabels(['t5', 't4', 't3', 't2', 't1'])
-    # [l.remove() for l in ax.lines]
-    # [l.remove() for l in ax.lines]
+    ax.set_xticklabels(['t5', 't4', 't3', 't2', 't1'])    
     plt.plot(x, metrics_df['mase'].to_numpy(), label='mase', color='blue', marker='o')
-    # plt.plot(x, metrics_df['mase1y'], label='mase1y', color='black', marker='*')
-#     plt.plot(x, df["metrics_df"]['mase1y_avg'], label='mase1y_avg', color='black', marker='o')
     plt.plot(x, np.ones(5), label='1', color='red')
     plt.title(f"Mean Absolute Scaled Error - {city_name_option2}")
     plt.legend()
@@ -112,14 +105,10 @@ def plot_cities():
     fig, ax = plt.subplots()
     plt.grid(True)
     # plt.rcParams['figure.figsize'] = (7,3)
-    colors = ['blue', 'red', 'green', 'black', 'purple']
     x = np.linspace(0, 1, 5)
     ax.set_xticks(x)
     ax.set_xticklabels(['t5', 't4', 't3', 't2', 't1'])
     idx = 0
-#     plt.plot(x, np.ones(5), label='1', color='red')
-    # for city in rconf.cities.values():
-    # [l.remove() for l in ax.lines]
     for city in cities_option:
         metrics_df = load_metrics_file(rconf.cities[city], weather_var_option3)
         plt.plot(x, metrics_df[metric_option].to_numpy(), label=city, marker='o')
