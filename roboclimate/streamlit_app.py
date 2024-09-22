@@ -88,7 +88,7 @@ def plot_scaled_error():
     metrics_df: pd.DataFrame = load_metrics_file(city, weather_var_option2)
     x = np.linspace(0, 1, 5)
     ax.set_xticks(x)
-    ax.set_xticklabels(['t5', 't4', 't3', 't2', 't1'])    
+    ax.set_xticklabels(['t5', 't4', 't3', 't2', 't1'])
     plt.plot(x, metrics_df['mase'].to_numpy(), label='mase', color='blue', marker='o')
     plt.plot(x, np.ones(5), label='1', color='red')
     plt.title(f"Mean Absolute Scaled Error - {city_name_option2}")
@@ -204,7 +204,7 @@ if selected == 'Intro':
             ##### Mean Absolute Error (MAE)
             Average of the absolute value of the errors (_errors_ are the difference between real and forecast values)                                                
             """
-        ) 
+        )
         st.latex(r"{mae}_j = \frac{1}{n} \sum_{i=1}^{n} |t_i - t_{ji}|")
 
         st.markdown(
@@ -212,7 +212,7 @@ if selected == 'Intro':
             ##### Root Mean Squared Error (RMSE)
             Square root of the average of the square of the errors. It weighs outliers more heavily than MAE as a result of the squaring of each term.
             """
-        ) 
+        )
         st.latex(r"{rmse}_j = \sqrt{\frac{1}{n} \sum_{i=1}^{n} (t_i - t_{ji})^2}")
 
         st.markdown(
@@ -222,7 +222,7 @@ if selected == 'Intro':
 
             It is robust to outliers
             """
-        ) 
+        )
         st.latex(r"{mdae}_j = \text{median} \left( |t_i - t_{ji}| \right)_{i=1}^{n}")
 
         st.markdown(
@@ -237,7 +237,7 @@ if selected == 'Intro':
 
             In our case, the naive forecast corresponding to the forecast $t_j$ is the value actually measured $j$ days before.
             """
-        ) 
+        )
         st.latex(r"{mase}_j = \frac{\frac{1}{n} \sum_{i=1}^{n} |t_i - t_{ji}|}{\frac{1}{n-8j} \sum_{i=8j+1}^{n} |t_i - t_{i-8j}|}")
         st.markdown("""where 8 is the number of measurements per day""")
 
