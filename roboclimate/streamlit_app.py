@@ -141,6 +141,10 @@ with st.sidebar:
             'select a city',
             [city.name for city in rconf.cities.values()],
             key='city_name_option1')
+        
+        last_n_days = st.selectbox(
+            'select number of days',
+            [10, 20, 30, 40, 50])
 
     if selected == 'Forecast Metrics':
         st.markdown('---')  # Horizontal line for visual separation
@@ -242,7 +246,7 @@ if selected == 'Intro':
         st.markdown("""where 8 is the number of measurements per day""")
 
 if selected == 'Forecast vs Actual':
-    last_n_days = 20
+    # last_n_days = 20
     col1, col2 = st.columns([0.7, 0.3])
     with col1:
         plot_actual_vs_forecast(city_name_option1, weather_var_option1, tn, last_n_days)
