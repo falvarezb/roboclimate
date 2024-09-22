@@ -266,31 +266,5 @@ if selected == 'Forecast Metrics':
         with st.expander("Show data"):
             st.dataframe(y_mase)
 
-    # plot_metrics()
-    # plot_scaled_error()
-
 if selected == 'City Comparison':
-    # col1, col2 = st.columns(2)
-    # with col1:
     plot_cities()
-
-# with st.sidebar:
-#     with st.echo():
-#         st.write("This code will be printed to the sidebar.")
-
-#     with st.spinner("Loading..."):
-#         time.sleep(5)
-#     st.success("Done!")
-
-# with st.container():
-#    plot_metrics()
-#    plot_scaled_error()
-#    plot_actual_vs_forecast(20)
-
-# st.write("This is outside the container")
-
-# with st.empty():
-#     for seconds in range(3):
-#         st.write(f"⏳ {seconds} seconds have passed")
-#         time.sleep(1)
-#     st.write("✔️ 1 minute over!")
