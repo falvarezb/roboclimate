@@ -47,9 +47,9 @@ def plot_actual_vs_forecast(city_name_option1, weather_var_option1, tn, last_n_d
     plt.ylim(min_y, max_y)
     # [l.remove() for l in ax.lines]
     # [l.remove() for l in ax.lines]
-    plt.plot(x, y1.to_numpy(), label=f'actual {weather_var_option1}', color='green', marker="o")
+    plt.plot(x, y1.to_numpy(), label=f'actual {weather_var_option1}', color='green', marker="o", markersize=3)
     if tn != 'None':
-        plt.plot(x, y2.to_numpy(), label=tn, color='red', marker='*')
+        plt.plot(x, y2.to_numpy(), label=tn, color='red', marker='*', markersize=3)
     plt.title(f"{city_name_option1}: t vs {tn} (last {last_n_days} days)")
     plt.legend()
     st.pyplot(fig)
@@ -140,7 +140,7 @@ with st.sidebar:
     if selected == 'Forecast vs Actual':
         st.markdown('---')  # Horizontal line for visual separation
         tn = st.selectbox(
-            'select tx forecast',
+            'select $t_j$ forecast',
             ['t1', 't2', 't3', 't4', 't5', 'None'])
 
         weather_var_option1 = st.selectbox(
@@ -190,28 +190,9 @@ if selected == 'Intro':
     with col1:
         st.markdown(
             """
-            Roboclimate is a website to evaluate the accuracy of weather forecasts according to the values of multiple weather variables.
+            Roboclimate is a website to evaluate the accuracy of weather models according to the values forecast for multiple variables (temperataure, pressure, etc.) measured in different cities across the world (i.e. London, Madrid, Sydney...)  
 
-            The forecast model under consideration is the one providing the values of [OpenWeather's API](https://openweathermap.org)
-            
-            Here we analyse the precision of a forecast model based on the values of multiple weather variables 
-            - temperature
-            - pressure
-            - humidity
-            - wind speed 
-            - wind direction
-            
-            measured in 10 different cities across the world:
-            - London
-            - Madrid
-            - Sydney
-            - New York
-            - Sao Paulo
-            - Moscow
-            - Tokyo
-            - Nairobi
-            - Lagos
-            - Asuncion        
+            The forecast model under consideration is [OpenWeather's](https://openweathermap.org).     
             """
         )
 
@@ -221,40 +202,55 @@ if selected == 'Intro':
             Weather measurements are taken at 3-hour intervals from midnight until 9pm every day, totalling 8 datapoints per day.
             Also every day, we obtain the forecast for the next 5 days (resulting in new 5*8 datapoints per day)
 
-            This way it is possible to build a dataset where each actual weather measurement can be compared to its values
-            forecasted during the previous 5 days. Those values will be denoted as`t1` (forecast made 1 day ago), 
-            `t2` (forecast made 2 days ago) and so on up to `t5`.
-
-            Weather measurements and forecasts are provided by [OpenWeather's API](https://openweathermap.org)
+            This way each measurement can be compared to the values forecast during the previous 5 days. 
+            Those values will be denoted as $t_1$ (forecast made 1 day ago), $t_2$ (forecast made 2 days ago) and so on up to $t_5$.            
+            For simplicity, we will refer to them as $t_j$ where $j = 1, 2, ..., 5$, whereas $t$ will be the real value.
             """
         )
         st.subheader('Metrics')
         st.markdown(
             """
-            In order to evaluate the accuracy of the forecasts, the following metrics are computed:
+            In order to evaluate the accuracy of each forecast $t_j$, the following metrics are computed:
 
             ##### Mean Absolute Error (MAE)
-            Average of the absolute value of the errors ('errors' are the difference between real and forecast values)
+            Average of the absolute value of the errors (_errors_ are the difference between real and forecast values)                                                
+            """
+        ) 
+        st.latex(r"{mae}_j = \frac{1}{n} \sum_{i=1}^{n} |t_i - t_{ji}|")
 
+        st.markdown(
+            """
             ##### Root Mean Squared Error (RMSE)
             Square root of the average of the square of the errors. It weighs outliers more heavily than MAE as a result of the squaring of each term.
+            """
+        ) 
+        st.latex(r"{rmse}_j = \sqrt{\frac{1}{n} \sum_{i=1}^{n} (t_i - t_{ji})^2}")
 
+        st.markdown(
+            """
             ##### Median absolute error (MEDAE)
             Median of the absolute value of the errors.
 
             It is robust to outliers
-            
+            """
+        ) 
+        st.latex(r"{mdae}_j = \text{median} \left( |t_i - t_{ji}| \right)_{i=1}^{n}")
+
+        st.markdown(
+            """
             ##### Mean Absolute Scaled Error (MASE)
             [MASE](https://en.wikipedia.org/wiki/Mean_absolute_scaled_error) is a measure of the precision of a model compared to the naive forecast.
             It is calculated as the MAE of the forecast divided by the MAE of the naive forecast.            
 
-            Therefore, `MASE > 1` indicates that the naive forecast performs better than the model. 
+            Therefore, $mase_j > 1$ indicates that the naive forecast performs better than the model. 
 
-            Naive forecasting models are based exclusively on historical observation, e.g. the forecast for tomorrow is the same as today's value.
+            Naive forecasting models are based exclusively on historical observation, e.g. the forecast for tomorrow is today's value.
 
-            In our case, to compute mase(tn) we'll assume that the forecast for a given day is the same as the value measured __n__ days ago.
+            In our case, the naive forecast corresponding to the forecast $t_j$ is the value actually measured $j$ days before.
             """
-        )
+        ) 
+        st.latex(r"{mase}_j = \frac{\frac{1}{n} \sum_{i=1}^{n} |t_i - t_{ji}|}{\frac{1}{n-8j} \sum_{i=8j+1}^{n} |t_i - t_{i-8j}|}")
+        st.markdown("""where 8 is the number of measurements per day""")
 
 if selected == 'Forecast vs Actual':
     last_n_days = 20
