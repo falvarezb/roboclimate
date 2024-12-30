@@ -59,13 +59,13 @@ public class Main {
             String weatherVariable) throws IOException {
 
         List<JoinedRecord> joinWeatherRecords = joinWeatherRecords(actualWeather, weatherForecast, weatherVariableExtractor);
-        writeJoinCsvFile(joinWeatherRecords, Paths.get(STR."\{CSV_FILES_PATH}/\{weatherVariable}/java_join_\{cityName}.csv"), weatherVariable);
+        writeJoinCsvFile(joinWeatherRecords, Paths.get(STR."\{CSV_FILES_PATH}/\{weatherVariable}/join_\{cityName}.csv"), weatherVariable);
 
         var mae = computeMetric(MetricCalculator::computeMeanAbsoluteError, joinWeatherRecords);
         var rmse = computeMetric(MetricCalculator::computeRootMeanSquaredError, joinWeatherRecords);
         var medae = computeMetric(MetricCalculator::computeMedianAbsoluteError, joinWeatherRecords);
         var mase = computeMeanAbsoluteScaledError(joinWeatherRecords);
-        writeMetricsCsvFile(mae, rmse, medae, mase, Paths.get(STR."\{CSV_FILES_PATH}/\{weatherVariable}/java_metrics_\{cityName}.csv"));
+        writeMetricsCsvFile(mae, rmse, medae, mase, Paths.get(STR."\{CSV_FILES_PATH}/\{weatherVariable}/metrics_\{cityName}.csv"));
     }
 
 

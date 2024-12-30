@@ -134,8 +134,10 @@ with st.sidebar:
 
         weather_var_option1 = st.selectbox(
             'choose a weather variable',
-            list(rconf.weather_variables.values()),
+            list(rconf.weather_variables_with_units.values()),
             key='weather_var_option1')
+        
+        weather_var_option1 = weather_var_option1.split('(')[0].strip()
 
         city_name_option1 = st.sidebar.selectbox(
             'select a city',
@@ -151,8 +153,10 @@ with st.sidebar:
 
         weather_var_option2 = st.selectbox(
             'choose a weather variable',
-            list(rconf.weather_variables.values()),
+            list(rconf.weather_variables_with_units.values()),
             key='weather_var_option2')
+        
+        weather_var_option2 = weather_var_option2.split('(')[0].strip()
 
         city_name_option2 = st.sidebar.selectbox(
             'select a city',
@@ -164,8 +168,10 @@ with st.sidebar:
 
         weather_var_option3 = st.selectbox(
             'choose a weather variable',
-            list(rconf.weather_variables.values()),
+            list(rconf.weather_variables_with_units.values()),
             key='weather_var_option3')
+        
+        weather_var_option3 = weather_var_option3.split('(')[0].strip()
 
         metric_option = st.sidebar.selectbox(
             'select metric to compare among all cities',
@@ -196,7 +202,7 @@ if selected == 'Intro':
             Also every day, we obtain the forecast for the next 5 days (resulting in new 5*8 datapoints per day)
 
             This way each measurement can be compared to the values forecast during the previous 5 days. 
-            Those values will be denoted as $t_1$ (forecast made 1 day ago), $t_2$ (forecast made 2 days ago) and so on up to $t_5$.            
+            Those values are denoted as $t_1$ (forecast made 1 day ago), $t_2$ (forecast made 2 days ago) and so on up to $t_5$.            
             For simplicity, we will refer to them as $t_j$ where $j = 1, 2, ..., 5$, whereas $t$ will be the real value.
             """
         )
@@ -222,9 +228,7 @@ if selected == 'Intro':
         st.markdown(
             """
             ##### Median absolute error (MEDAE)
-            Median of the absolute value of the errors.
-
-            It is robust to outliers
+            Median of the absolute value of the errors. It is more robust to outliers than MAE.
             """
         )
         st.latex(r"{mdae}_j = \text{median} \left( |t_i - t_{ji}| \right)_{i=1}^{n}")
@@ -233,7 +237,7 @@ if selected == 'Intro':
             """
             ##### Mean Absolute Scaled Error (MASE)
             [MASE](https://en.wikipedia.org/wiki/Mean_absolute_scaled_error) is a measure of the precision of a model compared to the naive forecast.
-            It is calculated as the MAE of the forecast divided by the MAE of the naive forecast.            
+            It is calculated as the MAE of the model forecast divided by the MAE of the naive forecast.            
 
             Therefore, $mase_j > 1$ indicates that the naive forecast performs better than the model. 
 
