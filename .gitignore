@@ -44,3 +44,9 @@ test_csv_files/
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
+
+bin/
+lib/
+pyvenv.cfg
+etc/
+share/
