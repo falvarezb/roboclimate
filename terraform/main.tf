@@ -173,7 +173,7 @@ resource "aws_route_table" "lambda_subnet" {
 
   route {
     cidr_block  = "0.0.0.0/0"
-    instance_id = aws_instance.nat_instance.id
+    network_interface_id = aws_instance.nat_instance.primary_network_interface_id
   }
 
   tags = {
