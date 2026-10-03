@@ -110,10 +110,9 @@ The data is recorded in 2 types of csv files:
 where `*` represents each of the locations.
 
 
-Dependencies corresponding to the production code of data collection must be kept separate in the file `lambda_requirements.txt`. This file is used to generate the artifact to be deployed as a lambda function.
+Lambda dependencies are locked separately under `lambda/` (see `lambda/README.md` for locking, building, deploying and releasing).
 
-
-On the other hand, `requirements.txt` has all the dependencies to run all modules and their corresponding tests.
+`requirements.txt` has all the dependencies to run all modules and their corresponding tests locally.
 
 
 ### Data analysis

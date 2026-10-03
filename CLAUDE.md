@@ -48,11 +48,13 @@ java --enable-preview -cp out roboclimate.Main
 
 **Terraform deployment** (in `terraform/`):
 ```bash
-./artifact_prep.sh        # build Lambda deployment packages
+./artifact_prep.sh all    # build Lambda packages from lambda/*-requirements.txt and verify them in the Lambda image
 terraform apply -var-file ../secrets.tfvars
 ```
 
 **Before any `terraform plan`/`apply`, update `my_ip` in `secrets.tfvars`** to the current public IP of this machine in CIDR form (`"<ip>/32"`, e.g. from `curl -s https://checkip.amazonaws.com`). It restricts SSH ingress to the NAT instance (`terraform/main.tf`), and the IP changes over time, so a stale value locks out SSH access. `secrets.tfvars` is gitignored — never commit it or print its other values.
+
+**Deploying is not releasing.** The EventBridge schedules invoke pinned Lambda versions (`module "eventbridge_scheduler"` in `terraform/main.tf`), so `terraform apply` of new code only publishes a version. Follow `lambda/README.md` for dependency locking, deploy, the release step (bumping the pinned versions after `lambda/prerelease_check.sh`) and rollback. Lambda dependencies live in `lambda/*.in` — never edit the generated `lambda/*-requirements.txt` by hand.
 
 ## Environment Variables
 
