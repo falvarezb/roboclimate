@@ -36,6 +36,7 @@ commands.txt
 **/terraform/forecast_spider_pkg/
 **/terraform/uvi_spider_pkg/
 **/terraform/backup_pkg/
+**/terraform/verify_tools/
 csv_files_backup/
 test_csv_files/
 

@@ -1,6 +1,6 @@
 import os
 import boto3
-from common import logger
+from log_config import logger
 
 
 def handler(event, context):
