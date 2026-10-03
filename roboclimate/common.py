@@ -1,7 +1,6 @@
 from datetime import datetime, date
 from collections import namedtuple
 import os
-import logging
 import requests
 from requests.exceptions import ConnectionError as RequestsConnectionError, Timeout
 from tenacity import retry
@@ -39,14 +38,7 @@ CITY_PARAMS = {'london': CityParams('london', 51.5073219, -0.1276474, 0),
                'asuncion': CityParams('asuncion', -25.2800459, -57.6343814, -4),
                'lagos': CityParams('lagos', 6.4550575, 3.3941795, 1)}
 
-# global variables
-logger = logging.getLogger()
-if len(logger.handlers) > 0:
-    # The Lambda environment pre-configures a handler logging to stderr. If a handler is already configured,
-    # `.basicConfig` does not execute. Thus we set the level directly.
-    logger.setLevel(logging.INFO)
-else:
-    logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level='INFO', filename='weather.log')
+from log_config import logger  # noqa: E402  re-exported: spiders use `from common import logger`
 
 
 # common functions
