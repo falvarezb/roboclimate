@@ -108,7 +108,7 @@ def weather_handler(event, context):
         'weather_resource': WEATHER_RESOURCE
     }
     for city_name, city_id in CITIES.items():
-        run_params['weather_resource_url'] = f"http://api.openweathermap.org/data/2.5/{WEATHER_RESOURCE}?id={city_id}&units=metric&appid={os.environ.get('OPEN_WEATHER_API')}"
+        run_params['weather_resource_url'] = f"https://api.openweathermap.org/data/2.5/{WEATHER_RESOURCE}?id={city_id}&units=metric&appid={os.environ.get('OPEN_WEATHER_API')}"
         run_city(city_name, run_params)
 
 
