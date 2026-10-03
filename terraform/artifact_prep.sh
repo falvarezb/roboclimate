@@ -1,36 +1,90 @@
 #!/bin/bash
 
-# Script to prepare the lambda function artifact to be uploaded to AWS Lambda
-# 
-# - Input: name of the lambda function
-# - Output: folder with the source code and dependencies of the corresponding lambda function
+# Build and verify Lambda deployment packages.
+#
+# For each function: build terraform/<function>_pkg/ from its source files and its lock file
+# (lambda/<lock>-requirements.txt), then verify the package inside the official Lambda image:
+# import the handler in isolation and run the function's unit tests against the locked deps only.
+# Stops at the first failure. See lambda/README.md for the full procedure.
+#
+# USAGE: ./artifact_prep.sh <weather_spider|forecast_spider|uvi_spider|backup|all>
+# Requires: uv, docker
 
-# https://gist.github.com/mohanpedala/1e2ff5661761d3abd0385e8223e16425?permalink_comment_id=3945021
-set -exuvo pipefail
+set -euo pipefail
 
-if [ $# -lt 1 ]; then
-    echo "USAGE ./artifact_prep.sh <weather_spider|forecast_spider|uvi_spider|backup>"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO="$(cd "$SCRIPT_DIR/.." && pwd)"
+LAMBDA_IMAGE="public.ecr.aws/lambda/python:3.13"
+UV_TARGET=(--python-platform x86_64-manylinux2014 --python-version 3.13)
+TOOLS_DIR="$SCRIPT_DIR/verify_tools"
+ALL_FUNCTIONS="weather_spider forecast_spider uvi_spider backup"
+
+usage() {
+    echo "USAGE: ./artifact_prep.sh <weather_spider|forecast_spider|uvi_spider|backup|all>"
     exit 1
-fi
+}
 
+# Function manifest: handler | source files | lock name | unit tests
+# Handlers must match handler_name in terraform/main.tf.
+manifest() {
+    case "$1" in
+        weather_spider)  echo "weather_spider_lambda.weather_handler|weather_spider_lambda.py common.py log_config.py|spider|tests/weather_spider_lambda_test.py" ;;
+        forecast_spider) echo "forecast_spider_lambda.forecast_handler|forecast_spider_lambda.py common.py log_config.py|spider|" ;;
+        uvi_spider)      echo "uvi_spider_lambda.handler|uvi_spider_lambda.py common.py log_config.py|spider|tests/uvi_spider_lambda_test.py" ;;
+        backup)          echo "backup_lambda.handler|backup_lambda.py log_config.py|backup|" ;;
+        *) usage ;;
+    esac
+}
 
-lambda_function="$1"    
-if [ "$lambda_function" != "weather_spider" ] && [ "$lambda_function" != "forecast_spider" ] && [ "$lambda_function" != "uvi_spider" ] && [ "$lambda_function" != "backup" ]; then
-    echo "USAGE ./artifact_prep.sh <weather_spider|forecast_spider|uvi_spider|backup>"
-    exit 1
-fi
+build() {
+    local fn="$1" sources="$2" lock="$3"
+    local pkg="$SCRIPT_DIR/${fn}_pkg"
+    rm -rf "$pkg"
+    mkdir "$pkg"
+    for src in $sources; do
+        cp "$REPO/roboclimate/$src" "$pkg/"
+    done
+    # --no-deps: install exactly what is locked; an incomplete lock must fail verification, not be patched up
+    uv pip install --quiet --target "$pkg" --no-deps --require-hashes "${UV_TARGET[@]}" \
+        -r "$REPO/lambda/${lock}-requirements.txt"
+    echo "BUILT $fn ($pkg)"
+}
 
-pkg_folder=${lambda_function}_pkg
-rm -rf "$pkg_folder"
-mkdir "$pkg_folder"
-cp "$ROBOCLIMATE_HOME"/roboclimate/"${lambda_function}"_lambda.py "$ROBOCLIMATE_HOME"/roboclimate/common.py "$pkg_folder"
+prepare_tools() {
+    rm -rf "$TOOLS_DIR"
+    uv pip install --quiet --target "$TOOLS_DIR" --no-deps --require-hashes "${UV_TARGET[@]}" \
+        -r "$REPO/lambda/verify-tools-requirements.txt"
+}
 
-# Install wheels built for the Lambda runtime (Linux x86_64, Python 3.13) rather than the host machine
-pip_opts=(--platform manylinux2014_x86_64 --implementation cp --python-version 3.13 --only-binary=:all:)
+verify() {
+    local fn="$1" handler="$2" tests="$3"
+    local test_args=()
+    if [ -n "$tests" ]; then
+        test_args=(--tests $tests)
+    fi
+    docker run --rm --platform linux/amd64 \
+        -v "$SCRIPT_DIR/${fn}_pkg:/var/task:ro" \
+        -v "$TOOLS_DIR:/opt/verify-tools:ro" \
+        -v "$REPO/tests:/src/tests:ro" \
+        -v "$REPO/lambda/verify_in_image.py:/opt/verify_in_image.py:ro" \
+        -e OPEN_WEATHER_API=dummy -e S3_BUCKET_NAME=dummy -e ROBOCLIMATE_CSV_FILES_PATH=/tmp \
+        -e AWS_DEFAULT_REGION=eu-west-1 \
+        --entrypoint python3 "$LAMBDA_IMAGE" \
+        -I /opt/verify_in_image.py --handler "$handler" ${test_args[@]+"${test_args[@]}"}
+}
 
-if [ "$lambda_function" == "backup" ]; then
-    pip install "${pip_opts[@]}" --target "$pkg_folder" -r "$ROBOCLIMATE_HOME"/lambda_backup_requirements.txt
+[ $# -eq 1 ] || usage
+if [ "$1" == "all" ]; then
+    functions="$ALL_FUNCTIONS"
 else
-    pip install "${pip_opts[@]}" --target "$pkg_folder" -r "$ROBOCLIMATE_HOME"/lambda_spider_requirements.txt
+    manifest "$1" >/dev/null
+    functions="$1"
 fi
 
+prepare_tools
+for fn in $functions; do
+    IFS='|' read -r handler sources lock tests <<< "$(manifest "$fn")"
+    build "$fn" "$sources" "$lock"
+    verify "$fn" "$handler" "$tests"
+done
+echo "ALL CHECKS PASSED: $functions"
