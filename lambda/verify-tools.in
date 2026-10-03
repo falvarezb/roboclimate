@@ -1,0 +1,2 @@
+# Test tooling installed (outside the packages) to run unit tests inside the Lambda image.
+pytest
