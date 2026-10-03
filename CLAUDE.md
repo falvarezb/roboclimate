@@ -45,6 +45,8 @@ java --enable-preview -cp out roboclimate.Main
 terraform apply -var-file ../secrets.tfvars
 ```
 
+**Before any `terraform plan`/`apply`, update `my_ip` in `secrets.tfvars`** to the current public IP of this machine in CIDR form (`"<ip>/32"`, e.g. from `curl -s https://checkip.amazonaws.com`). It restricts SSH ingress to the NAT instance (`terraform/main.tf`), and the IP changes over time, so a stale value locks out SSH access. `secrets.tfvars` is gitignored — never commit it or print its other values.
+
 ## Environment Variables
 
 | Variable | Purpose |
