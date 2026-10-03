@@ -8,6 +8,13 @@ Roboclimate evaluates the accuracy of meteorological weather forecast models by 
 
 ## Commands
 
+**Virtual environment** (Python 3.13; the venv lives at the repo root, alongside the code):
+```bash
+python3.13 -m venv --without-scm-ignore-files .   # without the flag, venv overwrites the repo's .gitignore with "*"
+bin/pip install -r requirements.txt
+```
+Never use `venv --clear` here — it would delete the whole repo.
+
 **Tests:**
 ```bash
 pytest --cov-branch --cov-report html --cov=roboclimate tests/
