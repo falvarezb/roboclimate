@@ -85,7 +85,7 @@ It is robust to outliers
 
 ## Technical information
 
-This project comprises two Python 3.8 applications:
+This project comprises two Python applications (the Lambda functions run on Python 3.13):
 
 - data collection
 - data analysis
