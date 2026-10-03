@@ -184,7 +184,9 @@ tenacity==8.2.2
 # Top-level dependencies of the backup Lambda.
 # Edit this file, then run lambda/lock.sh to regenerate backup-requirements.txt.
 boto3==1.34.109
+botocore==1.34.109
 ```
+(botocore was pinned in the old `lambda_backup_requirements.txt` too; without it uv resolves botocore 1.34.162.)
 
 `lambda/verify-tools.in`:
 ```
@@ -241,7 +243,7 @@ grep -E "^(requests|tenacity|certifi|idna|charset-normalizer|urllib3)==" lambda/
 grep -E "^(boto3|botocore|s3transfer|jmespath|python-dateutil|six|urllib3)==" lambda/backup-requirements.txt
 grep -c -- "--hash=sha256:" lambda/spider-requirements.txt lambda/backup-requirements.txt
 ```
-Expected: spider shows all six packages pinned with `requests==2.28.2`, `tenacity==8.2.2`, `urllib3==1.26.x` (requests 2.28 caps urllib3 <1.27); backup shows all seven with `boto3==1.34.109`; both hash counts > 0. `requests`/`tenacity` must NOT appear in `backup-requirements.txt`: `grep -cE "^(requests|tenacity)==" lambda/backup-requirements.txt` → `0`.
+Expected: spider shows all six packages pinned with `requests==2.28.2`, `tenacity==8.2.2`, `urllib3==1.26.x` (requests 2.28 caps urllib3 <1.27); backup shows all seven with `boto3==1.34.109` and `botocore==1.34.109`; both hash counts > 0. `requests`/`tenacity` must NOT appear in `backup-requirements.txt`: `grep -cE "^(requests|tenacity)==" lambda/backup-requirements.txt` → `0`.
 
 - [ ] **Step 6: Check locking is reproducible**
 

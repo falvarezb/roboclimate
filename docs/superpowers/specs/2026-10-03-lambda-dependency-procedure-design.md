@@ -55,7 +55,7 @@ lambda/
 ```
 
 - `.in` files record intent; the generated `*-requirements.txt` lock files record exactly what ships. Both are committed. The lock files use pip's requirements format and a `*requirements*.txt` name so GitHub Dependabot can read them.
-- Existing pins are carried over into the `.in` files (`requests==2.28.2`, `tenacity==8.2.2`, `boto3==1.34.109`) so the first lock changes only the unpinned transitive deps. Loosening them is a later, deliberate upgrade.
+- Existing pins are carried over into the `.in` files (`requests==2.28.2`, `tenacity==8.2.2`, `boto3==1.34.109`, `botocore==1.34.109`) so the first lock changes only the unpinned transitive deps. Loosening them is a later, deliberate upgrade.
 - `lock.sh` runs, for each `.in`:
   `uv pip compile lambda/<name>.in -o lambda/<name>-requirements.txt --python-platform x86_64-manylinux2014 --python-version 3.13 --generate-hashes`
   and passes through `--upgrade` or `--upgrade-package <pkg>` when given.
@@ -117,7 +117,7 @@ Documented in `lambda/README.md`; CLAUDE.md gets a short summary and a pointer.
 - `common.py`: replace its logging setup with `from log_config import logger`. Existing `from common import logger` imports (spiders, `tests/weather_spider_lambda_test.py`) keep working.
 - `backup_lambda.py`: `from log_config import logger` instead of `from common import logger`.
 - Packaging per the manifest in section 2: backup ships `backup_lambda.py` + `log_config.py` only.
-- `lambda/backup.in` contains only `boto3==1.34.109`; the `requests`/`tenacity` lines added in #12 are dropped.
+- `lambda/backup.in` contains only `boto3==1.34.109` and `botocore==1.34.109`; the `requests`/`tenacity` lines added in #12 are dropped.
 
 ## Testing
 
