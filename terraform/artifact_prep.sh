@@ -25,9 +25,12 @@ rm -rf "$pkg_folder"
 mkdir "$pkg_folder"
 cp "$ROBOCLIMATE_HOME"/roboclimate/"${lambda_function}"_lambda.py "$ROBOCLIMATE_HOME"/roboclimate/common.py "$pkg_folder"
 
+# Install wheels built for the Lambda runtime (Linux x86_64, Python 3.13) rather than the host machine
+pip_opts=(--platform manylinux2014_x86_64 --implementation cp --python-version 3.13 --only-binary=:all:)
+
 if [ "$lambda_function" == "backup" ]; then
-    pip install --target "$pkg_folder" -r "$ROBOCLIMATE_HOME"/lambda_backup_requirements.txt
+    pip install "${pip_opts[@]}" --target "$pkg_folder" -r "$ROBOCLIMATE_HOME"/lambda_backup_requirements.txt
 else
-    pip install --target "$pkg_folder" -r "$ROBOCLIMATE_HOME"/lambda_spider_requirements.txt
+    pip install "${pip_opts[@]}" --target "$pkg_folder" -r "$ROBOCLIMATE_HOME"/lambda_spider_requirements.txt
 fi
 

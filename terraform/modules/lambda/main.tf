@@ -16,7 +16,7 @@ data "archive_file" "roboclimate" {
 
 resource "aws_lambda_function" "roboclimate" {
   function_name = var.function_name
-  runtime       = "python3.8"
+  runtime       = "python3.13"
   handler       = var.handler_name
   role          = var.execution_role
   filename      = data.archive_file.roboclimate.output_path
