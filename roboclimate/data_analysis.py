@@ -38,6 +38,9 @@ import roboclimate.util as util
 logger = logging.getLogger(__name__)
 
 
+FORECAST_HEADERS = ['t5', 't4', 't3', 't2', 't1']
+
+
 def load_data(file):
     return pd.read_csv(file, dtype={'dt': 'int64'})
 
@@ -95,7 +98,7 @@ def join_actual_values_and_forecast(actual_values_df, forecast_df) -> Dict[str, 
 
     """
 
-    headers = ['t5', 't4', 't3', 't2', 't1']
+    headers = FORECAST_HEADERS
     # initializing dataframes
     dfs_dict = {weather_variable: pd.DataFrame() for _, weather_variable in config.weather_variables.items()}
 
@@ -181,11 +184,15 @@ def analyse_city_data(city_name: str, segments: List[Tuple[int, int]] = []) -> N
 
 
     """
-    try:
-        # file pointers
-        weather_file = util.csv_file_path(config.csv_folder, config.weather_resources[0], city_name)
-        forecast_file = util.csv_file_path(config.csv_folder, config.weather_resources[1], city_name)
+    # file pointers
+    weather_file = util.csv_file_path(config.csv_folder, config.weather_resources[0], city_name)
+    forecast_file = util.csv_file_path(config.csv_folder, config.weather_resources[1], city_name)
+    if not (os.path.exists(weather_file) and os.path.exists(forecast_file)):
+        # newly added cities have no measurements/forecasts until the spiders' first runs
+        logger.warning("skipping city %s: no data yet (missing %s or %s)", city_name, weather_file, forecast_file)
+        return
 
+    try:
         join_data_dict = join_actual_values_and_forecast(load_data(weather_file), load_data(forecast_file))
 
         for _, weather_variable in config.weather_variables.items():
@@ -201,6 +208,12 @@ def analyse_city_data(city_name: str, segments: List[Tuple[int, int]] = []) -> N
                 metrics_file = util.csv_file_path(config.csv_folder, "metrics", city_name, weather_variable)
 
                 selected_df = select_intervals(join_data_dict[weather_variable], segments)
+                if selected_df.empty:
+                    # a newly added city has no measurement with all 5 prior forecasts until ~5 days after its
+                    # first run; write a header-only join file and skip the metrics, which are undefined
+                    pd.DataFrame(columns=[weather_variable, 'dt', 'today', *FORECAST_HEADERS]).to_csv(join_file, index=False)
+                    logger.warning("skipping metrics for %s %s: no joined records yet", city_name, weather_variable)
+                    continue
                 selected_df.to_csv(join_file, index=False)
                 metrics = forecast_precision(selected_df, weather_variable)
                 pd.DataFrame(metrics).to_csv(metrics_file, index=False)

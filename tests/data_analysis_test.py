@@ -118,3 +118,39 @@ def test_join_record_discarded_when_has_empty_value():
 
     result = join_actual_values_and_forecast(current_weather_df, forecast_df)
     assert result['temp'].equals(pd.DataFrame())
+
+
+WEATHER_CSV_HEADER = 'temp,pressure,humidity,wind_speed,wind_deg,dt,today'
+
+
+def _error_records(caplog):
+    return [r for r in caplog.records if r.levelname == 'ERROR']
+
+
+def test_analyse_city_data_skips_city_without_data(tmp_path, monkeypatch, caplog):
+    # a newly added city has no CSVs until the spiders' first runs
+    monkeypatch.setattr(rda.config, 'csv_folder', str(tmp_path))
+
+    rda.analyse_city_data('newcity')
+
+    assert any(r.levelname == 'WARNING' and 'skipping city newcity: no data yet' in r.getMessage() for r in caplog.records)
+    assert not _error_records(caplog)
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_analyse_city_data_skips_metrics_when_nothing_joins(tmp_path, monkeypatch, caplog):
+    # one measurement but only 2 of the 5 forecasts it needs: nothing joins yet (a new city's first days)
+    (tmp_path / 'weather_newcity.csv').write_text(f"{WEATHER_CSV_HEADER}\n20.0,1010,50,3.0,180,100,2026-10-05\n")
+    (tmp_path / 'forecast_newcity.csv').write_text(
+        f"{WEATHER_CSV_HEADER}\n19.0,1011,55,2.5,170,100,2026-10-03\n21.0,1009,45,3.5,190,100,2026-10-04\n")
+    monkeypatch.setattr(rda.config, 'csv_folder', str(tmp_path))
+
+    rda.analyse_city_data('newcity')
+
+    assert not _error_records(caplog)
+    for weather_variable in rda.config.weather_variables.values():
+        join_file = tmp_path / weather_variable / 'join_newcity.csv'
+        assert join_file.read_text().strip() == f"{weather_variable},dt,today,t5,t4,t3,t2,t1"
+        assert not (tmp_path / weather_variable / 'metrics_newcity.csv').exists()
+        assert any(r.levelname == 'WARNING' and f'skipping metrics for newcity {weather_variable}: no joined records yet' in r.getMessage()
+                   for r in caplog.records)
