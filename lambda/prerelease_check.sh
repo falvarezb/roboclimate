@@ -60,10 +60,27 @@ if [ "$name" == "backup" ]; then
     echo "FAIL backup did not reach the S3 call"; grep -E '^\[ERROR\]|Error' "$work/run.log" | head -5; exit 1
 fi
 
+# Every city configured in the deployed package must have gained rows (a city that wrote nothing has no file).
+# Read CITIES from the package's common.py without importing it.
+cities="$(python3 -c "
+import ast, sys
+tree = ast.parse(open(sys.argv[1]).read())
+for node in tree.body:
+    if isinstance(node, ast.Assign) and any(getattr(t, 'id', None) == 'CITIES' for t in node.targets):
+        print(' '.join(ast.literal_eval(node.value)))
+" "$work/code/common.py")"
+[ -n "$cities" ] || { echo "FAIL could not read CITIES from the package"; exit 1; }
+
 failed=0
-for f in "$work"/efs/$csv_glob; do
-    base="$(basename "$f")"
-    added=$(( $(wc -l < "$f") - $(wc -l < "$REPO/csv_files/$base") ))
+for city in $cities; do
+    base="${name}_${city}.csv"
+    before=0
+    [ -f "$REPO/csv_files/$base" ] && before=$(wc -l < "$REPO/csv_files/$base")
+    if [ -f "$work/efs/$base" ]; then
+        added=$(( $(wc -l < "$work/efs/$base") - before ))
+    else
+        added=0
+    fi
     printf "  %-24s +%s rows\n" "$base" "$added"
     [ "$added" -gt 0 ] || failed=1
 done
