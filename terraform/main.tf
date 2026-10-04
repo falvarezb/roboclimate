@@ -79,6 +79,8 @@ module "backup_function" {
   artifact_folder = "backup_pkg"
   open_weather_api = ""
   s3_bucket_name = var.s3_bucket
+  # boto3/botocore peak at ~105-110 MB, close to the 128 MB default
+  memory_size = 256
 
   # Explicitly declare dependency on EFS mount target.
   # When creating or updating Lambda functions, mount target must be in 'available' lifecycle state.

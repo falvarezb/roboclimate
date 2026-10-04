@@ -46,3 +46,8 @@ variable "s3_bucket_name" {
   sensitive   = true
 }
 
+variable "memory_size" {
+  description = "memory (MB) allocated to the lambda function; CPU scales with it"
+  type        = number
+  default     = 128
+}
