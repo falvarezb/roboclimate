@@ -344,9 +344,9 @@ module "eventbridge_scheduler" {
 
   # Schedules invoke these pinned, published versions — not $LATEST. Deploying publishes a
   # new version; bumping these numbers is what releases it. Verify the version first.
-  weather_lambda_arn = "${module.weather_function.function_arn}:26"
-  forecast_lambda_arn = "${module.forecast_function.function_arn}:11"
-  uvi_lambda_arn = "${module.uvi_function.function_arn}:7"
+  weather_lambda_arn = "${module.weather_function.function_arn}:27"
+  forecast_lambda_arn = "${module.forecast_function.function_arn}:12"
+  uvi_lambda_arn = "${module.uvi_function.function_arn}:8"
   backup_lambda_arn = "${module.backup_function.function_arn}:4"
 }
 
