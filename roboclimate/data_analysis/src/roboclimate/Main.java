@@ -79,6 +79,13 @@ public class Main {
         List<JoinedRecord> joinWeatherRecords = joinWeatherRecords(actualWeather, weatherForecast, weatherVariableExtractor);
         writeJoinCsvFile(joinWeatherRecords, Paths.get(STR."\{CSV_FILES_PATH}/\{weatherVariable}/join_\{cityName}.csv"), weatherVariable);
 
+        if (joinWeatherRecords.isEmpty()) {
+            // a newly added city has no measurement with all 5 prior forecasts until ~5 days after its first run;
+            // metrics of an empty join are undefined (and the median would index an empty list)
+            System.out.println(STR."skipping metrics: \{cityName} \{weatherVariable} (no joined records yet)");
+            return;
+        }
+
         var mae = computeMetric(MetricCalculator::computeMeanAbsoluteError, joinWeatherRecords);
         var rmse = computeMetric(MetricCalculator::computeRootMeanSquaredError, joinWeatherRecords);
         var medae = computeMetric(MetricCalculator::computeMedianAbsoluteError, joinWeatherRecords);
