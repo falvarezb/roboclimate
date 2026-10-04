@@ -21,6 +21,7 @@ resource "aws_lambda_function" "roboclimate" {
   role          = var.execution_role
   filename      = data.archive_file.roboclimate.output_path
   timeout       = 60
+  memory_size   = var.memory_size
   # Update the Lambda function whenever the deployment package changes
   source_code_hash = data.archive_file.roboclimate.output_base64sha256
   publish          = true
