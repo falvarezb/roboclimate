@@ -1,5 +1,6 @@
 """Streamlit dashboard
 """
+import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -101,6 +102,13 @@ def load_metrics_file(city, weather_var):
     return rde.load_metrics_file(city, weather_var)
 
 
+def cities_with_data():
+    # A city appears in the menus once the data analysis has produced its metrics
+    # (newly added cities need several days of measurements and forecasts first)
+    return [city.name for city in rconf.cities.values()
+            if os.path.exists(f"{rconf.csv_folder}/temp/metrics_{city.name}.csv")]
+
+
 def plot_cities():
     fig, ax = plt.subplots()
     plt.grid(True)
@@ -141,7 +149,7 @@ with st.sidebar:
 
         city_name_option1 = st.sidebar.selectbox(
             'select a city',
-            [city.name for city in rconf.cities.values()],
+            cities_with_data(),
             key='city_name_option1')
         
         last_n_days = st.selectbox(
@@ -160,7 +168,7 @@ with st.sidebar:
 
         city_name_option2 = st.sidebar.selectbox(
             'select a city',
-            [city.name for city in rconf.cities.values()],
+            cities_with_data(),
             key='city_name_option2')
 
     if selected == 'City Comparison':
@@ -179,7 +187,7 @@ with st.sidebar:
 
         cities_option = st.multiselect(
             'select cities to compare',
-            [city.name for city in rconf.cities.values()],
+            cities_with_data(),
             ['london'])
 
 

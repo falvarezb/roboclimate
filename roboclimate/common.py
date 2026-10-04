@@ -22,7 +22,17 @@ CITIES = {"london": 2643743,
           "tokyo": 1850147,
           "nairobi": 184745,
           "asuncion": 3439389,
-          "lagos": 2332459}
+          "lagos": 2332459,
+          "quito": 3652462,
+          "guayaquil": 3657509,
+          "belem": 3405870,
+          "reykjavik": 3413829,
+          "ushuaia": 3833367,
+          "lapaz": 3911925,
+          "cairo": 360630,
+          "mumbai": 1275339,
+          "singapore": 1880252,
+          "santos": 3449433}
 
 # openweathermap provides an endpoint to get a city's geo coordinates
 # https://api.openweathermap.org/geo/1.0/direct?q=London,GB&limit=5&appid=YOUR_API_KEY
@@ -36,7 +46,17 @@ CITY_PARAMS = {'london': CityParams('london', 51.5073219, -0.1276474, 0),
                'tokyo': CityParams('tokyo', 35.6828387, 139.7594549, 9),
                'nairobi': CityParams('nairobi', -1.2832533, 36.8172449, 3),
                'asuncion': CityParams('asuncion', -25.2800459, -57.6343814, -4),
-               'lagos': CityParams('lagos', 6.4550575, 3.3941795, 1)}
+               'lagos': CityParams('lagos', 6.4550575, 3.3941795, 1),
+               'quito': CityParams('quito', -0.2201641, -78.5123274, -5),
+               'guayaquil': CityParams('guayaquil', -2.1704143, -79.9050241, -5),
+               'belem': CityParams('belem', -1.45056, -48.4682453, -3),
+               'reykjavik': CityParams('reykjavik', 64.145981, -21.9422367, 0),
+               'ushuaia': CityParams('ushuaia', -54.8061159, -68.3184973, -3),
+               'lapaz': CityParams('lapaz', -16.4955455, -68.1336229, -4),
+               'cairo': CityParams('cairo', 30.0443879, 31.2357257, 2),
+               'mumbai': CityParams('mumbai', 19.0785451, 72.878176, 5.5),
+               'singapore': CityParams('singapore', 1.2899175, 103.8519072, 8),
+               'santos': CityParams('santos', -23.960833, -46.333889, -3)}
 
 from log_config import logger  # noqa: E402  re-exported: spiders use `from common import logger`
 
