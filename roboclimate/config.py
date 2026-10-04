@@ -21,7 +21,8 @@ cities = {"london": City(2643743, 'london', dt.datetime(2019, 11, 28, 3, 0, 0, t
           "lapaz": City(3911925, 'lapaz', dt.datetime(2026, 10, 5, 0, 0, 0, tzinfo=dt.timezone.utc)),
           "cairo": City(360630, 'cairo', dt.datetime(2026, 10, 5, 0, 0, 0, tzinfo=dt.timezone.utc)),
           "mumbai": City(1275339, 'mumbai', dt.datetime(2026, 10, 5, 0, 0, 0, tzinfo=dt.timezone.utc)),
-          "singapore": City(1880252, 'singapore', dt.datetime(2026, 10, 5, 0, 0, 0, tzinfo=dt.timezone.utc))}
+          "singapore": City(1880252, 'singapore', dt.datetime(2026, 10, 5, 0, 0, 0, tzinfo=dt.timezone.utc)),
+          "santos": City(3449433, 'santos', dt.datetime(2026, 10, 5, 0, 0, 0, tzinfo=dt.timezone.utc))}
 
 weather_resources = ['weather', 'forecast']
 weather_variables = {'temperature': 'temp', 'pressure': 'pressure', 'humidity': 'humidity', 'wind_speed': 'wind_speed', 'wind_direction': 'wind_deg'}

@@ -31,7 +31,8 @@ CITIES = {"london": 2643743,
           "lapaz": 3911925,
           "cairo": 360630,
           "mumbai": 1275339,
-          "singapore": 1880252}
+          "singapore": 1880252,
+          "santos": 3449433}
 
 # openweathermap provides an endpoint to get a city's geo coordinates
 # https://api.openweathermap.org/geo/1.0/direct?q=London,GB&limit=5&appid=YOUR_API_KEY
@@ -54,7 +55,8 @@ CITY_PARAMS = {'london': CityParams('london', 51.5073219, -0.1276474, 0),
                'lapaz': CityParams('lapaz', -16.4955455, -68.1336229, -4),
                'cairo': CityParams('cairo', 30.0443879, 31.2357257, 2),
                'mumbai': CityParams('mumbai', 19.0785451, 72.878176, 5.5),
-               'singapore': CityParams('singapore', 1.2899175, 103.8519072, 8)}
+               'singapore': CityParams('singapore', 1.2899175, 103.8519072, 8),
+               'santos': CityParams('santos', -23.960833, -46.333889, -3)}
 
 from log_config import logger  # noqa: E402  re-exported: spiders use `from common import logger`
 

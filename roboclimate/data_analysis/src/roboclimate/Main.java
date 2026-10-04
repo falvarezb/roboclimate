@@ -41,6 +41,7 @@ public class Main {
             add("cairo");
             add("mumbai");
             add("singapore");
+            add("santos");
         }};
         cities.forEach(Main::processCity);
     }

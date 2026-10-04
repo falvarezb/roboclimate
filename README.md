@@ -36,6 +36,7 @@ To do so we'll investigate the accuracy of the meteorological models.
 - Cairo
 - Mumbai
 - Singapore
+- Santos
 
 
 
