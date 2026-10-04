@@ -31,7 +31,7 @@ def test_collect_uvi_data(get_yesterday, req, csv_folder):
     req.get.return_value.json.return_value = json_body
     rspider.handler(None, None)
     time.sleep(1)
-    assert req.get.call_count == 10
+    assert req.get.call_count == len(rspider.CITY_PARAMS)
 
     # checking a few calls
     req.get.assert_has_calls([
@@ -39,7 +39,7 @@ def test_collect_uvi_data(get_yesterday, req, csv_folder):
         call("https://api.openweathermap.org/data/3.0/onecall/timemachine?lat=40.4167047&lon=-3.7035825&units=metric&dt=1709290800&appid=api_key", timeout=10)
     ], any_order=True)
 
-    assert len(os.listdir(csv_folder)) == 10
+    assert len(os.listdir(csv_folder)) == len(rspider.CITY_PARAMS)
 
     # checking a few files
     with open(f"{csv_folder}/uvi_london.csv", encoding='UTF-8') as f:

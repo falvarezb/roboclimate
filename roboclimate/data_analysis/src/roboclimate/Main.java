@@ -1,6 +1,8 @@
 package roboclimate;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -30,12 +32,27 @@ public class Main {
             add("nairobi");
             add("asuncion");
             add("lagos");
+            add("quito");
+            add("guayaquil");
+            add("belem");
+            add("reykjavik");
+            add("ushuaia");
+            add("lapaz");
+            add("cairo");
+            add("mumbai");
+            add("singapore");
         }};
         cities.forEach(Main::processCity);
     }
 
     private static void processCity(String cityName) {
 
+        if (!Files.exists(Path.of(STR."\{CSV_FILES_PATH}/weather_\{cityName}.csv"))
+                || !Files.exists(Path.of(STR."\{CSV_FILES_PATH}/forecast_\{cityName}.csv"))) {
+            // newly added cities have no measurements/forecasts until the spiders' first runs
+            System.out.println(STR."skipping city: \{cityName} (no data yet)");
+            return;
+        }
         try {
             System.out.println(STR."processing city: \{cityName}");
             List<WeatherRecord> actualWeatherList = readWeatherFile(STR."\{CSV_FILES_PATH}/weather_\{cityName}.csv");

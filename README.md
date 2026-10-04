@@ -27,6 +27,15 @@ To do so we'll investigate the accuracy of the meteorological models.
 - Asuncion
 - Nairobi
 - Lagos
+- Quito
+- Guayaquil
+- Belem
+- Reykjavik
+- Ushuaia
+- La Paz
+- Cairo
+- Mumbai
+- Singapore
 
 
 
