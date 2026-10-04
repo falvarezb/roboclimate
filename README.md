@@ -200,3 +200,21 @@ csv_files
 ### Deployment
 
 See [deploy](./terraform/readme.md)
+
+### Adding a city
+
+The city list is repeated in several places; update all of them in one PR.
+
+1. **Look up the city on OpenWeather** (never from memory):
+   - coordinates from the geocoding API: `https://api.openweathermap.org/geo/1.0/direct?q=<city>,<country code>&limit=1&appid=<key>`
+   - the city id from the weather API: `https://api.openweathermap.org/data/2.5/weather?q=<city>,<country code>&appid=<key>` — check the returned `name` and `coord` match the geocoding result.
+2. **Edit these places** (use a lowercase, ASCII key without spaces, e.g. `lapaz`):
+   - `roboclimate/common.py` — `CITIES` (`"key": id`) and `CITY_PARAMS` (`CityParams('key', lat, lon, tz_offset)`)
+   - `roboclimate/config.py` — `cities` (`City(id, 'key', firstMeasurement)`)
+   - `roboclimate/data_analysis/src/roboclimate/Main.java` — the `cities` list
+   - the [Locations](#locations) list above
+
+   `tz_offset` is the city's **standard UTC offset, ignoring daylight saving** (e.g. Madrid `1`, Cairo `2`, Mumbai `5.5`): the UV spider uses it to request each day's reading at 12:00 local standard time. The tests derive the number of cities from `CITY_PARAMS`, so they need no change.
+3. **Verify:** run the tests and `terraform/artifact_prep.sh all`, then run the built spider packages in the Lambda emulator against a throwaway copy of the CSVs and check the new city gains rows (see `lambda/prerelease_check.sh` for the emulator invocation).
+4. **Ship** following [lambda/README.md](./lambda/README.md): deploy from `master`, `lambda/prerelease_check.sh` on each new spider version (it checks that every configured city gains rows), then a release PR that bumps the pinned versions **and** sets the new cities' `firstMeasurement` in `config.py` to the first scheduled weather run after the release (runs are every 3 hours from 00:00 UTC).
+5. **Expect a delay before analysis:** forecasts are compared 1–5 days ahead, so a new city has no joined records until about 5 days after its first run. Until then both analyses (Java and the legacy `data_analysis.py`) log a warning and skip the city ("no data yet") or just its metrics ("no joined records yet", writing a header-only join file), and the dashboard lists a city only once its metrics exist.

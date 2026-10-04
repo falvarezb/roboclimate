@@ -56,6 +56,8 @@ terraform apply -var-file ../secrets.tfvars
 
 **Deploying is not releasing.** The EventBridge schedules invoke pinned Lambda versions (`module "eventbridge_scheduler"` in `terraform/main.tf`), so `terraform apply` of new code only publishes a version. Follow `lambda/README.md` for dependency locking, deploy, the release step (bumping the pinned versions after `lambda/prerelease_check.sh`) and rollback. Lambda dependencies live in `lambda/*.in` — never edit the generated `lambda/*-requirements.txt` by hand.
 
+**Adding a city** touches several files (`common.py`, `config.py`, the Java `Main.java` list, README) and needs a release: follow the "Adding a city" checklist in `README.md`.
+
 ## Environment Variables
 
 | Variable | Purpose |

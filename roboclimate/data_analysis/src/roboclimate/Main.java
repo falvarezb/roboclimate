@@ -51,7 +51,7 @@ public class Main {
         if (!Files.exists(Path.of(STR."\{CSV_FILES_PATH}/weather_\{cityName}.csv"))
                 || !Files.exists(Path.of(STR."\{CSV_FILES_PATH}/forecast_\{cityName}.csv"))) {
             // newly added cities have no measurements/forecasts until the spiders' first runs
-            System.out.println(STR."skipping city: \{cityName} (no data yet)");
+            System.out.println(STR."WARNING: skipping city \{cityName}: no data yet");
             return;
         }
         try {
@@ -78,6 +78,13 @@ public class Main {
 
         List<JoinedRecord> joinWeatherRecords = joinWeatherRecords(actualWeather, weatherForecast, weatherVariableExtractor);
         writeJoinCsvFile(joinWeatherRecords, Paths.get(STR."\{CSV_FILES_PATH}/\{weatherVariable}/join_\{cityName}.csv"), weatherVariable);
+
+        if (joinWeatherRecords.isEmpty()) {
+            // a newly added city has no measurement with all 5 prior forecasts until ~5 days after its first run;
+            // metrics of an empty join are undefined (and the median would index an empty list)
+            System.out.println(STR."WARNING: skipping metrics for \{cityName} \{weatherVariable}: no joined records yet");
+            return;
+        }
 
         var mae = computeMetric(MetricCalculator::computeMeanAbsoluteError, joinWeatherRecords);
         var rmse = computeMetric(MetricCalculator::computeRootMeanSquaredError, joinWeatherRecords);
