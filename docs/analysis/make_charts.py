@@ -4,8 +4,11 @@ Produces, next to this script:
 - london_temp_mase_by_season.png / .csv : MASE of London's 1- and 5-day temperature forecasts by season and year
 - wind_rose_<city>.png / .csv           : direction a city's wind blows from (8 sectors), by Beaufort band and season,
                                           for each of the original 10 cities
+- pressure_clock_<city>.png / .csv      : average day of measured vs forecast (t2) pressure and temperature;
+                                          the pressure tide is a fixed clock, so a temperature offset is the forecast's
+- pressure_clock_shifts.csv             : hours each city's forecast curve runs ahead (+) or behind (-), per variable
 
-Needs weather_<city>.csv and temp/join_london.csv (written by the Java or Python data analysis) in the data folder.
+Needs weather_<city>.csv, temp/join_<city>.csv and pressure/join_<city>.csv (written by the Java or Python data analysis) in the data folder.
 
 USAGE (from the repo root):
     bin/python docs/analysis/make_charts.py [--data csv_files] [--cities london madrid ...]
@@ -40,7 +43,10 @@ CITIES = {'london': ('London', 'north'), 'madrid': ('Madrid', 'north'), 'newyork
           'moscow': ('Moscow', 'north'), 'tokyo': ('Tokyo', 'north'), 'saopaulo': ('São Paulo', 'south'),
           'sydney': ('Sydney', 'south'), 'asuncion': ('Asunción', 'south'), 'nairobi': ('Nairobi', 'tropical'),
           'lagos': ('Lagos', 'tropical')}
-MONTH_BLOCKS = ['Dec–Feb', 'Mar–May', 'Jun–Aug', 'Sep–Nov']
+# standard (non-DST) UTC offsets, as in roboclimate/common.py CITY_PARAMS
+UTC_OFFSET = {'london': 0, 'madrid': 1, 'newyork': -5, 'moscow': 3, 'tokyo': 9, 'saopaulo': -3, 'sydney': 10,
+              'asuncion': -4, 'nairobi': 3, 'lagos': 1}
+MONTH_BLOCKS =['Dec–Feb', 'Mar–May', 'Jun–Aug', 'Sep–Nov']
 BLOCK_OF_MONTH = {12: 0, 1: 0, 2: 0, 3: 1, 4: 1, 5: 1, 6: 2, 7: 2, 8: 2, 9: 3, 10: 3, 11: 3}
 PANEL_TITLES = {'north': ['Winter', 'Spring', 'Summer', 'Autumn'],
                 'south': ['Summer', 'Autumn', 'Winter', 'Spring'],
@@ -220,6 +226,133 @@ def chart_wind_rose(data, city):
     plt.close(fig)
 
 
+def harmonic_fit(hours, values, periods):
+    """Least-squares fit of a daily curve (mean + one sine/cosine pair per period, in hours); returns f(hours)."""
+    def design(h):
+        return np.column_stack([np.ones_like(h)] + [f(2 * np.pi * h / p) for p in periods for f in (np.cos, np.sin)])
+    coef = np.linalg.lstsq(design(hours), values, rcond=None)[0]
+    return lambda h: design(np.asarray(h, float)) @ coef
+
+
+def curve_shift(f_forecast, f_measured):
+    """Hours by which the forecast curve runs ahead of the measured one (positive = early), from the best overlap."""
+    grid = np.arange(0, 24, 0.05)
+    taus = np.arange(-4, 4.001, 0.05)
+    errors = [np.mean((f_forecast(grid) - f_measured((grid + tau) % 24)) ** 2) for tau in taus]
+    return taus[int(np.argmin(errors))]
+
+
+def chart_pressure_clock(data, city, since='2024-06-24'):
+    """Average day of measured and forecast (t2) pressure and temperature, in local standard time.
+
+    The twice-daily atmospheric pressure tide happens at fixed solar times, so when measured and forecast pressure
+    peak together the two data sets share a clock, and any offset left in the temperature curves belongs to the
+    forecast itself. Data from `since` on: OpenWeather changed its pressure feed during the June 2024 outage (#30).
+    """
+    display = CITIES.get(city, (city.title(), ''))[0]
+    offset = UTC_OFFSET[city]
+    start = pd.Timestamp(since, tz='UTC').timestamp()
+    xs = np.linspace(0, 24, 481)
+    panels, rows = [], []
+    for var, unit, periods in [('pressure', 'hPa', [24, 12]), ('temp', '°C', [24, 12, 8])]:
+        j = pd.read_csv(os.path.join(data, var, f'join_{city}.csv'))
+        j = j[j.dt >= start]
+        hour = ((j.dt.astype('int64') % 86400) // 3600 + offset) % 24
+        curves = {}
+        for col, name in [(var, 'measured'), ('t2', 'forecast')]:
+            mean = j[col].groupby(hour).mean().sort_index()
+            anomaly = mean - mean.mean()
+            curves[name] = (anomaly.index.to_numpy(float), anomaly.to_numpy(), harmonic_fit(anomaly.index.to_numpy(float), anomaly.to_numpy(), periods))
+            rows += [(var, name, h, a) for h, a in anomaly.items()]
+        panels.append((var, unit, curves, curve_shift(curves['forecast'][2], curves['measured'][2])))
+    pd.DataFrame(rows, columns=['variable', 'series', 'local_hour', 'difference_from_daily_mean']) \
+        .to_csv(os.path.join(OUT, f'pressure_clock_{city}.csv'), index=False, float_format='%.3f')
+
+    tol = 0.75          # a quarter of the 3-hour sampling step: smaller offsets are not resolved
+
+    def describe(shift):
+        if abs(shift) < tol:
+            return 'in step with the measurements'
+        return f"about {abs(shift):.1f} h {'early' if shift > 0 else 'late'}"
+
+    plt.rcParams.update({'font.size': 10, 'axes.edgecolor': AXIS, 'xtick.color': MUTED, 'ytick.color': MUTED,
+                         'axes.labelcolor': INK2, 'text.color': INK})
+    fig, axes = plt.subplots(2, 1, figsize=(9, 8.2), sharex=True, facecolor=SURF)
+    for ax, (var, unit, curves, shift) in zip(axes, panels):
+        ax.set_facecolor(SURF)
+        ax.grid(axis='y', color=GRID, lw=0.8)
+        ax.set_axisbelow(True)
+        for side in ['top', 'right']:
+            ax.spines[side].set_visible(False)
+        ax.axhline(0, color=AXIS, lw=0.8)
+        for name, color, label, z in [('measured', CATEGORICAL[0], 'Measured', 3),
+                                      ('forecast', CATEGORICAL[1], 'Forecast (2 days ahead)', 2)]:
+            h, y, f = curves[name]
+            ax.plot(xs, f(xs), color=color, lw=2, zorder=z, label=label)
+            ax.scatter(np.r_[h, h[0] + 24], np.r_[y, y[0]],   # repeat the first reading a day later
+                       s=64, color=color, edgecolor=SURF, linewidth=2,
+                       zorder=z + 1)
+        measured = curves['measured'][2](xs)
+        if var == 'pressure':
+            for lo, hi in [(4, 14), (16, 28)]:                       # morning and evening tide peaks
+                window = np.arange(lo, hi, 0.05)                     # the evening one may fall after midnight
+                peak = window[np.argmax(curves['measured'][2](window % 24))] % 24
+                ax.axvline(peak, color=MUTED, lw=1, ls=(0, (3, 3)), zorder=1)
+                ax.text(peak + 0.25, 0.97, f'peak {int(round(peak * 60)) // 60 % 24:02d}:{int(round(peak * 60)) % 60:02d}',
+                        transform=ax.get_xaxis_transform(), color=INK2, fontsize=9, va='top')
+            ax.set_title(f'Pressure: forecast {describe(shift)}', loc='left', fontsize=11.5, color=INK, pad=8)
+            ax.text(0.01, 0.03, 'Twice-daily atmospheric tide, set by the sun: a fixed clock', color=MUTED,
+                    fontsize=8.5, transform=ax.transAxes)
+        else:
+            # horizontal gap between the curves at half the measured daily swing, on the rise and on the fall
+            forecast = curves['forecast'][2](xs)
+            swing_m, swing_f = np.ptp(measured), np.ptp(forecast)
+            level = measured.min() + 0.5 * swing_m
+            comparable = 0.7 <= swing_f / swing_m <= 1.4   # with very different swings the gaps mislead
+            for direction in ((1, -1) if comparable and abs(shift) >= tol else ()):
+                crossings = np.where(np.diff(np.sign(measured - level)) == 2 * direction)[0]
+                f_cross = np.where(np.diff(np.sign(forecast - level)) == 2 * direction)[0]
+                if len(crossings) and len(f_cross):
+                    xm, xf = xs[crossings[0]], xs[f_cross[np.argmin(abs(xs[f_cross] - xs[crossings[0]]))]]
+                    if abs(xm - xf) >= 0.5:
+                        ax.annotate('', xy=(xf, level), xytext=(xm, level),
+                                    arrowprops=dict(arrowstyle='<->', color=INK2, lw=1.2))
+                        ax.text((xm + xf) / 2, level, f'{abs(xm - xf):.1f} h\n', ha='center', va='bottom',
+                                color=INK, fontsize=9.5, fontweight='bold')
+            swing_note = '' if comparable else f'; daily swing {swing_f:.1f} °C forecast vs {swing_m:.1f} °C measured'
+            ax.set_title(f'Temperature: forecast {describe(shift)}{swing_note}', loc='left', fontsize=11.5,
+                         color=INK, pad=8)
+        ax.set_ylabel(f'difference from daily mean ({unit})')
+    axes[1].set_xticks(range(0, 25, 3))
+    axes[1].set_xticklabels([f'{h:02d}:00' for h in range(0, 25, 3)])
+    axes[1].set_xlim(0, 24)
+    axes[1].set_xlabel(f'local standard time (UTC{offset:+d})'.replace('-', '−'))
+    axes[0].legend(loc='lower left', bbox_to_anchor=(0, 1.07), ncol=2, frameon=False, fontsize=9.5, labelcolor=INK2)
+    p_shift, t_shift = panels[0][3], panels[1][3]
+    if abs(p_shift) >= tol:
+        verdict = 'measured and forecast pressure disagree on the time'
+    elif t_shift - p_shift >= tol:
+        verdict = 'pressure keeps time, temperature runs early'
+    elif t_shift - p_shift <= -tol:
+        verdict = 'pressure keeps time, temperature runs late'
+    else:
+        verdict = 'pressure and temperature both in step'
+    if not comparable:
+        verdict = verdict.replace('temperature runs', 'temperature').replace(', ', '; ') + \
+            (' and flattened' if swing_f < swing_m else ' and exaggerated')
+
+    fig.suptitle(f'{display}: {verdict}', x=0.075, y=0.985, ha='left', fontsize=14, fontweight='bold', color=INK)
+    last = pd.to_datetime(j.dt.max(), unit='s')
+    fig.text(0.075, 0.94, f'Average day, {pd.Timestamp(since):%d %b %Y} – {last:%b %Y}. '
+             'Dots: mean of the 3-hourly readings; lines: smooth fit through them.', fontsize=9, color=INK2)
+    fig.text(0.075, 0.012, 'Measured = OpenWeather current weather; forecast = OpenWeather 5-day forecast issued '
+             '2 days before (t2). Source: roboclimate.', fontsize=7.8, color=MUTED)
+    fig.tight_layout(rect=(0.03, 0.03, 1, 0.965))
+    fig.savefig(os.path.join(OUT, f'pressure_clock_{city}.png'), dpi=150, facecolor=SURF)
+    plt.close(fig)
+    return p_shift, t_shift
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--data', default=os.environ.get('ROBOCLIMATE_CSV_FILES_PATH', 'csv_files'),
@@ -229,6 +362,9 @@ def main():
     chart_mase_by_season(args.data)
     for city in args.cities:
         chart_wind_rose(args.data, city)
+    shifts = {city: chart_pressure_clock(args.data, city) for city in args.cities}
+    pd.DataFrame(shifts, index=['pressure_shift_h', 'temp_shift_h']).T.rename_axis('city') \
+        .to_csv(os.path.join(OUT, 'pressure_clock_shifts.csv'), float_format='%.2f')
     print(f'charts written to {OUT}')
 
 
