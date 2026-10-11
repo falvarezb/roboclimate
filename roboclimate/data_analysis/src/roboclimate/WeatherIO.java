@@ -16,20 +16,26 @@ public class WeatherIO {
         try (Stream<String> lines = Files.lines(Paths.get(path))) {
             return lines
                     .skip(1)                        // Skip the first line
-                    .map(line -> Arrays.stream(line.split(",")).filter(s -> !s.isEmpty()).toArray(String[]::new)) // Split each line by comma
-                    .filter(data -> data.length == 7) // Discard incomplete lines
+                    .map(line -> line.split(",", -1)) // Split each line by comma, keeping empty fields
+                    // Discard malformed lines and lines without dt/today; a blank weather value (e.g. wind_deg) is kept
+                    // as NaN so that only that variable loses the record, as in data_analysis.py
+                    .filter(data -> data.length == 7 && !data[5].isEmpty() && !data[6].isEmpty())
                     .map(data -> new WeatherRecord(       // Convert array to Weather object
-                                    Double.parseDouble(data[0]),
-                                    Double.parseDouble(data[1]),
-                                    Double.parseDouble(data[2]),
-                                    Double.parseDouble(data[3]),
-                                    Double.parseDouble(data[4]),
+                                    parseValue(data[0]),
+                                    parseValue(data[1]),
+                                    parseValue(data[2]),
+                                    parseValue(data[3]),
+                                    parseValue(data[4]),
                                     (long) Double.parseDouble(data[5]),
                                     LocalDate.parse(data[6])
                             )
                     )
                     .collect(Collectors.toList());
         }
+    }
+
+    private static double parseValue(String field) {
+        return field.isEmpty() ? Double.NaN : Double.parseDouble(field);
     }
 
     static void writeJoinCsvFile(List<JoinedRecord> joinedRecords, Path path, String weatherVariable) throws IOException {

@@ -34,17 +34,28 @@ public class MetricCalculator {
         }
     }
 
+    static final long THREE_HOURS_IN_SECONDS = 3 * 60 * 60;
+
+    /**
+     * MASE of the tx forecast, using as naive forecast the actual value tPeriod data points earlier. A pair only counts
+     * when the two data points are exactly tPeriod x 3 hours apart, so pairs straddling gaps in the time series are
+     * skipped (same definition as metrics.mean_absolute_scaled_error in Python).
+     * Returns NaN when there are no such pairs or the naive forecast has no error.
+     */
     static double computeMeanAbsoluteScaledErrorByTx(List<JoinedRecord> joinWeatherRecords, Function<JoinedRecord, Double> tExtractor, int tPeriod) {
         double mae = 0, naive_mae = 0;
+        long periodInSeconds = tPeriod * THREE_HOURS_IN_SECONDS;
         for(int i = tPeriod, j = 0; i < joinWeatherRecords.size(); i++, j++) {
-            double actualValue = joinWeatherRecords.get(i).weatherVariableValue();
-            Double predictedValue = tExtractor.apply(joinWeatherRecords.get(i));
-            mae += Math.abs(actualValue - predictedValue);
-
-            double naivePrediction = joinWeatherRecords.get(j).weatherVariableValue();
-            naive_mae += Math.abs(actualValue - naivePrediction);
+            JoinedRecord current = joinWeatherRecords.get(i);
+            JoinedRecord previous = joinWeatherRecords.get(j);
+            if (current.dt() - previous.dt() != periodInSeconds) {
+                continue;
+            }
+            double actualValue = current.weatherVariableValue();
+            mae += Math.abs(actualValue - tExtractor.apply(current));
+            naive_mae += Math.abs(actualValue - previous.weatherVariableValue());
         }
-        return mae / naive_mae;
+        return naive_mae == 0 ? Double.NaN : mae / naive_mae;
     }
 
     static ArrayList<Double> computeMeanAbsoluteScaledError(List<JoinedRecord> joinWeatherRecords) {
