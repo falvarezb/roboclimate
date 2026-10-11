@@ -49,7 +49,12 @@ def join_actual_values_and_forecast(actual_values_df, forecast_df) -> Dict[str, 
     """
     Joins the records from weather.csv (actual_values_df) and forecast.csv (forecast_df) by the field dt, effectively
     matching the actual values of the weather variables with the forecast done over the 5 previous days.
-    If the forecast of any of the 5 previous days is not available, the entire record is discarded
+    If the forecast of any of the 5 previous days is not available, the entire record is discarded.
+    A record whose value for a weather variable (actual or any forecast) is missing is discarded for that variable only.
+    Forecasts for a dt are ordered by 'today': the oldest one (made 5 days before) is t5, the most recent t1.
+
+    Implemented with whole-table operations (group, pivot, merge) rather than row by row, so the cost is linear in
+    the size of the data.
 
     Return a dict mapping each weather variable to its corresponding join
 
@@ -97,55 +102,25 @@ def join_actual_values_and_forecast(actual_values_df, forecast_df) -> Dict[str, 
     .....
 
     """
+    # keep only the dts with exactly one forecast per previous day, and label them t5 (oldest) .. t1 (most recent)
+    forecasts_per_dt = forecast_df.groupby('dt')['dt'].transform('size')
+    complete = forecast_df[forecasts_per_dt == len(FORECAST_HEADERS)].sort_values(['dt', 'today'], kind='mergesort')
+    complete = complete.assign(horizon=complete.groupby('dt').cumcount().map(dict(enumerate(FORECAST_HEADERS))))
 
-    headers = FORECAST_HEADERS
-    # initializing dataframes
     dfs_dict = {weather_variable: pd.DataFrame() for _, weather_variable in config.weather_variables.items()}
-
-    for row in actual_values_df.iterrows():
-        try:
-            # 1st row (dt=100)
-            # -----------------
-            #               0           1           2           3           4
-            # temp          4.0         1.5         2.0         3.0         1.0
-            # pressure      991         990         1002        1020        1000
-            # ....
-            # dt            100         100         100         100         100
-            # today         2019-11-25  2019-11-26  2019-11-27  2019-11-28  2019-11-29
-            #
-            transposed_forecast_df = forecast_df[forecast_df['dt'] == row[1]['dt']].sort_values('today').T
-            if transposed_forecast_df.shape[1] == len(headers):
-                for weather_variable, df in dfs_dict.items():
-
-                    # weather_variable = temp
-                    # ------------------------
-                    #
-                    #       t5  t4  t3  t2  t1
-                    # 0     4.0 1.5 2.0 3.0 1.0
-                    #
-                    tees_df = pd.DataFrame({i: [j] for i, j in zip(headers, transposed_forecast_df.loc[weather_variable])}, index=[row[0]])
-
-                    # weather_variable = temp
-                    # ------------------------
-                    #     temp  dt   today
-                    # 0   0.5   100  2019-11-30
-                    #
-                    weather_variable_df = pd.DataFrame({weather_variable: [row[1][weather_variable]], 'dt': [
-                                                       row[1]['dt']], 'today': [row[1]['today']]}, index=[row[0]])
-
-                    # weather_variable = temp
-                    # ------------------------
-                    #     temp  dt   today      t5  t4  t3  t2  t1
-                    # 0   0.5   100  2019-11-30 4.0 1.5 2.0 3.0 1.0
-                    #
-                    joined_df = weather_variable_df.join(tees_df)
-                    # discarding row if there is any empty value
-                    joined_df.dropna(inplace=True)
-                    dfs_dict[weather_variable] = pd.concat([df, joined_df], ignore_index=True)
-            # else:
-            #     logger.warning(f"number of {weather_variable} {len(temps)} != 5 for timestamp {row[1]['dt']}")
-        except Exception:
-            logger.error("Error while processing row \n %s", row[1], exc_info=True)
+    for weather_variable in dfs_dict:
+        if weather_variable not in actual_values_df.columns or weather_variable not in forecast_df.columns:
+            continue
+        # one row per dt with columns t5..t1
+        tees_df = complete.pivot(index='dt', columns='horizon', values=weather_variable).reindex(columns=FORECAST_HEADERS)
+        tees_df.columns.name = None
+        # inner merge keeps the order of the actual values; a missing value anywhere discards the row
+        joined_df = actual_values_df[[weather_variable, 'dt', 'today']] \
+            .merge(tees_df, left_on='dt', right_index=True, how='inner') \
+            .dropna() \
+            .reset_index(drop=True)
+        if not joined_df.empty:
+            dfs_dict[weather_variable] = joined_df
 
     return dfs_dict
 

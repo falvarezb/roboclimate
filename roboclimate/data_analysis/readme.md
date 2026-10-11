@@ -1,6 +1,6 @@
 Java module to analyze data gathered by the Weather Spiders (`weather_spider_lambda.py` and `forecast_spider_lambda.py`)
 
-It replaces the python module `data_analysis.py` as it is more efficient and faster. `data_analysis.py` remains the
+It replaced the python module `data_analysis.py`, which was much slower until its join was vectorised. `data_analysis.py` remains the
 reference implementation: both must produce the same join and metrics files (see [Parity check](#parity-check)).
 
 
@@ -23,7 +23,7 @@ or metric differs (relative tolerance 1e-9). Run it after any change to either a
 
 ```commandline
 JAVA_HOME=<jdk22> bin/python roboclimate/data_analysis/parity_check.py             # generated fixture, ~5 s
-JAVA_HOME=<jdk22> bin/python roboclimate/data_analysis/parity_check.py --data DIR  # real CSVs; slow (Python takes minutes per city)
+JAVA_HOME=<jdk22> bin/python roboclimate/data_analysis/parity_check.py --data DIR  # real CSVs, e.g. csv_files: ~6 s for 20 cities
 ```
 
 The generated fixture covers the cases where the two implementations once diverged:
