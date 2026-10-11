@@ -99,3 +99,38 @@ timestamps of the two series agree, so any offset left in the temperature curves
   humidity shows the same lead: it points to how fast the model's land surface heats and cools, not to cloud timing.
   Lagos' forecast flattens the daily cycle to about a third of the measured swing, possibly because its grid cell
   blends sea or lagoon with land.
+
+## Temperature history (original 10 cities)
+
+`temperature_history_<city>.png` · `temperature_history_<city>.csv` for the same 10 cities ·
+`temperature_history_summary.csv`
+
+Measured temperature over the whole record: the band is each day's lowest to highest 3-hourly reading, the line the
+30-day average of the daily mean. All cities share the same temperature scale and time window, so charts can be
+compared directly (Moscow's −28 °C to +34 °C against Lagos' 21–38 °C).
+
+| City | From | Readings | Mean of daily means | Highest reading | Lowest reading |
+|---|---|---|---|---|---|
+| London | 28 Nov 2019 | 16,504 | 12.5 °C | 36.6 °C (13 Aug 2026) | −3.9 °C (18 Jan 2024) |
+| Madrid | 11 Jun 2020 | 14,929 | 16.9 °C | 40.9 °C (14 Aug 2021) | −7.3 °C (12 Jan 2021) |
+| New York | 11 Jun 2020 | 14,930 | 14.3 °C | 38.4 °C (2 Jul 2026) | −15.3 °C (8 Feb 2026) |
+| Moscow | 27 Jan 2021 | 13,095 | 8.3 °C | 34.5 °C (12 Jul 2025) | −28.4 °C (17 Jan 2026) |
+| Tokyo | 27 Jan 2021 | 13,095 | 18.4 °C | 37.9 °C (8 Jul 2024) | −2.2 °C (8 Feb 2026) |
+| São Paulo | 11 Jun 2020 | 14,931 | 20.5 °C | 36.8 °C (2 Oct 2020) | 4.7 °C (30 Jul 2021) |
+| Sydney | 11 Jun 2020 | 14,931 | 17.9 °C | 42.1 °C (28 Jan 2025) | 4.5 °C (19 Jul 2023) |
+| Asunción | 27 Jan 2021 | 13,094 | 23.8 °C | 42.9 °C (18 Feb 2026) | 0.7 °C (29 Jun 2021) |
+| Nairobi | 27 Jan 2021 | 13,082 | 19.5 °C | 30.9 °C (26 Jan 2026) | 9.6 °C (28 Aug 2021) |
+| Lagos | 27 Jan 2021 | 13,093 | 27.9 °C | 38.1 °C (15 Mar 2024) | 21.1 °C (7 Jul 2021) |
+
+All records end on 10 Oct 2026.
+
+- Collection outages: no data from 15 Jan 2022 to 9 Mar 2023 and from 27 May to 24 Jun 2024 (shaded). Days with fewer
+  than 6 of their 8 readings are left blank. The mean of daily means covers uneven numbers of each season, so treat it
+  as a rough level, not a climate normal.
+- Extremes are of the 3-hourly readings (UTC 00, 03, … 21), so the true daily highs and lows can be more extreme.
+- Excluded as corrupted (`EXCLUDED_READINGS` in `make_charts.py`), Nairobi only: 12 May 2021 15:00 – 13 May 2021 18:00
+  UTC (10 readings falling to 5.1 °C, 4–10 °C below every forecast made for them, then jumping to 42.9–47.9 °C,
+  21–29 °C above them; Nairobi's record high is about 31 °C), and 1 Mar 2025 03:00 UTC (a single 5.6 °C reading at
+  100% humidity between 17.6 and 18.9 °C). No other city has a reading more than 10 °C outside all five of its
+  forecasts except during sudden storms the forecasts missed (Moscow, São Paulo, Asunción), which are kept.
+- CSV columns: daily `min`, `max`, `mean`, number of `readings` and the 30-day average `avg30`.
