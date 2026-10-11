@@ -15,6 +15,11 @@ public class DataTransformer {
                     if (forecasts.size() != 5) {
                         return null;
                     }
+                    // a blank value in the measurement or any of its forecasts excludes the record for this variable only
+                    if (Double.isNaN(weatherVariableExtractor.apply(actualWeatherRecord))
+                            || forecasts.stream().anyMatch(f -> Double.isNaN(weatherVariableExtractor.apply(f)))) {
+                        return null;
+                    }
                     return new JoinedRecord(
                             weatherVariableExtractor.apply(actualWeatherRecord),
                             actualWeatherRecord.dt(),

@@ -45,6 +45,10 @@ streamlit run roboclimate/streamlit_app.py
 javac -source 22 --enable-preview -d out src/roboclimate/*.java
 java --enable-preview -cp out roboclimate.Main
 ```
+Needs JDK 22 (string templates were removed in JDK 23). After changing either analysis, check Java still matches the Python reference:
+```bash
+JAVA_HOME=<jdk22> bin/python roboclimate/data_analysis/parity_check.py
+```
 
 **Terraform deployment** (in `terraform/`):
 ```bash
