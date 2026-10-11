@@ -1,8 +1,19 @@
 # Analysis charts
 
-Charts from ad-hoc analyses of the roboclimate data. Each PNG has a CSV with the exact values plotted.
-Both were produced on 2026-10-11 from the S3 backup of 2026-10-10 (measurements and forecasts from December 2019),
-after the Java/Python parity fix (#25).
+Charts from analyses of the roboclimate data. Each PNG has a CSV with the exact values plotted.
+The committed versions were produced on 2026-10-11 from the S3 backup of 2026-10-10 (London measurements from
+2019-11-28, forecast comparisons from 2019-12-03), after the Java/Python parity fix (#25).
+
+## Regenerating
+
+`make_charts.py` rebuilds all charts and CSVs in this folder from the data files. Refresh the data and run the
+analysis first, so the `join_*.csv` files are current (from the repo root):
+
+```bash
+terraform/download_csv_files_from_s3.sh myadmin csv_files     # latest backup from S3
+# run the Java analysis (roboclimate/data_analysis/readme.md) or data_analysis.py
+bin/python docs/analysis/make_charts.py                       # --data DIR to use another folder
+```
 
 ## London temperature forecasts: MASE by season
 
