@@ -82,7 +82,7 @@ terraform apply -var-file ../secrets.tfvars
 - `roboclimate/config.py` — city list, weather variable definitions, file paths
 - `roboclimate/common.py` — shared HTTP/retry logic, CSV I/O, OpenWeather API calls
 - `roboclimate/metrics.py` — error metric implementations (MAE, RMSE, MEDAE, MASE)
-- `roboclimate/data_analysis.py` — Python join/metric calculation (legacy; replaced by Java module)
+- `roboclimate/data_analysis.py` — Python join/metric calculation; the reference implementation the Java module must match (`roboclimate/data_analysis/parity_check.py`)
 - `roboclimate/data_analysis/` — Java 22 reimplementation of data analysis (faster)
 - `roboclimate/streamlit_app.py` — interactive dashboard
 - `roboclimate/*_spider_lambda.py` — AWS Lambda handlers for data collection

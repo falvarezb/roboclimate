@@ -9,7 +9,7 @@ By default the input is a small generated dataset for 'london' that exercises th
 
 USAGE (from the repo root; the Java module needs JDK 22 for its string templates):
     JAVA_HOME=<jdk22> bin/python roboclimate/data_analysis/parity_check.py            # generated fixture
-    JAVA_HOME=<jdk22> bin/python roboclimate/data_analysis/parity_check.py --data DIR  # real weather_*/forecast_* CSVs
+    JAVA_HOME=<jdk22> bin/python roboclimate/data_analysis/parity_check.py --data DIR  # real weather_*/forecast_* CSVs (~6 s for csv_files)
 Exit status 0 when the outputs match, 1 otherwise.
 """
 import argparse
