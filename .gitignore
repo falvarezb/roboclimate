@@ -14,6 +14,7 @@ __pycache__/
 *.jsonl
 *.csv
 !tests/csv_files/*.csv
+!docs/analysis/*.csv
 .terraform/
 *.tfplan
 *.tfstate
