@@ -19,19 +19,20 @@ def fetch_actual_vs_forecast_data(city_name, weather_variable, tn, last_n_days: 
     join_data_df: pd.DataFrame = rde.load_csv_files(city, weather_variable)["join_data_df"]
     N = join_data_df.shape[0]
     max_x = N
-    min_x = max_x - (rconf.day_factor * last_n_days)
+    # cities with less history than the requested window (e.g. newly added ones) show all they have
+    min_x = max(0, max_x - (rconf.day_factor * last_n_days))
     print(f"min_x={min_x}")
     print(f"max_x={max_x}")
     if tn != 'None':
-        max_y = max(pd.concat([join_data_df[weather_var_option1][min_x:max_x], join_data_df[tn][min_x:max_x]]))
-        min_y = min(pd.concat([join_data_df[weather_var_option1][min_x:max_x], join_data_df[tn][min_x:max_x]]))
+        max_y = max(pd.concat([join_data_df[weather_variable][min_x:max_x], join_data_df[tn][min_x:max_x]]))
+        min_y = min(pd.concat([join_data_df[weather_variable][min_x:max_x], join_data_df[tn][min_x:max_x]]))
     else:
-        max_y = max(join_data_df[weather_var_option1][min_x:max_x])
-        min_y = min(join_data_df[weather_var_option1][min_x:max_x])
+        max_y = max(join_data_df[weather_variable][min_x:max_x])
+        min_y = min(join_data_df[weather_variable][min_x:max_x])
     print(f"min_y={min_y}")
     print(f"max_y={max_y}")
     x = np.linspace(0, max_x - min_x, max_x - min_x)
-    y1 = join_data_df[weather_var_option1][min_x:max_x]
+    y1 = join_data_df[weather_variable][min_x:max_x]
     y2 = None
     if tn != 'None':
         y2 = join_data_df[tn][min_x:max_x]
