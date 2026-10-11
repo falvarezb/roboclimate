@@ -61,3 +61,41 @@ Beaufort wind-speed band, in km/h) and by three-month block (same scale within e
 - Moscow's directions are mostly not multiples of 10° (16%, against 68–90% elsewhere), suggesting a different
   underlying source for that city.
 - CSV columns: share of all readings per sector and speed band, the sector total, and the per-block share (`months_*`).
+
+## Pressure as a clock: measured vs forecast daily cycles (original 10 cities)
+
+`pressure_clock_<city>.png` · `pressure_clock_<city>.csv` for the same 10 cities · `pressure_clock_shifts.csv`
+
+Average day of measured and forecast (t2, issued 2 days before) pressure and temperature, as the difference from the
+daily mean, in local standard time. Data from 2024-06-24 on, after OpenWeather changed its pressure feed (#30).
+
+The sun drives a twice-daily atmospheric pressure tide that peaks at fixed local times (about 09:00–10:00 and
+22:00–23:00). It is a clock both data sets must share: when measured and forecast pressure peak together, the
+timestamps of the two series agree, so any offset left in the temperature curves comes from the forecast itself.
+
+| City | Pressure offset (h) | Temperature offset (h) | Reading |
+|---|---|---|---|
+| London | +0.55 | +0.35 | in step |
+| Madrid | +0.15 | +0.10 | in step |
+| New York | +0.10 | +0.20 | in step |
+| Moscow | +0.45 | +0.55 | in step |
+| Tokyo | +0.10 | −0.25 | in step |
+| São Paulo | +0.35 | +0.40 | in step |
+| Sydney | +0.20 | +0.30 | in step |
+| Asunción | +0.25 | +0.20 | in step |
+| **Nairobi** | 0.00 | **+1.25** | temperature forecast runs early |
+| **Lagos** | 0.00 | **+1.15** | temperature forecast early and flattened (daily swing 1.8 °C vs 4.8 °C measured) |
+
+- Offset = hours by which the forecast curve runs ahead of the measured one (+ = early), from the best overlap of the
+  two smooth curves (`pressure_clock_shifts.csv`). Offsets under 0.75 h, a quarter of the 3-hour sampling step, are
+  read as in step.
+- Lines are least-squares fits through the 8 three-hourly means (24 h and 12 h harmonics for pressure, plus 8 h for
+  temperature); the dots are the means themselves.
+- The tide is strong near the equator (±2–3 hPa in Nairobi and Lagos) and weak at high latitude (±0.3 hPa in Moscow),
+  where the pressure curves are noisier.
+- Times are local *standard* time all year (UTC offsets as in `roboclimate/common.py`), so daylight saving does not
+  affect the curves. Asunción has used UTC−3 all year since October 2024; the chart keeps the UTC−4 used in the code.
+- Nairobi's early temperature cycle is largest in the sunny Dec–May months and smallest in the overcast Jun–Aug, and
+  humidity shows the same lead: it points to how fast the model's land surface heats and cools, not to cloud timing.
+  Lagos' forecast flattens the daily cycle to about a third of the measured swing, possibly because its grid cell
+  blends sea or lagoon with land.

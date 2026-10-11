@@ -1,0 +1,11 @@
+city,pressure_shift_h,temp_shift_h
+london,0.55,0.35
+madrid,0.15,0.10
+newyork,0.10,0.20
+moscow,0.45,0.55
+tokyo,0.10,-0.25
+saopaulo,0.35,0.40
+sydney,0.20,0.30
+asuncion,0.25,0.20
+nairobi,-0.00,1.25
+lagos,-0.00,1.15
