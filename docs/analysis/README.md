@@ -134,3 +134,52 @@ All records end on 10 Oct 2026.
   100% humidity between 17.6 and 18.9 °C). No other city has a reading more than 10 °C outside all five of its
   forecasts except during sudden storms the forecasts missed (Moscow, São Paulo, Asunción), which are kept.
 - CSV columns: daily `min`, `max`, `mean`, number of `readings` and the 30-day average `avg30`.
+
+## Relative humidity history (original 10 cities)
+
+`humidity_history_<city>.png` · `humidity_history_<city>.csv` for the same 10 cities · `humidity_history_summary.csv`
+
+The same chart as the temperature history, for relative humidity: the band is each day's lowest to highest 3-hourly
+reading, the line the 30-day average of the daily mean, on a shared 0–100% scale and time window. Only the driest
+reading is marked, since every city reaches 100%.
+
+| City | From | Readings | Mean of daily means | Readings ≥ 90% | Driest reading |
+|---|---|---|---|---|---|
+| London | 28 Nov 2019 | 16,504 | 76.2% | 19.0% | 18% (25 Apr 2026) |
+| Madrid | 11 Jun 2020 | 14,929 | 57.8% | 10.5% | 5% (18 Jul 2020) |
+| New York | 11 Jun 2020 | 14,930 | 65.7% | 8.8% | 12% (6 Apr 2021) |
+| Moscow | 27 Jan 2021 | 13,095 | 69.5% | 17.7% | 19% (15 Apr 2023) |
+| Tokyo | 27 Jan 2021 | 13,095 | 66.3% | 10.5% | 11% (22 Apr 2021) |
+| São Paulo | 11 Jun 2020 | 14,931 | 76.0% | 20.2% | 19% (10 Sep 2020) |
+| Sydney | 11 Jun 2020 | 14,929 | 71.1% | 9.7% | 11% (31 Oct 2023) |
+| Asunción | 27 Jan 2021 | 13,094 | 69.3% | 16.9% | 10% (9 Sep 2024) |
+| Nairobi | 27 Jan 2021 | 13,082 | 68.7% | 15.1% | 13% (21 Feb 2025) |
+| Lagos | 27 Jan 2021 | 13,092 | 80.3% | 18.0% | 17% (28 Jan 2024) |
+
+All records end on 10 Oct 2026. The collection gaps, the blank days and the caveat on the mean of daily means are the
+same as for temperature.
+
+- **Readings of exactly 100% stop in spring 2021 in six cities.** London (last on 21 Apr 2021), New York and Sydney
+  (5 May), Madrid (10 May), Tokyo (18 May) and São Paulo (5 Jun) had 0.3–4.7% of readings at exactly 100% until
+  then and almost none afterwards (London 72 readings before the 2022–23 outage and 1 after; Madrid 135 and 2; New
+  York and Sydney 0, with a maximum of 97% since). In Moscow, Asunción, Nairobi and Lagos they continue
+  (159–320 readings after the outage). The dates are close to the Moscow source change of 19 May 2021 (#30) and the
+  corrupted Nairobi readings of 12–13 May 2021, so it probably is another change in what OpenWeather's
+  current-weather value represents, not a change in climate. It is visible in the charts as the band touching 100% only until mid-2021.
+- **Lagos' band has a flat ceiling at 94%.** 16% of Lagos readings (2,036 of 13,094; 85% of them at night, air
+  23–27 °C) are exactly 94%, every year. It is a plateau, not a cap (the maximum is 100%). A likely cause is humidity
+  computed from whole-degree air and dew-point temperatures: 26 °C air with a 25 °C dew point is 94%. This is
+  unverified.
+- Humidity is the most variable of the five variables; its forecasts miss fronts and fog by 30 points or more
+  fairly often (e.g. London 13 readings, Moscow 129, São Paulo 142 outside all five forecasts by 30+ points), and
+  these are kept as measured.
+- Excluded (`EXCLUDED_READINGS` in `make_charts.py`), humidity only: three isolated readings 40+ points from both
+  neighbours in the same direction and 30+ points outside all five forecasts, the only three in the 10 cities, with
+  normal temperatures: Sydney 21 Dec 2020 18:00 UTC (10% between 100% and 93%), Sydney 25 Mar 2021 06:00 UTC
+  (90% between 42% and 43%) and Lagos 12 Feb 2024 09:00 UTC (17% between 94% and 66%). The excluded Nairobi
+  episodes (see temperature history) are also dropped from humidity: the whole reading is dropped.
+- Two stale episodes where temperature and humidity repeat exactly while pressure and wind keep changing are kept
+  as measured: Moscow, 28 Jan 2025 12:00 – 30 Jan 2025 00:00 UTC (13 readings of 4.26 °C and 65%) and Asunción,
+  10 Jun 2026 18:00 – 11 Jun 2026 12:00 UTC (7 readings of 19.03 °C and 99%). They are plausible values and about
+  0.1% or less of the readings.
+- CSV columns: daily `min`, `max`, `mean`, number of `readings` and the 30-day average `avg30`.
