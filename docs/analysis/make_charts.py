@@ -9,6 +9,8 @@ Produces, next to this script:
 - pressure_clock_shifts.csv             : hours each city's forecast curve runs ahead (+) or behind (-), per variable
 - temperature_history_<city>.png / .csv : measured temperature over the whole record (daily range, 30-day average)
 - temperature_history_summary.csv       : period, readings, mean and extremes per city
+- humidity_history_<city>.png / .csv    : the same for relative humidity
+- humidity_history_summary.csv          : period, readings, mean, driest reading and share of damp readings per city
 
 Needs weather_<city>.csv, temp/join_<city>.csv and pressure/join_<city>.csv (written by the Java or Python data analysis) in the data folder.
 
@@ -49,12 +51,21 @@ CITIES = {'london': ('London', 'north'), 'madrid': ('Madrid', 'north'), 'newyork
 # standard (non-DST) UTC offsets, as in roboclimate/common.py CITY_PARAMS
 UTC_OFFSET = {'london': 0, 'madrid': 1, 'newyork': -5, 'moscow': 3, 'tokyo': 9, 'saopaulo': -3, 'sydney': 10,
               'asuncion': -4, 'nairobi': 3, 'lagos': 1}
-# corrupted measurement episodes, excluded from the temperature history: (first, last) reading in UTC, inclusive.
+# corrupted measurement episodes, excluded from the history charts of the listed variables: (first, last) reading in
+# UTC, inclusive, and the variables affected.
 # Nairobi, 12-13 May 2021: readings fall 4-10 °C below all five forecasts made for them (down to 5.1 °C), then jump
 # 21-29 °C above them (42.9-47.9 °C; Nairobi's record high is about 31 °C). Same week as Moscow's source change
 # (#30). Nairobi, 1 Mar 2025 03:00: a single 5.6 °C reading at 100% humidity between 17.6 and 18.9 °C, 11 °C below
-# all forecasts.
-EXCLUDED_READINGS = {'nairobi': [('2021-05-12 15:00', '2021-05-13 18:00'), ('2025-03-01 03:00', '2025-03-01 03:00')]}
+# all forecasts. In both the whole reading is dropped.
+# Isolated humidity readings 40+ points from both neighbours in the same direction and 30+ points outside all five
+# forecasts (the only three in the 10 cities; their temperatures look normal): Sydney 21 Dec 2020 18:00, 10% between
+# 100% and 93%; Sydney 25 Mar 2021 06:00, 90% between 42% and 43%; Lagos 12 Feb 2024 09:00, 17% between 94% and 66%.
+EXCLUDED_READINGS = {
+    'nairobi': [('2021-05-12 15:00', '2021-05-13 18:00', ('temp', 'humidity')),
+                ('2025-03-01 03:00', '2025-03-01 03:00', ('temp', 'humidity'))],
+    'sydney': [('2020-12-21 18:00', '2020-12-21 18:00', ('humidity',)),
+               ('2021-03-25 06:00', '2021-03-25 06:00', ('humidity',))],
+    'lagos': [('2024-02-12 09:00', '2024-02-12 09:00', ('humidity',))]}
 MONTH_BLOCKS = ['Dec–Feb', 'Mar–May', 'Jun–Aug', 'Sep–Nov']
 BLOCK_OF_MONTH = {12: 0, 1: 0, 2: 0, 3: 1, 4: 1, 5: 1, 6: 2, 7: 2, 8: 2, 9: 3, 10: 3, 11: 3}
 PANEL_TITLES = {'north': ['Winter', 'Spring', 'Summer', 'Autumn'],
@@ -362,24 +373,41 @@ def chart_pressure_clock(data, city, since='2024-06-24'):
     return p_shift, t_shift
 
 
-def chart_temperature_history(data, city, ylim):
-    """Measured temperature over the whole record: daily range band, 30-day average of the daily mean, extremes.
+# variables with a history chart: file stem and title, unit, which extremes to mark (and which of them to label above
+# the point), readings share to report, footer
+HISTORY_VARIABLES = {
+    'temp': dict(stem='temperature', title='temperature', unit='°C', fmt='{:.1f} °C', marks=('max', 'min'),
+                 above=('max',), zero_line=True, label_box=False, share_at_least=None,
+                 footer='Source: roboclimate. Extremes are of the 3-hourly readings, so true daily highs and lows '
+                        'can be more extreme.'),
+    'humidity': dict(stem='humidity', title='relative humidity', unit='%', fmt='{:.0f}%', marks=('min',),
+                     above=('min',), zero_line=False, label_box=True, share_at_least=90,
+                     footer='Source: roboclimate. The band and the marked low are of the 3-hourly readings, so true '
+                            'daily extremes can be more extreme.')}
 
-    Readings in the EXCLUDED_READINGS episodes are dropped; every other reading is plotted as measured. Days with fewer
-    than 6 of their 8 readings are left blank, and gaps of 3 days or more are shaded.
+
+def chart_history(data, city, variable, ylim):
+    """Measured temperature or relative humidity over the whole record: daily range band, 30-day average of the daily
+    mean and the marked extremes.
+
+    Readings in the EXCLUDED_READINGS episodes are dropped for the variables listed there; every other reading
+    is plotted as measured. Days with fewer than 6 of their 8 readings are left blank, and gaps of 3 days or
+    more are shaded.
     """
+    spec = HISTORY_VARIABLES[variable]
     display = CITIES.get(city, (city.title(), ''))[0]
     w = pd.read_csv(os.path.join(data, f'weather_{city}.csv')).drop_duplicates('dt')
     w['ts'] = pd.to_datetime(w.dt.astype('int64'), unit='s')
-    temps = w.set_index('ts').temp.sort_index()
-    for first, last in EXCLUDED_READINGS.get(city, []):
-        temps = temps[(temps.index < pd.Timestamp(first)) | (temps.index > pd.Timestamp(last))]
-    daily = temps.resample('D').agg(['min', 'max', 'mean', 'size'])
+    values = w.set_index('ts')[variable].sort_index()
+    for first, last, variables in EXCLUDED_READINGS.get(city, []):
+        if variable in variables:
+            values = values[(values.index < pd.Timestamp(first)) | (values.index > pd.Timestamp(last))]
+    daily = values.resample('D').agg(['min', 'max', 'mean', 'size'])
     daily.loc[daily['size'] < 6, ['min', 'max', 'mean']] = np.nan
     daily['avg30'] = daily['mean'].rolling(30, center=True, min_periods=20).mean()
     daily.rename(columns={'size': 'readings'}).rename_axis('date') \
-        .to_csv(os.path.join(OUT, f'temperature_history_{city}.csv'), float_format='%.2f')
-    step = temps.index.to_series().diff()
+        .to_csv(os.path.join(OUT, f"{spec['stem']}_history_{city}.csv"), float_format='%.2f')
+    step = values.index.to_series().diff()
     gaps = [(t - d, t) for t, d in step[step >= pd.Timedelta('3D')].items()]
 
     plt.rcParams.update({'font.size': 10, 'axes.edgecolor': AXIS, 'xtick.color': MUTED, 'ytick.color': MUTED,
@@ -394,38 +422,47 @@ def chart_temperature_history(data, city, ylim):
         if (end - start).days > 60:
             ax.text(start + (end - start) / 2, ylim[0] + 2, f'no data\n{start:%b %Y} – {end:%b %Y}', ha='center',
                     va='bottom', fontsize=8.5, color=MUTED)
-    for ts, above in [(temps.idxmax(), True), (temps.idxmin(), False)]:
-        ax.scatter([ts], [temps[ts]], s=40, color=INK, zorder=5, edgecolor=SURF, linewidth=1.5)
-        ax.annotate(f'{temps[ts]:.1f} °C  {ts:%d %b %Y}', (ts, temps[ts]), xytext=(8, 4 if above else -4),
-                    textcoords='offset points', va='bottom' if above else 'top', fontsize=9, color=INK)
-    ax.axhline(0, color=AXIS, lw=0.8)
+    for mark in spec['marks']:
+        ts = values.idxmax() if mark == 'max' else values.idxmin()
+        above = mark in spec['above']
+        ax.scatter([ts], [values[ts]], s=40, color=INK, zorder=5, edgecolor=SURF, linewidth=1.5)
+        ax.annotate(f"{spec['fmt'].format(values[ts])}  {ts:%d %b %Y}", (ts, values[ts]),
+                    xytext=(8, 4 if above else -4), textcoords='offset points', va='bottom' if above else 'top',
+                    fontsize=9, color=INK, zorder=6,
+                    bbox=dict(boxstyle='round,pad=0.2', fc=SURF, ec='none', alpha=0.85) if spec['label_box'] else None)
+    if spec['zero_line']:
+        ax.axhline(0, color=AXIS, lw=0.8)
     ax.grid(axis='y', color=GRID, lw=0.8)
     ax.set_axisbelow(True)
     for side in ['top', 'right']:
         ax.spines[side].set_visible(False)
-    ax.set_ylabel('°C')
+    ax.set_ylabel(spec['unit'])
     ax.set_ylim(*ylim)
+    if variable == 'humidity':
+        ax.set_yticks(range(0, 101, 20))
     ax.xaxis.set_major_locator(mdates.YearLocator())
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
-    ax.set_xlim(pd.Timestamp('2019-11-01'), temps.index.max() + pd.Timedelta('10D'))   # same window for every city
+    ax.set_xlim(pd.Timestamp('2019-11-01'), values.index.max() + pd.Timedelta('10D'))   # same window for every city
     ax.legend(loc='lower left', bbox_to_anchor=(0, 1.0), ncol=2, frameon=False, fontsize=9.5, labelcolor=INK2)
-    fig.suptitle(f'{display} temperature, measured', x=0.06, y=0.97, ha='left', fontsize=14, fontweight='bold',
+    fig.suptitle(f"{display} {spec['title']}, measured", x=0.06, y=0.97, ha='left', fontsize=14, fontweight='bold',
                  color=INK)
-    fig.text(0.06, 0.905, f'{temps.index.min():%d %b %Y} – {temps.index.max():%d %b %Y}, {len(temps):,} three-hourly '
-             'readings (OpenWeather current weather). Same scale for every city. Days with fewer than 6 readings '
-             'blank.',
-             fontsize=9, color=INK2)
-    fig.text(0.06, 0.015, 'Source: roboclimate. Extremes are of the 3-hourly readings, so true daily highs and lows '
-             'can be more extreme.', fontsize=7.8, color=MUTED)
+    fig.text(0.06, 0.905, f'{values.index.min():%d %b %Y} – {values.index.max():%d %b %Y}, {len(values):,} '
+             'three-hourly readings (OpenWeather current weather). Same scale for every city. Days with fewer than 6 '
+             'readings blank.', fontsize=9, color=INK2)
+    fig.text(0.06, 0.015, spec['footer'], fontsize=7.8, color=MUTED)
     fig.tight_layout(rect=(0.03, 0.03, 1, 0.89))
-    fig.savefig(os.path.join(OUT, f'temperature_history_{city}.png'), dpi=150, facecolor=SURF)
+    fig.savefig(os.path.join(OUT, f"{spec['stem']}_history_{city}.png"), dpi=150, facecolor=SURF)
     plt.close(fig)
     full_years = daily['mean'].groupby(daily.index.year).agg(['mean', 'count'])
-    return {'first': f'{temps.index.min():%Y-%m-%d}', 'last': f'{temps.index.max():%Y-%m-%d}', 'readings': len(temps),
-            'mean_of_daily_means': daily['mean'].mean(),
-            'max': temps.max(), 'max_at': f'{temps.idxmax():%Y-%m-%d %H:%M}',
-            'min': temps.min(), 'min_at': f'{temps.idxmin():%Y-%m-%d %H:%M}',
-            'full_years': ' '.join(str(y) for y in full_years.index[full_years['count'] >= 330])}
+    stats = {'first': f'{values.index.min():%Y-%m-%d}', 'last': f'{values.index.max():%Y-%m-%d}',
+             'readings': len(values), 'mean_of_daily_means': daily['mean'].mean()}
+    for mark in spec['marks']:
+        ts = values.idxmax() if mark == 'max' else values.idxmin()
+        stats[mark], stats[f'{mark}_at'] = values[ts], f'{ts:%Y-%m-%d %H:%M}'
+    if spec['share_at_least']:
+        stats[f"percent_at_least_{spec['share_at_least']}"] = 100 * (values >= spec['share_at_least']).mean()
+    stats['full_years'] = ' '.join(str(y) for y in full_years.index[full_years['count'] >= 330])
+    return stats
 
 
 def main():
@@ -441,10 +478,12 @@ def main():
     pd.DataFrame(shifts, index=['pressure_shift_h', 'temp_shift_h']).T.rename_axis('city') \
         .to_csv(os.path.join(OUT, 'pressure_clock_shifts.csv'), float_format='%.2f')
     temps = pd.concat(pd.read_csv(os.path.join(args.data, f'weather_{city}.csv')).temp for city in args.cities)
-    ylim = (5 * np.floor(temps.min() / 5) - 5, 5 * np.ceil(min(temps.max(), 45) / 5) + 5)   # shared by all cities
-    summary = {city: chart_temperature_history(args.data, city, ylim) for city in args.cities}
-    pd.DataFrame(summary).T.rename_axis('city') \
-        .to_csv(os.path.join(OUT, 'temperature_history_summary.csv'), float_format='%.2f')
+    ylims = {'temp': (5 * np.floor(temps.min() / 5) - 5, 5 * np.ceil(min(temps.max(), 45) / 5) + 5),   # shared by cities
+             'humidity': (0, 105)}
+    for variable, spec in HISTORY_VARIABLES.items():
+        summary = {city: chart_history(args.data, city, variable, ylims[variable]) for city in args.cities}
+        pd.DataFrame(summary).T.rename_axis('city') \
+            .to_csv(os.path.join(OUT, f"{spec['stem']}_history_summary.csv"), float_format='%.2f')
     print(f'charts written to {OUT}')
 
 
