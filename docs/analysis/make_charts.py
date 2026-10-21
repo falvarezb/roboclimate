@@ -11,6 +11,7 @@ Produces, next to this script:
 - temperature_history_summary.csv       : period, readings, mean and extremes per city
 - humidity_history_<city>.png / .csv    : the same for relative humidity
 - humidity_history_summary.csv          : period, readings, mean, driest reading and share of damp readings per city
+- humidity_by_month.png / .csv          : average humidity by calendar month for each city (whole record and each year)
 
 Needs weather_<city>.csv, temp/join_<city>.csv and pressure/join_<city>.csv (written by the Java or Python data analysis) in the data folder.
 
@@ -386,6 +387,17 @@ HISTORY_VARIABLES = {
                             'daily extremes can be more extreme.')}
 
 
+def measurements(data, city, variable):
+    """Measured values of `variable` indexed by UTC time, without the EXCLUDED_READINGS episodes."""
+    w = pd.read_csv(os.path.join(data, f'weather_{city}.csv')).drop_duplicates('dt')
+    w['ts'] = pd.to_datetime(w.dt.astype('int64'), unit='s')
+    values = w.set_index('ts')[variable].sort_index()
+    for first, last, variables in EXCLUDED_READINGS.get(city, []):
+        if variable in variables:
+            values = values[(values.index < pd.Timestamp(first)) | (values.index > pd.Timestamp(last))]
+    return values
+
+
 def chart_history(data, city, variable, ylim):
     """Measured temperature or relative humidity over the whole record: daily range band, 30-day average of the daily
     mean and the marked extremes.
@@ -396,12 +408,7 @@ def chart_history(data, city, variable, ylim):
     """
     spec = HISTORY_VARIABLES[variable]
     display = CITIES.get(city, (city.title(), ''))[0]
-    w = pd.read_csv(os.path.join(data, f'weather_{city}.csv')).drop_duplicates('dt')
-    w['ts'] = pd.to_datetime(w.dt.astype('int64'), unit='s')
-    values = w.set_index('ts')[variable].sort_index()
-    for first, last, variables in EXCLUDED_READINGS.get(city, []):
-        if variable in variables:
-            values = values[(values.index < pd.Timestamp(first)) | (values.index > pd.Timestamp(last))]
+    values = measurements(data, city, variable)
     daily = values.resample('D').agg(['min', 'max', 'mean', 'size'])
     daily.loc[daily['size'] < 6, ['min', 'max', 'mean']] = np.nan
     daily['avg30'] = daily['mean'].rolling(30, center=True, min_periods=20).mean()
@@ -465,6 +472,63 @@ def chart_history(data, city, variable, ylim):
     return stats
 
 
+def chart_humidity_by_month(data, cities):
+    """Average relative humidity by calendar month, one panel per city, ordered by the size of the seasonal swing.
+
+    Bold line: mean of the daily means of every day of that calendar month over the whole record (days with fewer
+    than 6 of 8 readings left out). Thin lines: each year's own monthly mean, for months with at least 20 such days.
+    """
+    rows, panels = [], []
+    for city in cities:
+        daily = measurements(data, city, 'humidity').resample('D').agg(['mean', 'size'])
+        daily = daily[daily['size'] >= 6]['mean']
+        climate = daily.groupby(daily.index.month).mean()
+        per_year = daily.groupby([daily.index.year, daily.index.month]).agg(['mean', 'size'])
+        per_year = per_year[per_year['size'] >= 20]
+        rows += [(city, 'all', month, climate[month], int((daily.index.month == month).sum())) for month in climate.index]
+        rows += [(city, year, month, r['mean'], int(r['size'])) for (year, month), r in per_year.iterrows()]
+        panels.append((city, climate, per_year['mean'].unstack(0), climate.max() - climate.min()))
+    pd.DataFrame(rows, columns=['city', 'year', 'month', 'humidity', 'days']) \
+        .to_csv(os.path.join(OUT, 'humidity_by_month.csv'), index=False, float_format='%.2f')
+    panels.sort(key=lambda p: -p[3])
+
+    plt.rcParams.update({'font.size': 10, 'axes.edgecolor': AXIS, 'xtick.color': MUTED, 'ytick.color': MUTED,
+                         'axes.labelcolor': INK2, 'text.color': INK})
+    fig, axes = plt.subplots(2, 5, figsize=(16, 7.4), sharex=True, sharey=True, facecolor=SURF)
+    months = np.arange(1, 13)
+    for ax, (city, climate, years, swing) in zip(axes.flat, panels):
+        ax.set_facecolor(SURF)
+        ax.grid(axis='y', color=GRID, lw=0.8)
+        ax.set_axisbelow(True)
+        for side in ['top', 'right']:
+            ax.spines[side].set_visible(False)
+        for year in years.columns:
+            ax.plot(months, years[year].reindex(months), color=BLUE_RAMP[0], lw=1, alpha=0.8, zorder=2)
+        ax.plot(months, climate.reindex(months), color=SINGLE, lw=2.4, marker='o', ms=5, mec=SURF, mew=1.2, zorder=3)
+        for month, above in [(climate.idxmax(), True), (climate.idxmin(), False)]:
+            ax.annotate(f'{climate[month]:.0f}%', (month, climate[month]), xytext=(0, 7 if above else -7),
+                        textcoords='offset points', ha='center', va='bottom' if above else 'top', fontsize=9,
+                        fontweight='bold', color=INK, zorder=4)
+        ax.set_title(CITIES.get(city, (city.title(), ''))[0], loc='left', fontsize=11.5, color=INK, pad=14)
+        ax.text(0, 1.03, f'wettest–driest month: {swing:.0f} points', transform=ax.transAxes, fontsize=8.5, color=INK2)
+        ax.set_xticks(months)
+        ax.set_xticklabels(list('JFMAMJJASOND'))
+        ax.set_xlim(0.5, 12.5)
+        ax.set_ylim(20, 100)
+    for ax in axes[:, 0]:
+        ax.set_ylabel('relative humidity (%)')
+    fig.suptitle('Average humidity by month of the year', x=0.04, y=0.985, ha='left', fontsize=14,
+                 fontweight='bold', color=INK)
+    fig.text(0.04, 0.925, 'Bold line: average of the daily means of each calendar month over the whole record. Thin lines: '
+             'each year on its own (months with 20+ days of data). Cities ordered by the gap between wettest and driest '
+             'month.', fontsize=9, color=INK2)
+    fig.text(0.04, 0.012, 'Source: roboclimate, OpenWeather current weather, up to 10 Oct 2026. Southern-hemisphere '
+             'cities (São Paulo, Sydney, Asunción) have their seasons the other way round.', fontsize=8, color=MUTED)
+    fig.tight_layout(rect=(0.01, 0.03, 1, 0.915))
+    fig.savefig(os.path.join(OUT, 'humidity_by_month.png'), dpi=150, facecolor=SURF)
+    plt.close(fig)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--data', default=os.environ.get('ROBOCLIMATE_CSV_FILES_PATH', 'csv_files'),
@@ -484,6 +548,7 @@ def main():
         summary = {city: chart_history(args.data, city, variable, ylims[variable]) for city in args.cities}
         pd.DataFrame(summary).T.rename_axis('city') \
             .to_csv(os.path.join(OUT, f"{spec['stem']}_history_summary.csv"), float_format='%.2f')
+    chart_humidity_by_month(args.data, args.cities)
     print(f'charts written to {OUT}')
 
 
