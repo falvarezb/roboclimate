@@ -183,3 +183,35 @@ same as for temperature.
   10 Jun 2026 18:00 – 11 Jun 2026 12:00 UTC (7 readings of 19.03 °C and 99%). They are plausible values and about
   0.1% or less of the readings.
 - CSV columns: daily `min`, `max`, `mean`, number of `readings` and the 30-day average `avg30`.
+
+## Average humidity by month of the year
+
+`humidity_by_month.png` · `humidity_by_month.csv`
+
+One panel per city, ordered by the gap between the wettest and driest month. Bold line: average of the daily means of
+each calendar month over the whole record; thin lines: each year on its own (months with at least 20 days of data).
+All panels share the same 20–100% scale. CSV: one row per city, year (`all` for the whole record) and month, with the
+average humidity and the number of days behind it.
+
+| City | Wettest month | Driest month | Gap (points) |
+|---|---|---|---|
+| Madrid | Jan 79% | Jul 34% | 46 |
+| Tokyo | Sep 78% | Jan 49% | 29 |
+| Moscow | Jan 85% | May 59% | 26 |
+| Asunción | Jun 79% | Jan 61% | 18 |
+| London | Dec 86% | Apr 68% | 17 |
+| Nairobi | May 77% | Feb 60% | 17 |
+| Sydney | Feb 76% | Sep 63% | 13 |
+| New York | Sep 70% | Mar 60% | 10 |
+| Lagos | Sep 84% | Dec 75% | 9 |
+| São Paulo | Oct 80% | Aug 71% | 9 |
+
+- Madrid is by far the most seasonal (humid winters, very dry summers); the same ranking holds using only data since
+  24 Jun 2024. Tokyo is second (humid summers, dry winters). São Paulo, Lagos and New York are the least seasonal.
+- Moscow's seasonality is overstated: its winter peak comes from winters at 92–95% (December 2021, and March 2023 to
+  March 2024) while the winters of 2024–25 and 2025–26 are 62–85%, coinciding with the change in its humidity data
+  around October 2024 (#30). Its yearly lines disagree more than any other city's.
+- The spring-2021 loss of exact-100% readings in six cities (#30) lowers the top of the daily range but barely moves
+  monthly averages.
+- Southern-hemisphere cities (São Paulo, Sydney, Asunción) have their seasons the other way round; months are
+  calendar months, not seasons.
