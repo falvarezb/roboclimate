@@ -215,3 +215,81 @@ average humidity and the number of days behind it.
   monthly averages.
 - Southern-hemisphere cities (São Paulo, Sydney, Asunción) have their seasons the other way round; months are
   calendar months, not seasons.
+
+## Wind speed history (original 10 cities)
+
+`wind_speed_history_<city>.png` · `wind_speed_history_<city>.csv` for the same 10 cities · `wind_speed_history_summary.csv`
+
+The same chart as the temperature and humidity histories, for wind speed: the band is each day's lowest to highest
+3-hourly reading, the line the 30-day average of the daily mean, on a shared scale and time window. Speeds are in
+**km/h** (OpenWeather's m/s × 3.6, as in the wind roses), also in the CSVs. Only the highest reading is marked; calm
+(near 0) occurs everywhere.
+
+| City | From | Readings | Mean of daily means (km/h) | Readings ≥ 29 km/h | Highest reading |
+|---|---|---|---|---|---|
+| London | 28 Nov 2019 | 16,504 | 13.5 | 3.7% | 56 km/h (26 Jan 2024) |
+| Madrid | 11 Jun 2020 | 14,929 | 11.4 | 3.9% | 57 km/h (22 Jan 2021) |
+| New York | 11 Jun 2020 | 14,930 | 14.9 | 7.2% | 95 km/h (26 Sep 2026) |
+| Moscow | 27 Jan 2021 | 13,095 | 12.8 | 1.0% | 47 km/h (25 Apr 2021) |
+| Tokyo | 27 Jan 2021 | 13,095 | 15.9 | 11.8% | 67 km/h (6 May 2023) |
+| São Paulo | 11 Jun 2020 | 14,931 | 12.0 | 0.8% | 56 km/h (10 Dec 2025) |
+| Sydney | 11 Jun 2020 | 14,931 | 15.7 | 13.4% | 72 km/h (26 Sep 2026) |
+| Asunción | 27 Jan 2021 | 13,094 | 10.7 | 1.5% | 65 km/h (8 Sep 2023) |
+| Nairobi | 27 Jan 2021 | 13,093 | 12.4 | 1.9% | 46 km/h (12 Jan 2022) |
+| Lagos | 27 Jan 2021 | 13,091 | 12.1 | 0.4% | 56 km/h (28 Apr 2025) |
+
+All records end on 10 Oct 2026. The collection gaps, the blank days and the caveat on the mean of daily means are the
+same as for temperature. 29 km/h is where "fresh" winds (Beaufort 5) start, as in the wind roses. The charts show the
+data as measured, including the two episodes below.
+
+- **19 May 2021: wind speed collapses in New York, Tokyo and Sydney.** From 18–19 May 2021 to their last reading
+  before the outage (15 Jan 2022), the mean falls to about a third of normal: New York 12.3 → 6.1 km/h, Tokyo
+  17.7 → 5.4, Sydney 17.9 → 6.4 (February to mid-May 2021 against 20 May 2021 – 15 Jan 2022), and after the outage it
+  is back at 17.2, 17.7 and 16.6. The drop starts on the same day in the three cities, in the same fortnight as the
+  Moscow change of 19 May 2021 and the loss of exact-100% humidity readings (#30). London and Moscow dip in June 2021
+  too, less clearly.
+- **9 Jun – 31 Jul 2026: another collapse.** In Tokyo (monthly mean 19 km/h in May, 10 in June, 7 in July, 12 in
+  August, 18 in September) and Sydney (16, 7, 6, 10, 17) wind speed falls below half of normal, while the forecasts
+  stay normal (Tokyo 18, 16, 14, 15, 16; Sydney 15, 13, 16, 13, 17), so it is on the measurement side. Madrid,
+  São Paulo, Asunción, Nairobi and London dip less (20–40%) over the same weeks; Moscow, Lagos and New York barely do.
+  Calm weather in both hemispheres at once is implausible, so this is probably another change in the feed. It moves the
+  t1 MASE of recent wind speed (since 24 Jun 2024) by 0.01–0.05 only, because the naive forecast gets calm too, and
+  the bias by up to 0.16 m/s (Sydney).
+- Moscow's wind speeds were whole m/s until 18 May 2021 (98% of readings), decimals since (#30).
+- Excluded (`EXCLUDED_READINGS` in `make_charts.py`), wind speed only: two isolated storm-force readings above 20 m/s
+  (72 km/h), 10+ m/s above both neighbours and above all five forecasts, the only two in the 10 cities: Lagos
+  3 Apr 2023 09:00 UTC (117 km/h between 4 and 13 km/h) and 12 Oct 2024 21:00 UTC (87 km/h between 19 and 9 km/h).
+  Sudden real storms are kept, e.g. the gale of 25–27 Sep 2026 in New York (95 km/h) and the front that crossed
+  Sydney on 26 Sep (72 km/h).
+- A stale stretch is kept as measured: Sydney repeats exactly 1.34 m/s at 305° in 63 readings between 23 Jun and
+  9 Jul 2021 while temperature, humidity and pressure keep changing.
+- Asunción and Nairobi report exactly 0 m/s in 6–7% of their readings (London 0.2%), so calm is coded differently.
+- CSV columns: daily `min`, `max`, `mean`, number of `readings` and the 30-day average `avg30`, in km/h.
+
+## Average wind speed by month of the year
+
+`wind_speed_by_month.png` · `wind_speed_by_month.csv`
+
+The same chart as the humidity by month, for wind speed in km/h, on a shared 0–30 km/h scale. Cities are ordered by the
+gap between the windiest and calmest month; the CSV has one row per city, year (`all` for the whole record) and month.
+
+| City | Windiest month (km/h) | Calmest month (km/h) | Gap (km/h) |
+|---|---|---|---|
+| Nairobi | Dec 16 | Jul 9 | 6.8 |
+| Lagos | Jul 15 | Dec 9 | 5.9 |
+| Sydney | Jan 21 | Aug 15 | 5.6 |
+| New York | Jan 18 | Jul 13 | 5.3 |
+| London | Feb 17 | Jun 12 | 4.6 |
+| Tokyo | Apr 19 | Dec 15 | 4.5 |
+| Asunción | Sep 13 | Apr 9 | 4.4 |
+| São Paulo | Oct 14 | Jun 10 | 4.0 |
+| Madrid | Feb 14 | Jun 10 | 3.9 |
+| Moscow | Apr 15 | Jun 11 | 3.6 |
+
+- The chart leaves out the two episodes above where they are pronounced (`SUSPECT_PERIODS` in `make_charts.py`): New
+  York, Tokyo and Sydney from 19 May 2021 to 15 Jan 2022, and Tokyo and Sydney from 9 Jun to 31 Jul 2026. With them
+  in, Sydney, Tokyo and New York looked the most seasonal (gaps of 7, 7 and 6 km/h, windy January–May and calm
+  June–December) only because of the two collapses.
+- Wind speed is the least seasonal of the variables charted: every gap is 4–7 km/h on averages of 10–20 km/h.
+  Nairobi (windiest in December, calmest in July) and Lagos (windiest in March and July, calmest in December) lead;
+  the other cities barely change through the year.

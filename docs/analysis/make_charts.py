@@ -12,6 +12,9 @@ Produces, next to this script:
 - humidity_history_<city>.png / .csv    : the same for relative humidity
 - humidity_history_summary.csv          : period, readings, mean, driest reading and share of damp readings per city
 - humidity_by_month.png / .csv          : average humidity by calendar month for each city (whole record and each year)
+- wind_speed_history_<city>.png / .csv  : the same history chart for wind speed, in km/h
+- wind_speed_history_summary.csv        : period, readings, mean, highest reading and share of fresh winds per city
+- wind_speed_by_month.png / .csv        : average wind speed by calendar month for each city
 
 Needs weather_<city>.csv, temp/join_<city>.csv and pressure/join_<city>.csv (written by the Java or Python data analysis) in the data folder.
 
@@ -61,12 +64,27 @@ UTC_OFFSET = {'london': 0, 'madrid': 1, 'newyork': -5, 'moscow': 3, 'tokyo': 9, 
 # Isolated humidity readings 40+ points from both neighbours in the same direction and 30+ points outside all five
 # forecasts (the only three in the 10 cities; their temperatures look normal): Sydney 21 Dec 2020 18:00, 10% between
 # 100% and 93%; Sydney 25 Mar 2021 06:00, 90% between 42% and 43%; Lagos 12 Feb 2024 09:00, 17% between 94% and 66%.
+# Isolated storm-force wind speeds: above 20 m/s (72 km/h) and 10+ m/s above both neighbours and above all five
+# forecasts (the only two in the 10 cities): Lagos 3 Apr 2023 09:00, 32.4 m/s between 1.0 and 3.6 m/s (forecasts up
+# to 5.0), and 12 Oct 2024 21:00, 24.2 m/s between 5.3 and 2.6 m/s (forecasts up to 5.4).
 EXCLUDED_READINGS = {
     'nairobi': [('2021-05-12 15:00', '2021-05-13 18:00', ('temp', 'humidity')),
                 ('2025-03-01 03:00', '2025-03-01 03:00', ('temp', 'humidity'))],
     'sydney': [('2020-12-21 18:00', '2020-12-21 18:00', ('humidity',)),
                ('2021-03-25 06:00', '2021-03-25 06:00', ('humidity',))],
-    'lagos': [('2024-02-12 09:00', '2024-02-12 09:00', ('humidity',))]}
+    'lagos': [('2024-02-12 09:00', '2024-02-12 09:00', ('humidity',)),
+              ('2023-04-03 09:00', '2023-04-03 09:00', ('wind_speed',)),
+              ('2024-10-12 21:00', '2024-10-12 21:00', ('wind_speed',))]}
+# suspect stretches left out of the by-month charts only (the history charts show everything as measured), per variable
+# and city: (first, last) reading in UTC, inclusive. Both are on the measurement side, as the forecasts stay normal (#30).
+# 19 May 2021 to the last reading before the outage: wind speed in New York, Tokyo and Sydney drops to about a third of
+# normal (12.3 -> 6.1, 17.7 -> 5.4 and 17.9 -> 6.4 km/h) on the same day and is back at 17, 18 and 17 km/h after it.
+# 9 Jun - 31 Jul 2026: wind speed in Tokyo and Sydney falls below half of normal (July 7 and 6 km/h against about 15)
+# and recovers gradually in August; Madrid, São Paulo, Asunción, Nairobi and London dip less (20-40%) and are kept.
+SUSPECT_2021 = ('2021-05-19 00:00', '2022-01-15 23:59')
+SUSPECT_2026 = ('2026-06-09 00:00', '2026-07-31 23:59')
+SUSPECT_PERIODS = {'wind_speed': {'newyork': [SUSPECT_2021], 'tokyo': [SUSPECT_2021, SUSPECT_2026],
+                                  'sydney': [SUSPECT_2021, SUSPECT_2026]}}
 MONTH_BLOCKS = ['Dec–Feb', 'Mar–May', 'Jun–Aug', 'Sep–Nov']
 BLOCK_OF_MONTH = {12: 0, 1: 0, 2: 0, 3: 1, 4: 1, 5: 1, 6: 2, 7: 2, 8: 2, 9: 3, 10: 3, 11: 3}
 PANEL_TITLES = {'north': ['Winter', 'Spring', 'Summer', 'Autumn'],
@@ -374,17 +392,26 @@ def chart_pressure_clock(data, city, since='2024-06-24'):
     return p_shift, t_shift
 
 
-# variables with a history chart: file stem and title, unit, which extremes to mark (and which of them to label above
-# the point), readings share to report, footer
+# variables with a history chart: file stem and title, unit, factor from the data's unit, which extremes to mark (and
+# which of them to label above the point), readings share to report, footer; by_month is the spec of the by-month chart
+# (title, words for the extremes, unit of the gap, y label and range, CSV column), None when there is no such chart
 HISTORY_VARIABLES = {
-    'temp': dict(stem='temperature', title='temperature', unit='°C', fmt='{:.1f} °C', marks=('max', 'min'),
-                 above=('max',), zero_line=True, label_box=False, share_at_least=None,
+    'temp': dict(stem='temperature', title='temperature', unit='°C', factor=1, fmt='{:.1f} °C', marks=('max', 'min'),
+                 above=('max',), zero_line=True, label_box=False, share_at_least=None, by_month=None,
                  footer='Source: roboclimate. Extremes are of the 3-hourly readings, so true daily highs and lows '
                         'can be more extreme.'),
-    'humidity': dict(stem='humidity', title='relative humidity', unit='%', fmt='{:.0f}%', marks=('min',),
+    'humidity': dict(stem='humidity', title='relative humidity', unit='%', factor=1, fmt='{:.0f}%', marks=('min',),
                      above=('min',), zero_line=False, label_box=True, share_at_least=90,
+                     by_month=dict(title='humidity', words=('wettest', 'driest'), gap_unit='points',
+                                   ylabel='relative humidity (%)', ylim=(20, 100), column='humidity'),
                      footer='Source: roboclimate. The band and the marked low are of the 3-hourly readings, so true '
-                            'daily extremes can be more extreme.')}
+                            'daily extremes can be more extreme.'),
+    'wind_speed': dict(stem='wind_speed', title='wind speed', unit='km/h', factor=3.6, fmt='{:.0f} km/h',
+                       marks=('max',), above=('max',), zero_line=False, label_box=True, share_at_least=29,
+                       by_month=dict(title='wind speed', words=('windiest', 'calmest'), gap_unit='km/h',
+                                     ylabel='wind speed (km/h)', ylim=None, column='wind_speed_kmh'),
+                       footer='Source: roboclimate. 3-hourly readings of OpenWeather current wind speed (m/s × 3.6), '
+                              'so gusts between readings are not captured.')}
 
 
 def measurements(data, city, variable):
@@ -408,7 +435,7 @@ def chart_history(data, city, variable, ylim):
     """
     spec = HISTORY_VARIABLES[variable]
     display = CITIES.get(city, (city.title(), ''))[0]
-    values = measurements(data, city, variable)
+    values = measurements(data, city, variable) * spec['factor']
     daily = values.resample('D').agg(['min', 'max', 'mean', 'size'])
     daily.loc[daily['size'] < 6, ['min', 'max', 'mean']] = np.nan
     daily['avg30'] = daily['mean'].rolling(30, center=True, min_periods=20).mean()
@@ -472,15 +499,21 @@ def chart_history(data, city, variable, ylim):
     return stats
 
 
-def chart_humidity_by_month(data, cities):
-    """Average relative humidity by calendar month, one panel per city, ordered by the size of the seasonal swing.
+def chart_by_month(data, cities, variable):
+    """Average of a variable by calendar month, one panel per city, ordered by the size of the seasonal swing.
 
     Bold line: mean of the daily means of every day of that calendar month over the whole record (days with fewer
     than 6 of 8 readings left out). Thin lines: each year's own monthly mean, for months with at least 20 such days.
     """
-    rows, panels = [], []
+    spec = HISTORY_VARIABLES[variable]
+    bm = spec['by_month']
+    rows, panels, last = [], [], []
     for city in cities:
-        daily = measurements(data, city, 'humidity').resample('D').agg(['mean', 'size'])
+        values = measurements(data, city, variable) * spec['factor']
+        last.append(values.index.max())
+        for first, final in SUSPECT_PERIODS.get(variable, {}).get(city, []):
+            values = values[(values.index < pd.Timestamp(first)) | (values.index > pd.Timestamp(final))]
+        daily = values.resample('D').agg(['mean', 'size'])
         daily = daily[daily['size'] >= 6]['mean']
         climate = daily.groupby(daily.index.month).mean()
         per_year = daily.groupby([daily.index.year, daily.index.month]).agg(['mean', 'size'])
@@ -488,9 +521,10 @@ def chart_humidity_by_month(data, cities):
         rows += [(city, 'all', month, climate[month], int((daily.index.month == month).sum())) for month in climate.index]
         rows += [(city, year, month, r['mean'], int(r['size'])) for (year, month), r in per_year.iterrows()]
         panels.append((city, climate, per_year['mean'].unstack(0), climate.max() - climate.min()))
-    pd.DataFrame(rows, columns=['city', 'year', 'month', 'humidity', 'days']) \
-        .to_csv(os.path.join(OUT, 'humidity_by_month.csv'), index=False, float_format='%.2f')
+    pd.DataFrame(rows, columns=['city', 'year', 'month', bm['column'], 'days']) \
+        .to_csv(os.path.join(OUT, f"{spec['stem']}_by_month.csv"), index=False, float_format='%.2f')
     panels.sort(key=lambda p: -p[3])
+    ylim = bm['ylim'] or (0, 5 * np.ceil(max(max(p[1].max(), p[2].max().max()) for p in panels) / 5) + 5)
 
     plt.rcParams.update({'font.size': 10, 'axes.edgecolor': AXIS, 'xtick.color': MUTED, 'ytick.color': MUTED,
                          'axes.labelcolor': INK2, 'text.color': INK})
@@ -506,26 +540,39 @@ def chart_humidity_by_month(data, cities):
             ax.plot(months, years[year].reindex(months), color=BLUE_RAMP[0], lw=1, alpha=0.8, zorder=2)
         ax.plot(months, climate.reindex(months), color=SINGLE, lw=2.4, marker='o', ms=5, mec=SURF, mew=1.2, zorder=3)
         for month, above in [(climate.idxmax(), True), (climate.idxmin(), False)]:
-            ax.annotate(f'{climate[month]:.0f}%', (month, climate[month]), xytext=(0, 7 if above else -7),
+            ax.annotate(spec['fmt'].format(climate[month]), (month, climate[month]), xytext=(0, 7 if above else -7),
                         textcoords='offset points', ha='center', va='bottom' if above else 'top', fontsize=9,
                         fontweight='bold', color=INK, zorder=4)
         ax.set_title(CITIES.get(city, (city.title(), ''))[0], loc='left', fontsize=11.5, color=INK, pad=14)
-        ax.text(0, 1.03, f'wettest–driest month: {swing:.0f} points', transform=ax.transAxes, fontsize=8.5, color=INK2)
+        ax.text(0, 1.03, f"{bm['words'][0]}–{bm['words'][1]} month: {swing:.0f} {bm['gap_unit']}",
+                transform=ax.transAxes, fontsize=8.5, color=INK2)
         ax.set_xticks(months)
         ax.set_xticklabels(list('JFMAMJJASOND'))
         ax.set_xlim(0.5, 12.5)
-        ax.set_ylim(20, 100)
+        ax.set_ylim(*ylim)
     for ax in axes[:, 0]:
-        ax.set_ylabel('relative humidity (%)')
-    fig.suptitle('Average humidity by month of the year', x=0.04, y=0.985, ha='left', fontsize=14,
+        ax.set_ylabel(bm['ylabel'])
+    fig.suptitle(f"Average {bm['title']} by month of the year", x=0.04, y=0.985, ha='left', fontsize=14,
                  fontweight='bold', color=INK)
     fig.text(0.04, 0.925, 'Bold line: average of the daily means of each calendar month over the whole record. Thin lines: '
-             'each year on its own (months with 20+ days of data). Cities ordered by the gap between wettest and driest '
-             'month.', fontsize=9, color=INK2)
-    fig.text(0.04, 0.012, 'Source: roboclimate, OpenWeather current weather, up to 10 Oct 2026. Southern-hemisphere '
-             'cities (São Paulo, Sydney, Asunción) have their seasons the other way round.', fontsize=8, color=MUTED)
-    fig.tight_layout(rect=(0.01, 0.03, 1, 0.915))
-    fig.savefig(os.path.join(OUT, 'humidity_by_month.png'), dpi=150, facecolor=SURF)
+             f"each year on its own (months with 20+ days of data). Cities ordered by the gap between "
+             f"{bm['words'][0]} and {bm['words'][1]} month.", fontsize=9, color=INK2)
+    left_out = {}                                    # cities grouped by the stretches left out for them
+    for city in cities:
+        periods = tuple(SUSPECT_PERIODS.get(variable, {}).get(city, []))
+        if periods:
+            left_out.setdefault(periods, []).append(CITIES[city][0])
+    note = ''
+    if left_out:
+        stretches = '; '.join(f"{', '.join(names)}: " + ' and '.join(
+            f'{pd.Timestamp(a):%d %b %Y} – {pd.Timestamp(b):%d %b %Y}' for a, b in periods)
+            for periods, names in left_out.items())
+        note = f'\nLeft out because wind speeds were far below normal (see README): {stretches}.'
+    fig.text(0.04, 0.012, f'Source: roboclimate, OpenWeather current weather, up to {max(last):%d %b %Y}. '
+             f'Southern-hemisphere cities (São Paulo, Sydney, Asunción) have their seasons the other way round.{note}',
+             fontsize=8, color=MUTED, va='bottom' if note else 'baseline')
+    fig.tight_layout(rect=(0.01, 0.05 if note else 0.03, 1, 0.915))
+    fig.savefig(os.path.join(OUT, f"{spec['stem']}_by_month.png"), dpi=150, facecolor=SURF)
     plt.close(fig)
 
 
@@ -544,11 +591,16 @@ def main():
     temps = pd.concat(pd.read_csv(os.path.join(args.data, f'weather_{city}.csv')).temp for city in args.cities)
     ylims = {'temp': (5 * np.floor(temps.min() / 5) - 5, 5 * np.ceil(min(temps.max(), 45) / 5) + 5),   # shared by cities
              'humidity': (0, 105)}
+    wind_max = max((measurements(args.data, city, 'wind_speed') * HISTORY_VARIABLES['wind_speed']['factor']).max()
+                   for city in args.cities)
+    ylims['wind_speed'] = (0, 10 * np.ceil(wind_max / 10) + 10)
     for variable, spec in HISTORY_VARIABLES.items():
         summary = {city: chart_history(args.data, city, variable, ylims[variable]) for city in args.cities}
         pd.DataFrame(summary).T.rename_axis('city') \
             .to_csv(os.path.join(OUT, f"{spec['stem']}_history_summary.csv"), float_format='%.2f')
-    chart_humidity_by_month(args.data, args.cities)
+    for variable, spec in HISTORY_VARIABLES.items():
+        if spec['by_month']:
+            chart_by_month(args.data, args.cities, variable)
     print(f'charts written to {OUT}')
 
 
